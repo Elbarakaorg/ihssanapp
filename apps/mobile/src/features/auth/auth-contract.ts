@@ -1,4 +1,4 @@
-export type ProfileType = 'patient' | 'caregiver' | 'clinician';
+export type ProfileType = 'patient' | 'clinician';
 
 export type AuthIdentity = {
   id: string;

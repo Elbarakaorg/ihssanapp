@@ -32,7 +32,7 @@ export function validateAuthForm(input: AuthFormInput): AuthValidation {
     }
 
     const profileType = input.profileType ?? 'patient';
-    if (!['patient', 'caregiver', 'clinician'].includes(profileType)) {
+    if (!['patient', 'clinician'].includes(profileType)) {
       return { valid: false, error: 'Choose a profile type to continue.' };
     }
 

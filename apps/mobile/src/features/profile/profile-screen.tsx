@@ -1,8 +1,10 @@
 import { useRouter } from 'expo-router';
 import { Globe2, LockKeyhole, ShieldCheck, UserRound } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/auth-provider';
+import { getCurrentUserProfile } from '@/features/profile/profile-repository';
 import { Page, PageHeading, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { palette } from '@/ui/palette';
 
@@ -15,6 +17,33 @@ const settings = [
 export default function ProfileScreen() {
   const router = useRouter();
   const { isReady, session, signOut } = useAuth();
+  const [profileName, setProfileName] = useState('');
+  const [profileType, setProfileType] = useState('Patient');
+
+  useEffect(() => {
+    if (!session) {
+      setProfileName('');
+      setProfileType('Patient');
+      return;
+    }
+
+    let active = true;
+
+    void getCurrentUserProfile().then((profile) => {
+      if (!active) return;
+      setProfileName(profile.display_name);
+      setProfileType(profile.profile_type === 'clinician' ? 'Clinician' : 'Patient');
+    }).catch(() => {
+      if (active) {
+        setProfileName('');
+        setProfileType('Patient');
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [session]);
 
   return (
     <Page>
@@ -26,8 +55,8 @@ export default function ProfileScreen() {
       <View style={[uiStyles.card, styles.accountCard]}>
         <View style={styles.avatar}><UserRound color={palette.forest} size={22} strokeWidth={1.8} /></View>
         <View style={styles.accountCopy}>
-          <Text style={styles.accountTitle}>{session ? 'Account' : 'Patient account'}</Text>
-          <Text style={styles.accountDetail}>{session?.identity.email ?? (isReady ? 'Not signed in' : 'Restoring session')}</Text>
+          <Text style={styles.accountTitle}>{session ? profileType : 'Patient account'}</Text>
+          <Text style={styles.accountDetail}>{profileName || session?.identity.email || (isReady ? 'Not signed in' : 'Restoring session')}</Text>
         </View>
       </View>
       {session ? (

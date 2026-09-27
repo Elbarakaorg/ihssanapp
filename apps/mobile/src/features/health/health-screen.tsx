@@ -1,7 +1,11 @@
 import { useRouter } from 'expo-router';
 import { Activity, Droplets, FlaskConical } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useAuth } from '@/features/auth/auth-provider';
+import { listMeasurementsForCurrentUser } from '@/features/health/measurement-repository';
+import { summarizeMeasurements } from '@/features/health/measurement-summary';
 import { Page, PageHeading, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { palette } from '@/ui/palette';
 
@@ -14,6 +18,28 @@ const metrics = [
 
 export default function HealthScreen() {
   const router = useRouter();
+  const { session } = useAuth();
+  const [measurementSummary, setMeasurementSummary] = useState({ count: 0, latestMeasurementDate: null as string | null });
+
+  useEffect(() => {
+    if (!session) {
+      setMeasurementSummary({ count: 0, latestMeasurementDate: null });
+      return;
+    }
+
+    let active = true;
+
+    void listMeasurementsForCurrentUser().then((measurements) => {
+      if (!active) return;
+      setMeasurementSummary(summarizeMeasurements(measurements));
+    }).catch(() => {
+      if (active) setMeasurementSummary({ count: 0, latestMeasurementDate: null });
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [session]);
 
   return (
     <Page>
@@ -24,14 +50,18 @@ export default function HealthScreen() {
 
       <View style={styles.summary}>
         <View>
-          <Text style={styles.summaryNumber}>0</Text>
-          <Text style={styles.summaryLabel}>results recorded</Text>
+          <Text style={styles.summaryNumber}>{measurementSummary.count}</Text>
+          <Text style={styles.summaryLabel}>{measurementSummary.count === 1 ? 'result recorded' : 'results recorded'}</Text>
         </View>
         <View style={styles.summaryRule} />
-        <Text style={styles.summaryCopy}>Your timeline will grow as you add test results.</Text>
+        <Text style={styles.summaryCopy}>
+          {measurementSummary.latestMeasurementDate
+            ? `Latest result: ${new Date(measurementSummary.latestMeasurementDate).toLocaleDateString()}`
+            : 'Your timeline will grow as you add test results.'}
+        </Text>
       </View>
 
-      <SectionHeading title="Test categories" detail="No results yet" />
+      <SectionHeading title="Test categories" detail={measurementSummary.count ? 'Saved results' : 'No results yet'} />
       <View style={styles.metricList}>
         {metrics.map((metric) => {
           const Icon = metric.icon;

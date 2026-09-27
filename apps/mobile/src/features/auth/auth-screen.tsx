@@ -139,14 +139,14 @@ export default function AuthScreen() {
             <>
               <Text style={styles.fieldLabel}>Account type</Text>
               <View style={styles.profileTypeRow}>
-                {(['patient', 'caregiver', 'clinician'] as ProfileType[]).map((type) => (
+                {(['patient', 'clinician'] as ProfileType[]).map((type) => (
                   <Pressable
                     accessibilityRole="button"
                     accessibilityState={{ selected: profileType === type }}
                     key={type}
                     onPress={() => setProfileType(type)}
                     style={[styles.profileTypeOption, profileType === type && styles.profileTypeOptionSelected]}>
-                    <Text style={[styles.profileTypeText, profileType === type && styles.profileTypeTextSelected]}>{type === 'patient' ? 'Patient' : type === 'caregiver' ? 'Caregiver' : 'Clinician'}</Text>
+                    <Text style={[styles.profileTypeText, profileType === type && styles.profileTypeTextSelected]}>{type === 'patient' ? 'Patient' : 'Clinician'}</Text>
                   </Pressable>
                 ))}
               </View>

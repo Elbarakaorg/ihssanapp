@@ -1,0 +1,24 @@
+{
+  "name": "@ihssan/ihssan-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.7",
+    "@supabase/supabase-js": "^2.117.2",
+    "dotenv": "^16.6.1",
+    "hono": "^4.10.5",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "tsx": "^4.20.6",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.2"
+  }
+}

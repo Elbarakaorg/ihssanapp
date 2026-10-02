@@ -22,3 +22,5 @@ For Google sign-in, add the exact deployed callback URLs to Supabase **Authentic
 - Admin portal: `https://<admin-domain>/`
 
 The Google OAuth provider's authorized redirect URI remains the Supabase callback URL shown in `docs/google-oauth-setup.md`; it is not the Vercel domain. After a deployment, test the app root, nested routes opened directly, browser refresh on nested routes, and Google sign-in on desktop and mobile browsers.
+
+Both Vercel configs set a Content Security Policy. The mobile policy hashes Expo's current inline router-hydration script instead of allowing arbitrary inline scripts; if an Expo upgrade changes that generated script, update the SHA-256 source in `apps/mobile/vercel.json` to match the exported HTML and test all routes. `connect-src` permits secure HTTPS/WebSocket connections because the deployed API origin is selected by `VITE_API_BASE_URL`; tighten it to the exact API origin once that production URL is fixed.

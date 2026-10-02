@@ -27,6 +27,7 @@ Google OAuth is brokered by Supabase Auth. The Ihssan mobile app must not contai
    - `https://admin.ihssanapp.com/` for the production admin portal if deployed on that subdomain; use the actual admin host if different.
    - `ihssan://auth/callback` for native development/production builds that register the `ihssan` custom URL scheme.
 4. Keep email/password signup enabled if you want both methods. Google provider enablement is separate from the app's local environment variables.
+5. Keep **Confirm email** enabled in the hosted Supabase project's email provider settings. Admin invitation acceptance requires a confirmed email that matches the invited address. The local `supabase/config.toml` also enables email confirmation.
 
 For Expo Go, `Linking.createURL()` uses a temporary `exp://<device-host>:<port>/--/auth/callback` URL. That URL changes with the development host; add the exact current URL to Supabase's redirect allow list while testing in Expo Go. A development or production native build uses the registered `ihssan://auth/callback` scheme. For a public production release, prefer verified iOS Universal Links and Android App Links over a custom scheme alone, and register the verified HTTPS domain in Expo native configuration and Supabase's allow list.
 

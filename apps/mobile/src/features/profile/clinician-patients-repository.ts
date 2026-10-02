@@ -53,15 +53,35 @@ export async function getMySharedPatientProfile(grantId: string): Promise<Shared
   return profile as SharedPatientProfile;
 }
 
-export async function listSharedPatientMeasurements(patientId: string): Promise<SharedMeasurement[]> {
+export async function listSharedPatientMeasurements(grantId: string): Promise<SharedMeasurement[]> {
   const client = requireClient();
-  const { data, error } = await client.from('health_measurements')
-    .select('id,numeric_value,component_values,unit,measured_at,source_kind,source_label,metric_definition:metric_definitions(metric_key,display_names)')
-    .eq('patient_id', patientId)
-    .order('measured_at', { ascending: false })
-    .limit(100);
+  const { data, error } = await client.rpc('list_my_shared_patient_measurements', { p_grant_id: grantId });
   if (error) throw error;
-  return (data ?? []) as unknown as SharedMeasurement[];
+  return ((data ?? []) as Array<{
+    id: string;
+    numeric_value: number | null;
+    component_values: Record<string, number> | null;
+    unit: string | null;
+    measured_at: string;
+    source_kind: string;
+    source_label: string | null;
+    metric_key: string | null;
+    display_names: Record<string, string> | null;
+  }>).map((measurement) => ({
+    id: measurement.id,
+    numeric_value: measurement.numeric_value,
+    component_values: measurement.component_values as Record<string, number> | null,
+    unit: measurement.unit,
+    measured_at: measurement.measured_at,
+    source_kind: measurement.source_kind,
+    source_label: measurement.source_label,
+    metric_definition: measurement.metric_key
+      ? {
+          metric_key: measurement.metric_key,
+          display_names: measurement.display_names ?? {},
+        }
+      : null,
+  }));
 }
 
 function requireClient() {

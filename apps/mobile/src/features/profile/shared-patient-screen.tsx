@@ -26,7 +26,7 @@ export default function SharedPatientScreen() {
       if (!active) return;
       setProfile(nextProfile);
       if (nextProfile.access_scope.measurements) {
-        const rows = await listSharedPatientMeasurements(nextProfile.patient_id);
+        const rows = await listSharedPatientMeasurements(grantId);
         if (active) setMeasurements(rows);
       }
     }).catch(() => {

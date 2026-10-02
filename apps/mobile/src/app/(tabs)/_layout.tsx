@@ -1,8 +1,9 @@
 import * as Haptics from 'expo-haptics';
 import { Tabs } from 'expo-router';
+import { PlatformPressable } from 'expo-router/react-navigation';
 import { Activity, Compass, HeartHandshake, House, type LucideIcon, Menu } from 'lucide-react-native';
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, View, type ColorValue } from 'react-native';
+import { Platform, StyleSheet, View, type ColorValue } from 'react-native';
 import type { BottomTabBarButtonProps } from 'expo-router/build/react-navigation/bottom-tabs/types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -26,14 +27,15 @@ function TabIcon({ Icon, focused }: { Icon: LucideIcon; focused: boolean }) {
 
 function TabButton({ children, href, onLongPress, onMenuPress, onPress, style, ref: _ref, ...rest }: BottomTabBarButtonProps & { onMenuPress?: () => void }) {
   return (
-    <Pressable
+    <PlatformPressable
       {...rest}
       {...(!onMenuPress && href ? { href } : {})}
       onLongPress={onLongPress}
       onPress={onMenuPress ? () => onMenuPress() : onPress}
-      style={({ pressed }) => [style, pressed && iconStyles.pressed]}>
+      pressOpacity={0.7}
+      style={style}>
       <View style={iconStyles.buttonInner}>{children}</View>
-    </Pressable>
+    </PlatformPressable>
   );
 }
 
@@ -116,9 +118,6 @@ export default function TabLayout() {
 }
 
 const iconStyles = themedStyles(() => StyleSheet.create({
-  pressed: {
-    opacity: 0.7,
-  },
   buttonInner: {
     alignItems: 'center',
     flex: 1,

@@ -41,18 +41,25 @@ export const supabaseAuthRepository: AuthRepository = {
   async signInWithGoogle(profileType?: ProfileType) {
     if (!supabaseClient) throw new Error('Authentication is not configured.');
 
-    const popup = Platform.OS === 'web'
-      ? window.open('about:blank', 'ihssan-google-auth', 'popup,width=480,height=680')
-      : null;
-    if (Platform.OS === 'web' && !popup) throw new Error('Allow pop-ups to continue with Google.');
-    const oauthChannelId = Platform.OS === 'web' ? crypto.randomUUID() : undefined;
-
     const redirectTo = Linking.createURL('auth/callback', {
       queryParams: {
         ...(profileType ? { profile_type: profileType } : {}),
-        ...(oauthChannelId ? { oauth_channel: oauthChannelId } : {}),
       },
     });
+
+    if (Platform.OS === 'web') {
+      const { error } = await supabaseClient.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          queryParams: { prompt: 'select_account' },
+        },
+      });
+
+      if (error) throw error;
+      return;
+    }
+
     const { data, error } = await supabaseClient.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -62,49 +69,8 @@ export const supabaseAuthRepository: AuthRepository = {
       },
     });
 
-    if (error) {
-      popup?.close();
-      throw error;
-    }
-    if (!data.url) {
-      popup?.close();
-      throw new Error('Google sign-in could not be started.');
-    }
-
-    if (Platform.OS === 'web' && popup) {
-      const code = await new Promise<string>((resolve, reject) => {
-        const channel = new BroadcastChannel(`ihssan-google-auth-${oauthChannelId}`);
-        const finishWith = (data: { source?: string; code?: string; error?: string }) => {
-          if (data.source !== 'ihssan-google-auth') return;
-          finish(() => data.error
-            ? reject(new Error(data.error))
-            : data.code
-              ? resolve(data.code)
-              : reject(new Error('Google sign-in returned an invalid response.')));
-        };
-        const onMessage = (event: MessageEvent<{ source?: string; code?: string; error?: string }>) => {
-          if (event.origin !== window.location.origin || event.source !== popup || event.data?.source !== 'ihssan-google-auth') return;
-          finishWith(event.data);
-        };
-        channel.onmessage = (event: MessageEvent<{ source?: string; code?: string; error?: string }>) => finishWith(event.data);
-        const timeout = window.setTimeout(() => {
-          popup.close();
-          finish(() => reject(new Error('Google sign-in timed out. Please try again.')));
-        }, 120000);
-        const finish = (callback: () => void) => {
-          window.removeEventListener('message', onMessage);
-          window.clearTimeout(timeout);
-          channel.close();
-          callback();
-        };
-
-        window.addEventListener('message', onMessage);
-        popup.location.href = data.url;
-      });
-      const { error: exchangeError } = await supabaseClient.auth.exchangeCodeForSession(code);
-      if (exchangeError) throw exchangeError;
-      return;
-    }
+    if (error) throw error;
+    if (!data.url) throw new Error('Google sign-in could not be started.');
 
     const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
     if (result.type !== 'success') throw new Error('Google sign-in was cancelled.');

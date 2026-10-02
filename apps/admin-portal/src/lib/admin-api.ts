@@ -33,19 +33,28 @@ export const permissionOptions: Array<{ id: AdminPermission; label: string; desc
   { id: 'admin.audit.read', label: 'Audit read access', description: 'Read purpose-limited administrative audit events.' },
 ];
 
-function resolveApiBaseUrl() {
+function resolveApiBaseUrl(): string {
   const configuredUrl = import.meta.env.VITE_API_BASE_URL;
-  if (configuredUrl && configuredUrl !== 'http://localhost:4000') return configuredUrl;
+  if (configuredUrl) {
+    const apiUrl = new URL(configuredUrl);
+    if (!import.meta.env.DEV && apiUrl.protocol !== 'https:') {
+      throw new Error('VITE_API_BASE_URL must use HTTPS outside local development.');
+    }
+    return configuredUrl;
+  }
+
+  if (!import.meta.env.DEV) {
+    throw new Error('VITE_API_BASE_URL must be configured for deployed admin access.');
+  }
 
   const codespacesHost = window.location.hostname.match(/^(.+)-5173\.app\.github\.dev$/);
   if (codespacesHost) return '/api';
 
-  return configuredUrl ?? 'http://localhost:4000';
+  return 'http://localhost:4000';
 }
 
-const apiBaseUrl = resolveApiBaseUrl();
-
 export async function adminApi<T>(path: string, accessToken: string, init: RequestInit = {}): Promise<T> {
+  const apiBaseUrl = resolveApiBaseUrl();
   const requestUrl = apiBaseUrl.startsWith('/')
     ? `${apiBaseUrl}${path}`
     : new URL(path, apiBaseUrl).toString();

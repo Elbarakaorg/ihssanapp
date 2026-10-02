@@ -193,7 +193,7 @@ function LoadingScreen({ label }: { label: string }) {
 }
 
 function NoAdminAccess({ error }: { error: string }) {
-  return <main className="center-state"><div className="denied-symbol">!</div><p className="eyebrow">ACCESS NOT ASSIGNED</p><h1>This account has no admin permissions</h1><p>{error || 'Ask the platform owner to grant a support-admin membership.'}</p><button className="button button-secondary" onClick={() => void supabase?.auth.signOut({ scope: 'local' })}>Sign out</button></main>;
+  return <main className="center-state"><div className="denied-symbol">!</div><p className="eyebrow">{error ? 'ACCESS CHECK FAILED' : 'ACCESS NOT ASSIGNED'}</p><h1>{error ? 'Admin access could not be verified' : 'This account has no admin permissions'}</h1><p>{error || 'Ask the platform owner to grant a support-admin membership.'}</p><button className="button button-secondary" onClick={() => void supabase?.auth.signOut({ scope: 'local' })}>Sign out</button></main>;
 }
 
 function ConfigurationError() {

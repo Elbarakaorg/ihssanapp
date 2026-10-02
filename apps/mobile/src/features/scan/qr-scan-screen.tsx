@@ -8,11 +8,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/features/auth/auth-provider';
 import { supabaseClient } from '@/platform/supabase/client';
-import { palette } from '@/ui/palette';
+import { palette, themedStyles, useScheme } from '@/ui/palette';
 
 const urlPattern = /^https?:\/\//i;
 
 export default function QrScanScreen() {
+  useScheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { session } = useAuth();
@@ -86,7 +87,7 @@ export default function QrScanScreen() {
 
       {scanned ? (
         <View style={[styles.resultCard, { marginBottom: insets.bottom + 24 }]}>
-          <Text style={styles.resultLabel}>SCANNED</Text>
+          <Text style={styles.resultLabel}>Scanned</Text>
           <Text numberOfLines={3} style={styles.resultValue}>{isShareCode ? (shareMessage || 'Sending access request…') : scanned.data}</Text>
           <View style={styles.resultActions}>
             {isShareCode && claimSucceeded ? <Pressable accessibilityRole="button" onPress={() => router.push('/my-patients')} style={styles.primaryButton}><Text style={styles.primaryButtonLabel}>My patients</Text></Pressable> : null}
@@ -105,7 +106,7 @@ export default function QrScanScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => StyleSheet.create({
   container: {
     backgroundColor: '#0B120E',
     flex: 1,
@@ -227,4 +228,4 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-});
+}));

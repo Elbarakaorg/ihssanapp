@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/features/auth/auth-provider';
 import { getCurrentUserProfile } from '@/features/profile/profile-repository';
 import { Page, PageHeading, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
-import { palette } from '@/ui/palette';
+import { palette, themedStyles, useScheme } from '@/ui/palette';
 
 const settings = [
   { title: 'Language', detail: 'English · preview', icon: Globe2 },
@@ -15,6 +15,7 @@ const settings = [
 ];
 
 export default function ProfileScreen() {
+  useScheme();
   const router = useRouter();
   const { isReady, session, signOut } = useAuth();
   const [profileName, setProfileName] = useState('');
@@ -103,7 +104,7 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => StyleSheet.create({
   accountCard: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -142,30 +143,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     backgroundColor: palette.forest,
-    borderRadius: 7,
+    borderCurve: 'continuous',
+    borderRadius: 8,
     justifyContent: 'center',
     minHeight: 44,
     paddingHorizontal: 15,
   },
   signOutButton: {
-    backgroundColor: '#EEF3EE',
+    backgroundColor: palette.leaf,
   },
   secondaryActionButton: {
-    backgroundColor: '#EAF0EA',
+    backgroundColor: palette.leaf,
   },
   authButtonText: {
     color: palette.white,
     fontSize: 13,
     fontWeight: '700',
   },
-  settingsList: {
-    gap: 9,
-  },
+  settingsList: { borderBottomColor: palette.line, borderBottomWidth: StyleSheet.hairlineWidth, borderTopColor: palette.line, borderTopWidth: StyleSheet.hairlineWidth, gap: 0 },
   settingRow: {
     alignItems: 'center',
+    backgroundColor: 'transparent',
+    borderBottomColor: palette.line,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: 'transparent',
+    borderRadius: 0,
+    borderWidth: 0,
     flexDirection: 'row',
     gap: 12,
-    padding: 12,
+    paddingHorizontal: 0,
+    paddingVertical: 14,
   },
   settingCopy: {
     flex: 1,
@@ -192,4 +199,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
   },
-});
+}));

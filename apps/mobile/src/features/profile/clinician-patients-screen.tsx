@@ -7,9 +7,10 @@ import { useAuth } from '@/features/auth/auth-provider';
 import { listMyPatientProfiles, type AuthorizedPatient } from '@/features/profile/clinician-patients-repository';
 import { getClinicianVerificationStatus } from '@/features/profile/profile-repository';
 import { Page, PageHeading, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
-import { palette } from '@/ui/palette';
+import { palette, themedStyles, useScheme } from '@/ui/palette';
 
 export default function ClinicianPatientsScreen() {
+  useScheme();
   const router = useRouter();
   const { session } = useAuth();
   const [patients, setPatients] = useState<AuthorizedPatient[]>([]);
@@ -96,7 +97,7 @@ function formatDate(value: string) {
   return Number.isNaN(date.getTime()) ? 'recently' : date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => StyleSheet.create({
   scanButton: { alignItems: 'center', backgroundColor: palette.leaf, borderRadius: 14, flexDirection: 'row', gap: 12, marginBottom: 6, padding: 14 },
   scanDisabled: { opacity: 0.55 },
   scanIcon: { alignItems: 'center', backgroundColor: palette.forest, borderRadius: 20, height: 40, justifyContent: 'center', width: 40 },
@@ -122,4 +123,4 @@ const styles = StyleSheet.create({
   pastRow: { alignItems: 'center', flexDirection: 'row', gap: 11, padding: 12 },
   pastAvatar: { backgroundColor: palette.paper },
   pastName: { color: palette.muted, fontSize: 13, fontWeight: '600' },
-});
+}));

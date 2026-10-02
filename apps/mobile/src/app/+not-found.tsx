@@ -1,9 +1,10 @@
 import { Link, Stack } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { palette } from '@/ui/palette';
+import { palette, themedStyles, useScheme } from '@/ui/palette';
 
 export default function NotFoundScreen() {
+  useScheme();
   return (
     <>
       <Stack.Screen options={{ title: 'Oops!' }} />
@@ -19,7 +20,7 @@ export default function NotFoundScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => StyleSheet.create({
   container: {
     backgroundColor: palette.paper,
     flex: 1,
@@ -29,8 +30,8 @@ const styles = StyleSheet.create({
   },
   title: {
     color: palette.ink,
-    fontFamily: 'Georgia',
     fontSize: 24,
+    fontWeight: '600',
   },
   link: {
     backgroundColor: palette.forest,
@@ -44,4 +45,4 @@ const styles = StyleSheet.create({
     color: palette.white,
     fontWeight: '700',
   },
-});
+}));

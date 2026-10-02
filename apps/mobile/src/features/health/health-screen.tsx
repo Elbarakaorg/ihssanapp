@@ -1,7 +1,7 @@
 import { type Href, useFocusEffect, useRouter } from 'expo-router';
 import { Activity, CircleHelp, Droplets, FlaskConical, Plus, TrendingUp, X } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/auth-provider';
 import MetricTrendChart, { type ChartPeriod } from '@/features/health/metric-trend-chart';
@@ -9,7 +9,7 @@ import { getPatientMetric, listActiveMetricDefinitions, listMeasurementsForCurre
 import { summarizeMeasurements } from '@/features/health/measurement-summary';
 import { useLocale } from '@/platform/locale/locale-provider';
 import { Page, PageHeading, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
-import { palette } from '@/ui/palette';
+import { palette, themedStyles, useScheme } from '@/ui/palette';
 
 type MetricCard = { id: string; databaseKey: string; category: string; name: string; detail: string; measurements: SavedMeasurement[]; content: PublishedMetricContent | null };
 const fallbackMetrics: MetricCard[] = [
@@ -23,6 +23,7 @@ const fallbackMetrics: MetricCard[] = [
 ];
 
 export default function HealthScreen() {
+  useScheme();
   const router = useRouter();
   const { session } = useAuth();
   const { locale } = useLocale();
@@ -31,15 +32,24 @@ export default function HealthScreen() {
   const [explanationMetric, setExplanationMetric] = useState<MetricCard | null>(null);
   const [selectedMetricId, setSelectedMetricId] = useState('glucose');
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('1M');
+  const [loading, setLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [retryKey, setRetryKey] = useState(0);
 
   useFocusEffect(useCallback(() => {
     if (!session) {
       setMeasurementSummary({ count: 0, latestMeasurementDate: null });
       setMetricCards(fallbackMetrics);
+      setLoading(false);
+      setHasLoaded(true);
+      setLoadError('');
       return undefined;
     }
 
     let active = true;
+    setLoading(true);
+    setLoadError('');
 
     void Promise.all([listMeasurementsForCurrentUser(), listActiveMetricDefinitions()]).then(async ([measurements, definitions]) => {
       if (!active) return;
@@ -57,15 +67,20 @@ export default function HealthScreen() {
           content: detail.content,
         };
       }));
-      if (active) setMetricCards(metrics);
+      if (active) {
+        setMetricCards(metrics);
+        setHasLoaded(true);
+      }
     }).catch(() => {
-      if (active) setMeasurementSummary({ count: 0, latestMeasurementDate: null });
+      if (active) setLoadError('Could not refresh your health record. Check your connection and try again.');
+    }).finally(() => {
+      if (active) setLoading(false);
     });
 
     return () => {
       active = false;
     };
-  }, [session, locale]));
+  }, [session, locale, retryKey]));
 
   const selectedMetric = metricCards.find((metric) => metric.id === selectedMetricId) ?? metricCards[0];
   const selectedValues = selectedMetric?.measurements.filter((measurement) => chartPeriod === 'ALL' || new Date(measurement.measured_at).getTime() >= Date.now() - periodMilliseconds[chartPeriod]) ?? [];
@@ -97,6 +112,23 @@ export default function HealthScreen() {
           : 'Record test results in your health timeline. Sign in or create an account to save them securely.'}
       </PageHeading>
 
+      {loadError ? (
+        <View accessibilityRole="alert" style={styles.errorNotice}>
+          <Text style={styles.errorText}>{loadError}</Text>
+          <Pressable accessibilityRole="button" onPress={() => setRetryKey((key) => key + 1)} style={styles.retryButton}>
+            <Text style={styles.retryText}>Try again</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      {session && loading ? (
+        <View style={styles.loadingNotice}>
+          <ActivityIndicator color={palette.forest} />
+          <Text style={styles.loadingText}>Loading your saved measurements</Text>
+        </View>
+      ) : null}
+
+      {!session || hasLoaded ? <>
       <View style={styles.summary}>
         <View>
           <Text style={styles.summaryNumber}>{measurementSummary.count}</Text>
@@ -132,11 +164,11 @@ export default function HealthScreen() {
         {selectedMetric?.measurements.length && selectedValues.length ? (
           <>
             <View style={styles.chartStats}>
-              <View><Text style={styles.statLabel}>LATEST IN RANGE</Text><Text style={styles.statValue}>{formatMeasurement(selectedValues[0])}</Text></View>
+              <View><Text style={styles.statLabel}>Latest in range</Text><Text style={styles.statValue}>{formatMeasurement(selectedValues[0])}</Text></View>
               <View style={styles.statDivider} />
-              <View><Text style={styles.statLabel}>CHANGE</Text><Text style={styles.statValue}>{change === null ? '—' : `${change > 0 ? '+' : ''}${change.toFixed(1)}`}</Text></View>
+              <View><Text style={styles.statLabel}>Change</Text><Text style={styles.statValue}>{change === null ? '—' : `${change > 0 ? '+' : ''}${change.toFixed(1)}`}</Text></View>
               <View style={styles.statDivider} />
-              <View><Text style={styles.statLabel}>PERIOD</Text><Text style={styles.statValue}>{chartPeriod}</Text></View>
+              <View><Text style={styles.statLabel}>Period</Text><Text style={styles.statValue}>{chartPeriod}</Text></View>
             </View>
             <MetricTrendChart large measurements={selectedMetric.measurements} metricKey={selectedMetric.databaseKey} period={chartPeriod} referenceRanges={selectedMetric.content?.reference_ranges} />
             {rangeLabels.length ? <View style={styles.rangeGuide}>
@@ -188,12 +220,13 @@ export default function HealthScreen() {
           <Pressable accessibilityRole="button" onPress={() => { const metric = explanationMetric; setExplanationMetric(null); if (metric) router.push(`/metrics/${metric.id}` as Href); }} style={styles.modalLink}><Text style={styles.modalLinkText}>View metric details</Text></Pressable>
         </View></View>
       </Modal>
+      </> : null}
     </Page>
   );
 }
 
-const styles = StyleSheet.create({
-  overviewChart: { backgroundColor: palette.white, borderRadius: 16, marginBottom: 8, padding: 16, shadowColor: '#1C1C1E', shadowOffset: { height: 2, width: 0 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
+const styles = themedStyles(() => StyleSheet.create({
+  overviewChart: { backgroundColor: palette.white, borderColor: palette.line, borderCurve: 'continuous', borderRadius: 18, borderWidth: 1, marginBottom: 8, padding: 16 },
   chartHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   chartTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 9 },
   chartIcon: { alignItems: 'center', backgroundColor: palette.leaf, borderRadius: 14, height: 28, justifyContent: 'center', width: 28 },
@@ -206,11 +239,11 @@ const styles = StyleSheet.create({
   metricChipTextActive: { color: palette.white },
   periodRow: { alignSelf: 'stretch', backgroundColor: palette.paper, borderRadius: 10, flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14, padding: 3 },
   periodChip: { alignItems: 'center', borderRadius: 8, flex: 1, justifyContent: 'center', minHeight: 34 },
-  periodChipActive: { backgroundColor: palette.white, shadowColor: '#1C1C1E', shadowOffset: { height: 1, width: 0 }, shadowOpacity: 0.09, shadowRadius: 3, elevation: 1 },
+  periodChipActive: { backgroundColor: palette.white, borderColor: palette.line, borderWidth: 1 },
   periodText: { color: palette.muted, fontSize: 10, fontWeight: '700' },
   periodTextActive: { color: palette.forest },
   chartStats: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-around', marginBottom: 10 },
-  statLabel: { color: palette.muted, fontSize: 8, fontWeight: '700', letterSpacing: 0.4 },
+  statLabel: { color: palette.muted, fontSize: 11, fontWeight: '600' },
   statValue: { color: palette.ink, fontSize: 14, fontWeight: '700', marginTop: 4 },
   statDivider: { backgroundColor: palette.line, height: 28, width: 1 },
   rangeGuide: { backgroundColor: palette.paper, borderRadius: 11, marginTop: 12, padding: 12 },
@@ -226,36 +259,47 @@ const styles = StyleSheet.create({
   chartEmptyBody: { color: palette.muted, fontSize: 11, lineHeight: 17, marginTop: 5, textAlign: 'center' },
   summary: {
     alignItems: 'center',
-    backgroundColor: palette.ink,
-    borderRadius: 16,
+    backgroundColor: palette.white,
+    borderCurve: 'continuous',
+    borderRadius: 14,
     flexDirection: 'row',
     gap: 17,
     marginBottom: 28,
     padding: 20,
   },
   summaryNumber: {
-    color: palette.white,
+    color: palette.ink,
     fontSize: 34,
-    fontWeight: '700',
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
   },
   summaryLabel: {
-    color: '#C4D5CA',
+    color: palette.muted,
     fontSize: 11,
     marginTop: 2,
   },
   summaryRule: {
-    backgroundColor: '#4A6557',
+    backgroundColor: palette.line,
     height: 42,
     width: 1,
   },
   summaryCopy: {
-    color: '#E1E9E2',
+    color: palette.muted,
     flex: 1,
     fontSize: 13,
     lineHeight: 19,
   },
-  metricList: { gap: 12 },
-  metricCard: { padding: 14 },
+  metricList: { gap: 0 },
+  metricCard: {
+    backgroundColor: 'transparent',
+    borderBottomColor: palette.line,
+    borderColor: 'transparent',
+    borderRadius: 0,
+    borderWidth: 0,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 0,
+    paddingVertical: 14,
+  },
   metricMain: { alignItems: 'center', flexDirection: 'row', gap: 12, minHeight: 48 },
   metricCopy: {
     flex: 1,
@@ -265,7 +309,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-  categoryLabel: { color: palette.coral, fontSize: 9, fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase' },
+  categoryLabel: { color: palette.muted, fontSize: 11, fontWeight: '500', textTransform: 'capitalize' },
   metricDetail: {
     color: palette.muted,
     fontSize: 13,
@@ -317,10 +361,16 @@ const styles = StyleSheet.create({
   modalTitle: { color: palette.ink, flex: 1, fontSize: 22, fontWeight: '700', lineHeight: 28 },
   closeButton: { alignItems: 'center', backgroundColor: palette.paper, borderRadius: 17, height: 34, justifyContent: 'center', width: 34 },
   modalBody: { color: palette.ink, fontSize: 13, lineHeight: 20, marginTop: 12 },
-  modalSafety: { backgroundColor: '#F9EEE8', borderRadius: 6, color: '#754334', fontSize: 11, lineHeight: 17, marginTop: 13, padding: 11 },
+  modalSafety: { backgroundColor: palette.dangerBg, borderRadius: 6, color: palette.dangerText, fontSize: 11, lineHeight: 17, marginTop: 13, padding: 11 },
   modalLink: { alignSelf: 'flex-start', backgroundColor: palette.forest, borderRadius: 10, marginTop: 16, minHeight: 42, justifyContent: 'center', paddingHorizontal: 15 },
   modalLinkText: { color: palette.white, fontSize: 12, fontWeight: '700' },
-});
+  errorNotice: { backgroundColor: palette.dangerBg, borderCurve: 'continuous', borderRadius: 12, gap: 6, marginBottom: 12, padding: 14 },
+  errorText: { color: palette.dangerText, fontSize: 13, lineHeight: 19 },
+  retryButton: { alignSelf: 'flex-start', justifyContent: 'center', minHeight: 44, paddingHorizontal: 4 },
+  retryText: { color: palette.forest, fontSize: 14, fontWeight: '700' },
+  loadingNotice: { alignItems: 'center', backgroundColor: palette.white, borderColor: palette.line, borderCurve: 'continuous', borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 12, minHeight: 64, paddingHorizontal: 16 },
+  loadingText: { color: palette.muted, fontSize: 14 },
+}));
 
 const chartPeriods: ChartPeriod[] = ['1W', '1M', '3M', '1Y', 'ALL'];
 const periodMilliseconds: Record<Exclude<ChartPeriod, 'ALL'>, number> = { '1W': 7 * 86400000, '1M': 30 * 86400000, '3M': 90 * 86400000, '1Y': 365 * 86400000 };

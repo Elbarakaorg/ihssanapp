@@ -6,9 +6,10 @@ import { useAuth } from '@/features/auth/auth-provider';
 import { getCurrentUserProfile } from '@/features/profile/profile-repository';
 import { supabaseClient } from '@/platform/supabase/client';
 import { Page, PageHeading, PreviewNotice } from '@/ui/patient-ui';
-import { palette } from '@/ui/palette';
+import { palette, themedStyles, useScheme } from '@/ui/palette';
 
 export default function AuthCallbackScreen() {
+  useScheme();
   const router = useRouter();
   const { profile_type: requestedProfileType, oauth_channel: oauthChannelId, code, error: authError, error_description: authErrorDescription } = useLocalSearchParams<{ profile_type?: string; oauth_channel?: string; code?: string; error?: string; error_description?: string }>();
   const { isReady, session, signOut } = useAuth();
@@ -18,8 +19,10 @@ export default function AuthCallbackScreen() {
   useLayoutEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
     const providerError = authErrorDescription ?? authError;
-    if (code || authError || authErrorDescription || oauthChannelId) {
+    const hasHashCredentials = /access_token|refresh_token|provider_token|error/.test(window.location.hash);
+    if (code || authError || authErrorDescription || oauthChannelId || hasHashCredentials) {
       const cleanUrl = new URL(window.location.href);
+      cleanUrl.hash = '';
       cleanUrl.searchParams.delete('code');
       cleanUrl.searchParams.delete('error');
       cleanUrl.searchParams.delete('error_description');
@@ -93,10 +96,10 @@ export default function AuthCallbackScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => StyleSheet.create({
   error: {
-    color: '#A83B28',
+    color: palette.dangerText,
     fontSize: 13,
     lineHeight: 19,
   },
-});
+}));

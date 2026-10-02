@@ -7,11 +7,12 @@ import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View 
 import { useAuth } from '@/features/auth/auth-provider';
 import { getAvatarUrl, getCurrentUserProfile, type AccountProfile, updateCurrentUserProfile, uploadCurrentUserAvatar } from '@/features/profile/profile-repository';
 import { Page, PageHeading, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
-import { palette } from '@/ui/palette';
+import { palette, themedStyles, useScheme } from '@/ui/palette';
 
 const imageTypes = ['image/jpeg', 'image/png', 'image/webp'];
 
 export default function AccountScreen() {
+  useScheme();
   const router = useRouter();
   const { session, updatePassword } = useAuth();
   const [profile, setProfile] = useState<AccountProfile | null>(null);
@@ -190,7 +191,7 @@ export default function AccountScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => StyleSheet.create({
   backButton: { alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', gap: 8, marginBottom: 17, minHeight: 42 },
   backLabel: { color: palette.ink, fontSize: 14, fontWeight: '600' },
   loading: { alignItems: 'center', gap: 10, marginTop: 72 },
@@ -218,4 +219,4 @@ const styles = StyleSheet.create({
   secondaryButton: { alignItems: 'center', backgroundColor: palette.leaf, borderColor: 'transparent', borderRadius: 11, borderWidth: 1, flexDirection: 'row', gap: 8, justifyContent: 'center', marginTop: 20, minHeight: 48, paddingHorizontal: 16 },
   secondaryLabel: { color: palette.forest, fontSize: 13, fontWeight: '700' },
   disabledButton: { opacity: 0.55 },
-});
+}));

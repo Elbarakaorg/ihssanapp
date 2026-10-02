@@ -7,11 +7,12 @@ import { useAuth } from '@/features/auth/auth-provider';
 import { getAvatarUrl, getCurrentUserProfile, type AccountProfile } from '@/features/profile/profile-repository';
 import { emptyMedicalProfile, getMedicalProfile, listDoctorShares, listFavoriteDoctors, listPendingShareRequests, respondToShareRequest, revokeDoctorShare, saveMedicalProfile, setDoctorFavorite, type DoctorShare, type FavoriteDoctor, type MedicalProfile, type ShareRequest } from '@/features/profile/medical-profile-repository';
 import { Page, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
-import { palette } from '@/ui/palette';
+import { palette, themedStyles, useScheme } from '@/ui/palette';
 
 const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
 export default function MedicalProfileScreen() {
+  useScheme();
   const router = useRouter();
   const { isReady, session } = useAuth();
   const [account, setAccount] = useState<AccountProfile | null>(null);
@@ -206,7 +207,7 @@ export default function MedicalProfileScreen() {
           {avatarUrl ? <Image source={{ uri: avatarUrl }} style={styles.avatarImage} /> : <UserRound color={palette.forest} size={27} />}
         </View>
         <View style={styles.heroCopy}>
-          <Text style={styles.eyebrow}>PATIENT MEDICAL PROFILE</Text>
+          <Text style={styles.eyebrow}>Medical profile</Text>
           <Text style={styles.title}>{account?.display_name || 'Your profile'}</Text>
           <Text style={styles.body}>{account?.bio || 'A concise health summary you control and can share with your care team.'}</Text>
         </View>
@@ -304,7 +305,7 @@ export default function MedicalProfileScreen() {
           <View style={styles.rowIcon}><UserRound color={palette.forest} size={18} /></View>
           <View style={styles.requestCopy}><Text style={styles.rowTitle}>{name}</Text><Text style={styles.rowDetail}>Shared {formatDate(share.granted_at)} · {share.scope.medical_profile ? 'Medical profile' : ''}{share.scope.measurements ? ' + measurements' : ''}</Text></View>
           <Pressable accessibilityLabel={isFavorite ? `Remove ${name} from saved doctors` : `Save ${name}`} accessibilityRole="button" disabled={busyId === share.clinician_id} onPress={() => void toggleFavorite(share.clinician_id, isFavorite)} style={styles.starButton}><Star color={isFavorite ? palette.gold : palette.muted} fill={isFavorite ? palette.gold : 'transparent'} size={19} /></Pressable>
-          <Pressable accessibilityLabel={`Revoke ${name}'s access`} accessibilityRole="button" disabled={busyId === share.id} onPress={() => revoke(share)} style={styles.revokeButton}><LockKeyhole color="#A83B28" size={17} /></Pressable>
+          <Pressable accessibilityLabel={`Revoke ${name}'s access`} accessibilityRole="button" disabled={busyId === share.id} onPress={() => revoke(share)} style={styles.revokeButton}><LockKeyhole color={palette.coral} size={17} /></Pressable>
         </View>;
       })}</View> : <EmptyLine icon={ShieldCheck} text="No doctors have access to your profile." />}
 
@@ -333,10 +334,12 @@ export default function MedicalProfileScreen() {
 }
 
 function Fact({ label, value }: { label: string; value: string }) {
+  useScheme();
   return <View style={styles.factRow}><Text style={styles.factLabel}>{label}</Text><Text style={styles.factValue}>{value}</Text></View>;
 }
 
 function ListFact({ label, values, empty, caution = false }: { label: string; values: string[]; empty: string; caution?: boolean }) {
+  useScheme();
   return <View style={styles.listFact}>
     <Text style={styles.factLabel}>{label}</Text>
     {values.length ? <View style={styles.tags}>{values.map((value, index) => <Text key={`${value}-${index}`} style={[styles.tag, caution && styles.cautionTag]}>{value}</Text>)}</View> : <Text style={styles.emptyFact}>{empty}</Text>}
@@ -344,6 +347,7 @@ function ListFact({ label, values, empty, caution = false }: { label: string; va
 }
 
 function EmptyLine({ icon: Icon, text }: { icon: typeof ShieldCheck; text: string }) {
+  useScheme();
   return <View style={styles.emptyLine}><Icon color={palette.muted} size={18} /><Text style={styles.emptyCopy}>{text}</Text></View>;
 }
 
@@ -361,7 +365,7 @@ function formatDateOnly(value: string) {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => StyleSheet.create({
   loading: { alignItems: 'center', gap: 10, marginTop: 70 },
   muted: { color: palette.muted, fontSize: 13 },
   signInState: { alignItems: 'center', marginTop: 46, paddingHorizontal: 12 },
@@ -374,7 +378,7 @@ const styles = StyleSheet.create({
   avatar: { alignItems: 'center', backgroundColor: palette.leaf, borderRadius: 32, height: 64, justifyContent: 'center', overflow: 'hidden', width: 64 },
   avatarImage: { height: 64, width: 64 },
   heroCopy: { flex: 1 },
-  eyebrow: { color: palette.forest, fontSize: 9, fontWeight: '700', letterSpacing: 0.6, marginBottom: 5 },
+  eyebrow: { color: palette.forest, fontSize: 12, fontWeight: '600', marginBottom: 5 },
   error: { backgroundColor: '#FCE9E5', borderRadius: 10, color: '#9A3E2A', fontSize: 12, lineHeight: 18, marginBottom: 12, padding: 12 },
   notice: { backgroundColor: palette.leaf, borderRadius: 10, color: palette.forest, fontSize: 12, lineHeight: 18, marginBottom: 12, padding: 12 },
   shareBanner: { alignItems: 'center', backgroundColor: palette.ink, borderRadius: 15, flexDirection: 'row', gap: 12, padding: 15 },
@@ -412,7 +416,7 @@ const styles = StyleSheet.create({
   listFact: { borderBottomColor: palette.line, borderBottomWidth: 1, paddingVertical: 10 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 7 },
   tag: { backgroundColor: palette.paper, borderRadius: 8, color: palette.ink, fontSize: 11, overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 6 },
-  cautionTag: { backgroundColor: '#F9EEE8', color: '#754334' },
+  cautionTag: { backgroundColor: palette.dangerBg, color: palette.dangerText },
   emptyFact: { color: palette.muted, fontSize: 11, marginTop: 5 },
   form: { gap: 2 },
   fieldLabel: { color: palette.ink, fontSize: 12, fontWeight: '700', marginBottom: 7, marginTop: 12 },
@@ -442,4 +446,4 @@ const styles = StyleSheet.create({
   appointmentCopy: { flex: 1 },
   privacyNote: { alignItems: 'flex-start', flexDirection: 'row', gap: 9, marginTop: 22, paddingHorizontal: 2 },
   privacyText: { color: palette.muted, flex: 1, fontSize: 11, lineHeight: 17 },
-});
+}));

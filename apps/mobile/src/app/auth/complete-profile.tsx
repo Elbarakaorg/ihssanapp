@@ -1,12 +1,10 @@
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { Check } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import type { ProfileType } from '@/features/auth/auth-contract';
 import { completeAccountSetup } from '@/features/profile/profile-repository';
-import { Page, PreviewNotice } from '@/ui/patient-ui';
-import { palette } from '@/ui/palette';
+import { DarkAuthShell, ink } from '@/features/auth/dark-auth-shell';
 
 export default function CompleteProfileScreen() {
   const router = useRouter();
@@ -35,14 +33,11 @@ export default function CompleteProfileScreen() {
   };
 
   return (
-    <Page>
-      <Stack.Screen options={{ title: 'Complete your profile' }} />
-      <PreviewNotice />
-      <Text style={styles.eyebrow}>ONE-TIME SETUP</Text>
+    <DarkAuthShell showBack={false}>
+      <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
       <Text style={styles.title}>Complete your profile</Text>
       <Text style={styles.description}>Choose how you’ll use Ihssan. Clinician accounts require separate verification before accessing patient records.</Text>
 
-      <Text style={styles.fieldLabel}>Profile type</Text>
       <View style={styles.profileTypes}>
         {(['patient', 'clinician'] as const).map((type) => (
           <Pressable
@@ -54,7 +49,6 @@ export default function CompleteProfileScreen() {
             <Text style={[styles.profileTypeText, profileType === type && styles.profileTypeTextSelected]}>
               {type === 'patient' ? 'Patient' : 'Clinician'}
             </Text>
-            {profileType === type ? <Check color={palette.forest} size={16} /> : null}
           </Pressable>
         ))}
       </View>
@@ -65,7 +59,7 @@ export default function CompleteProfileScreen() {
         autoCapitalize="words"
         onChangeText={setDisplayName}
         placeholder="Your name"
-        placeholderTextColor="#8A958E"
+        placeholderTextColor={ink.faint}
         style={styles.input}
         value={displayName}
       />
@@ -76,112 +70,64 @@ export default function CompleteProfileScreen() {
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
 
       <Pressable accessibilityRole="button" disabled={saving} onPress={() => void handleContinue()} style={[styles.button, saving && styles.disabled]}>
-        {saving ? <ActivityIndicator color={palette.white} /> : <Text style={styles.buttonText}>Continue</Text>}
+        {saving ? <ActivityIndicator color={ink.bg} /> : <Text style={styles.buttonText}>Continue</Text>}
       </Pressable>
-    </Page>
+    </DarkAuthShell>
   );
 }
 
 const styles = StyleSheet.create({
-  eyebrow: {
-    color: palette.coral,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-    marginBottom: 8,
-  },
-  title: {
-    color: palette.ink,
-    fontFamily: 'Georgia',
-    fontSize: 30,
-    lineHeight: 37,
-  },
-  description: {
-    color: palette.muted,
-    fontSize: 14,
-    lineHeight: 21,
-    marginTop: 8,
-    maxWidth: 480,
-  },
-  fieldLabel: {
-    color: palette.ink,
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: 8,
-    marginTop: 22,
-  },
+  title: { color: ink.text, fontSize: 38, fontWeight: '300', letterSpacing: -1, lineHeight: 44 },
+  description: { color: ink.muted, fontSize: 15, lineHeight: 22, marginTop: 10 },
+  fieldLabel: { color: ink.muted, fontSize: 12, fontWeight: '500', marginBottom: 8, marginTop: 22 },
   profileTypes: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 9,
-  },
-  profileType: {
-    alignItems: 'center',
-    backgroundColor: palette.white,
-    borderColor: palette.line,
-    borderRadius: 7,
+    backgroundColor: ink.panel,
+    borderColor: ink.edge,
+    borderCurve: 'continuous',
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 8,
-    justifyContent: 'center',
-    minHeight: 45,
-    minWidth: 118,
-    paddingHorizontal: 14,
+    marginTop: 28,
+    padding: 3,
   },
-  profileTypeSelected: {
-    backgroundColor: palette.leaf,
-    borderColor: palette.leafDeep,
-  },
-  profileTypeText: {
-    color: palette.muted,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  profileTypeTextSelected: {
-    color: palette.forest,
-  },
+  profileType: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 9, flex: 1, justifyContent: 'center', minHeight: 40 },
+  profileTypeSelected: { backgroundColor: 'rgba(63,214,162,0.16)' },
+  profileTypeText: { color: ink.muted, fontSize: 14, fontWeight: '500' },
+  profileTypeTextSelected: { color: ink.accent },
   input: {
-    backgroundColor: palette.white,
-    borderColor: palette.line,
-    borderRadius: 7,
+    backgroundColor: ink.panel,
+    borderColor: ink.edge,
+    borderCurve: 'continuous',
+    borderRadius: 12,
     borderWidth: 1,
-    color: palette.ink,
-    fontSize: 15,
-    minHeight: 49,
-    paddingHorizontal: 14,
+    color: ink.text,
+    fontSize: 16,
+    minHeight: 54,
+    paddingHorizontal: 16,
   },
   clinicianNotice: {
-    backgroundColor: '#EDF2EA',
-    borderRadius: 6,
-    color: palette.forest,
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 14,
-    padding: 12,
+    backgroundColor: 'rgba(63,214,162,0.1)',
+    borderCurve: 'continuous',
+    borderRadius: 12,
+    color: ink.accent,
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 16,
+    overflow: 'hidden',
+    padding: 14,
   },
-  error: {
-    color: '#A83B28',
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 14,
-  },
+  error: { color: ink.error, fontSize: 13, lineHeight: 19, marginTop: 16 },
   button: {
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: palette.forest,
-    borderRadius: 7,
+    alignSelf: 'stretch',
+    backgroundColor: ink.accent,
+    borderCurve: 'continuous',
+    borderRadius: 12,
+    boxShadow: '0 0 28px rgba(63,214,162,0.35)',
     justifyContent: 'center',
-    marginTop: 22,
-    minHeight: 47,
-    minWidth: 122,
-    paddingHorizontal: 18,
+    marginTop: 28,
+    minHeight: 54,
   },
-  disabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: palette.white,
-    fontSize: 13,
-    fontWeight: '700',
-  },
+  disabled: { opacity: 0.5 },
+  buttonText: { color: ink.bg, fontSize: 16, fontWeight: '600' },
 });

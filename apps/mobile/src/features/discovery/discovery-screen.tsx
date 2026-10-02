@@ -3,9 +3,10 @@ import { ArrowRight, Compass, MapPin, Stethoscope, Pill } from 'lucide-react-nat
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Page, PageHeading, PreviewNotice } from '@/ui/patient-ui';
-import { palette, radii, spacing } from '@/ui/palette';
+import { palette, radii, spacing, themedStyles, useScheme } from '@/ui/palette';
 
 export default function DiscoveryScreen() {
+  useScheme();
   const router = useRouter();
 
   return (
@@ -64,18 +65,20 @@ export default function DiscoveryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => StyleSheet.create({
   directoryPanel: {
-    backgroundColor: palette.leaf,
+    backgroundColor: palette.white,
     borderCurve: 'continuous',
+    borderColor: palette.line,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radii.large,
     padding: spacing.lg,
   },
   panelIcon: {
     alignItems: 'center',
-    backgroundColor: palette.white,
+    backgroundColor: palette.leaf,
     borderCurve: 'continuous',
-    borderRadius: radii.medium,
+    borderRadius: radii.small,
     height: 48,
     justifyContent: 'center',
     marginBottom: spacing.md,
@@ -138,7 +141,7 @@ const styles = StyleSheet.create({
     width: 42,
   },
   pharmacyIcon: {
-    backgroundColor: palette.sky,
+    backgroundColor: palette.leaf,
   },
   serviceCopy: {
     flex: 1,
@@ -171,4 +174,4 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.7,
   },
-});
+}));

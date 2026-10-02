@@ -5,9 +5,10 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 
 import { getMySharedPatientProfile, listSharedPatientMeasurements, type SharedMeasurement, type SharedPatientProfile } from '@/features/profile/clinician-patients-repository';
 import { Page, PageHeading, SectionHeading, uiStyles } from '@/ui/patient-ui';
-import { palette } from '@/ui/palette';
+import { palette, themedStyles, useScheme } from '@/ui/palette';
 
 export default function SharedPatientScreen() {
+  useScheme();
   const { grantId = '' } = useLocalSearchParams<{ grantId: string }>();
   const router = useRouter();
   const [profile, setProfile] = useState<SharedPatientProfile | null>(null);
@@ -78,10 +79,12 @@ export default function SharedPatientScreen() {
 }
 
 function Fact({ icon: Icon, label, value }: { icon: typeof UserRound; label: string; value: string }) {
+  useScheme();
   return <View style={styles.factRow}><View style={styles.factLabel}><Icon color={palette.forest} size={15} /><Text style={styles.factLabelText}>{label}</Text></View><Text style={styles.factValue}>{value}</Text></View>;
 }
 
 function ListFact({ icon: Icon, label, values, empty, caution = false }: { icon: typeof UserRound; label: string; values: string[]; empty: string; caution?: boolean }) {
+  useScheme();
   return <View style={styles.listFact}>
     <View style={styles.factLabel}><Icon color={caution ? palette.coral : palette.forest} size={15} /><Text style={styles.factLabelText}>{label}</Text></View>
     {values.length ? <Text style={[styles.listValue, caution && styles.caution]}>{values.join(', ')}</Text> : <Text style={styles.body}>{empty}</Text>}
@@ -110,7 +113,7 @@ function formatDateOnly(value: string) {
   return formatDate(`${value}T12:00:00`);
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => StyleSheet.create({
   back: { alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', gap: 8, marginBottom: 17, minHeight: 42 },
   backLabel: { color: palette.ink, fontSize: 13, fontWeight: '600' },
   loading: { alignItems: 'center', gap: 10, marginTop: 65 },
@@ -124,7 +127,7 @@ const styles = StyleSheet.create({
   factValue: { color: palette.ink, fontSize: 12, fontWeight: '700' },
   listFact: { borderBottomColor: palette.line, borderBottomWidth: 1, gap: 6, paddingVertical: 9 },
   listValue: { color: palette.ink, fontSize: 12, lineHeight: 18, paddingLeft: 22 },
-  caution: { color: '#754334' },
+  caution: { color: palette.dangerText },
   patientName: { color: palette.ink, fontSize: 14, fontWeight: '700' },
   measurementList: { gap: 8 },
   measurementRow: { alignItems: 'center', flexDirection: 'row', gap: 10, justifyContent: 'space-between', padding: 13 },
@@ -136,4 +139,4 @@ const styles = StyleSheet.create({
   scopeText: { color: palette.ink, flex: 1, fontSize: 11, lineHeight: 17 },
   privacyNote: { alignItems: 'flex-start', flexDirection: 'row', gap: 9, marginTop: 20 },
   privacyText: { color: palette.muted, flex: 1, fontSize: 11, lineHeight: 17 },
-});
+}));

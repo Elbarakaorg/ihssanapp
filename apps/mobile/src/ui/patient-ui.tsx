@@ -3,8 +3,10 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { palette, radii, spacing } from './palette';
+import { themedStyles, useScheme } from '@/ui/palette';
 
 export function Page({ children }: PropsWithChildren) {
+  useScheme();
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <ScrollView
@@ -18,15 +20,17 @@ export function Page({ children }: PropsWithChildren) {
 }
 
 export function PreviewNotice() {
+  useScheme();
   return (
     <View style={styles.notice}>
       <View style={styles.noticeDot} />
-      <Text style={styles.noticeText}>Preview only · Use fictional health information</Text>
+      <Text style={styles.noticeText}>Preview build. Use fictional health information.</Text>
     </View>
   );
 }
 
 export function PageHeading({ eyebrow, title, children }: { eyebrow: string; title: string; children?: ReactNode }) {
+  useScheme();
   return (
     <View style={styles.heading}>
       <Text style={styles.eyebrow}>{eyebrow}</Text>
@@ -37,6 +41,7 @@ export function PageHeading({ eyebrow, title, children }: { eyebrow: string; tit
 }
 
 export function SectionHeading({ title, detail }: { title: string; detail?: string }) {
+  useScheme();
   return (
     <View style={styles.sectionHeading}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -46,6 +51,7 @@ export function SectionHeading({ title, detail }: { title: string; detail?: stri
 }
 
 export function BrandMark() {
+  useScheme();
   return (
     <View style={styles.brandRow}>
       <View style={styles.brandIcon}>
@@ -57,13 +63,13 @@ export function BrandMark() {
   );
 }
 
-export const uiStyles = StyleSheet.create({
+export const uiStyles = themedStyles(() => StyleSheet.create({
   card: {
     backgroundColor: palette.white,
     borderColor: palette.line,
     borderCurve: 'continuous',
     borderRadius: radii.medium,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     padding: 16,
   },
   iconTile: {
@@ -75,9 +81,9 @@ export const uiStyles = StyleSheet.create({
     justifyContent: 'center',
     width: 42,
   },
-});
+}));
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => StyleSheet.create({
   safeArea: {
     backgroundColor: palette.paper,
     flex: 1,
@@ -95,39 +101,39 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     backgroundColor: palette.leaf,
     borderCurve: 'continuous',
-    borderRadius: radii.small,
+    borderRadius: 6,
     flexDirection: 'row',
     gap: spacing.sm,
     marginBottom: spacing.lg,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   noticeDot: {
-    backgroundColor: palette.coral,
+    backgroundColor: palette.forest,
     borderRadius: radii.full,
-    height: 8,
-    width: 8,
+    height: 6,
+    width: 6,
   },
   noticeText: {
-    color: palette.forest,
-    fontSize: 11,
-    fontWeight: '600',
+    color: palette.muted,
+    fontSize: 10,
+    fontWeight: '500',
   },
   heading: {
     marginBottom: spacing.lg,
   },
   eyebrow: {
-    color: palette.forest,
-    fontSize: 12,
-    fontWeight: '600',
+    color: palette.muted,
+    fontSize: 11,
+    fontWeight: '500',
     marginBottom: spacing.xs,
   },
   title: {
     color: palette.ink,
-    fontSize: 30,
-    fontWeight: '700',
-    letterSpacing: 0,
-    lineHeight: 36,
+    fontSize: 32,
+    fontWeight: '600',
+    letterSpacing: -0.6,
+    lineHeight: 38,
   },
   description: {
     color: palette.muted,
@@ -145,8 +151,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: palette.ink,
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '600',
   },
   sectionDetail: {
     color: palette.muted,
@@ -160,29 +166,29 @@ const styles = StyleSheet.create({
   },
   brandIcon: {
     alignItems: 'center',
-    backgroundColor: palette.forest,
-    borderRadius: 9,
-    height: 30,
+    backgroundColor: 'transparent',
+    height: 26,
     justifyContent: 'center',
     position: 'relative',
-    width: 30,
+    width: 26,
   },
   brandStem: {
-    backgroundColor: palette.white,
-    borderRadius: 2,
-    height: 15,
-    width: 4,
+    backgroundColor: palette.forest,
+    borderRadius: 1,
+    height: 17,
+    width: 3,
   },
   brandCross: {
-    backgroundColor: palette.white,
-    borderRadius: 2,
-    height: 4,
+    backgroundColor: palette.forest,
+    borderRadius: 1,
+    height: 3,
     position: 'absolute',
-    width: 15,
+    width: 17,
   },
   brandName: {
     color: palette.ink,
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 19,
+    fontWeight: '600',
+    letterSpacing: 0.15,
   },
-});
+}));

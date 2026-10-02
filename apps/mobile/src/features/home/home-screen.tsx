@@ -9,25 +9,31 @@ import { listMeasurementsForCurrentUser } from '@/features/health/measurement-re
 import { summarizeMeasurements } from '@/features/health/measurement-summary';
 import { getCurrentUserProfile } from '@/features/profile/profile-repository';
 import { BrandMark, Page, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
-import { palette } from '@/ui/palette';
+import { PreferenceIcons } from '@/ui/preference-icons';
+import { palette, themedStyles, useScheme } from '@/ui/palette';
 
 export default function HomeScreen() {
+  useScheme();
   const router = useRouter();
   const { session } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [summary, setSummary] = useState({ count: 0, latestMeasurementDate: null as string | null });
   const [summaryReady, setSummaryReady] = useState(false);
+  const [summaryError, setSummaryError] = useState('');
+  const [summaryRetry, setSummaryRetry] = useState(0);
 
   useEffect(() => {
     if (!session) {
       setDisplayName('');
       setSummary({ count: 0, latestMeasurementDate: null });
       setSummaryReady(true);
+      setSummaryError('');
       return;
     }
 
     let active = true;
     setSummaryReady(false);
+    setSummaryError('');
 
     void Promise.all([getCurrentUserProfile(), listMeasurementsForCurrentUser()]).then(([profile, measurements]) => {
       if (!active) return;
@@ -36,28 +42,30 @@ export default function HomeScreen() {
       setSummaryReady(true);
     }).catch(() => {
       if (!active) return;
-      setDisplayName('');
-      setSummary({ count: 0, latestMeasurementDate: null });
+      setSummaryError('Could not load your health record. Check your connection and try again.');
       setSummaryReady(true);
     });
 
     return () => {
       active = false;
     };
-  }, [session]);
+  }, [session, summaryRetry]);
 
   return (
     <Page>
       <View style={styles.topNav}>
         <BrandMark />
-        <Pressable accessibilityLabel="Scan a QR code" accessibilityRole="button" onPress={() => router.push('/scan')} style={styles.scanButton}>
-          <QrCode color={palette.forest} size={19} strokeWidth={1.9} />
-        </Pressable>
+        <View style={styles.topActions}>
+          <PreferenceIcons />
+          <Pressable accessibilityLabel="Scan a QR code" accessibilityRole="button" onPress={() => router.push('/scan')} style={styles.scanButton}>
+            <QrCode color={palette.forest} size={19} strokeWidth={1.9} />
+          </Pressable>
+        </View>
       </View>
       <PreviewNotice />
 
       <View style={styles.intro}>
-        <Text style={styles.eyebrow}>{session ? `WELCOME BACK${displayName ? `, ${displayName}` : ''}` : 'YOUR HEALTH, YOUR PACE'}</Text>
+        <Text style={styles.eyebrow}>{session ? `Welcome back${displayName ? `, ${displayName}` : ''}` : 'Your health, your pace'}</Text>
         <Text style={styles.title}>{session ? 'Your health,\nyour pace.' : 'A clearer view\nof your health.'}</Text>
         <Text style={styles.description}>
           Keep your test results together, learn what each test measures, and choose when to share them with a doctor.
@@ -67,9 +75,9 @@ export default function HomeScreen() {
       <View style={styles.recordCard}>
         <View style={styles.recordTop}>
           <View>
-            <Text style={styles.cardEyebrow}>YOUR HEALTH RECORD</Text>
+            <Text style={styles.cardEyebrow}>Your health record</Text>
             <Text style={styles.recordCount}>
-              {!summaryReady ? 'Loading your record' : summary.count ? `${summary.count} ${summary.count === 1 ? 'result' : 'results'} recorded` : 'Ready when you are'}
+              {!summaryReady ? 'Loading your record' : summary.count ? `${summary.count} ${summary.count === 1 ? 'result' : 'results'} recorded` : summaryError ? 'Record unavailable' : 'Ready when you are'}
             </Text>
           </View>
           <View style={styles.recordIcon}>
@@ -77,17 +85,24 @@ export default function HomeScreen() {
           </View>
         </View>
         <View style={styles.rule} />
-        <Text style={styles.emptyText}>
-          {!session
+        <Text accessibilityRole={summaryError ? 'alert' : undefined} style={styles.emptyText}>
+          {summaryError
+            ? summaryError
+            : !session
             ? 'Sign in to see your saved measurements and keep your health history in one place.'
             : summary.count
               ? `Your latest result is dated ${new Date(summary.latestMeasurementDate ?? '').toLocaleDateString()}.`
               : 'No measurements saved yet. Add your first result to start your health timeline.'}
         </Text>
+        {session && summaryError ? (
+          <Pressable accessibilityRole="button" onPress={() => setSummaryRetry((retry) => retry + 1)} style={styles.retryButton}>
+            <Text style={styles.retryLabel}>Try again</Text>
+          </Pressable>
+        ) : null}
         {session ? (
           <View style={styles.accountActions}>
             <Pressable accessibilityRole="button" onPress={() => router.navigate('/health')} style={styles.primaryAccountButton}>
-              <Text style={styles.primaryAccountText}>{summary.count ? 'View health record' : 'Add a result'}</Text>
+              <Text style={styles.primaryAccountText}>{summaryError ? 'Open health tracking' : summary.count ? 'View health record' : 'Add a result'}</Text>
             </Pressable>
             <Pressable accessibilityRole="button" onPress={() => router.navigate('/profile')} style={styles.secondaryAccountButton}>
               <Text style={styles.secondaryAccountText}>Your account</Text>
@@ -142,25 +157,25 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => StyleSheet.create({
   topNav: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-  scanButton: { alignItems: 'center', backgroundColor: palette.white, borderRadius: 21, height: 42, justifyContent: 'center', shadowColor: '#1C1C1E', shadowOffset: { height: 1, width: 0 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, width: 42 },
+  topActions: { alignItems: 'center', flexDirection: 'row', gap: 4 },
+  scanButton: { alignItems: 'center', backgroundColor: palette.white, borderColor: palette.line, borderCurve: 'continuous', borderRadius: 21, borderWidth: 1, height: 44, justifyContent: 'center', width: 44 },
   intro: {
     marginBottom: 28,
     paddingTop: 8,
   },
   eyebrow: {
-    color: palette.coral,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1.1,
+    color: palette.muted,
+    fontSize: 12,
+    fontWeight: '500',
     marginBottom: 11,
   },
   title: {
     color: palette.ink,
-    fontFamily: 'Georgia',
-    fontSize: 38,
-    fontWeight: '700',
+    fontSize: 39,
+    fontWeight: '600',
+    letterSpacing: -0.9,
     lineHeight: 44,
   },
   description: {
@@ -171,9 +186,10 @@ const styles = StyleSheet.create({
     maxWidth: 530,
   },
   recordCard: {
-    backgroundColor: palette.leaf,
-    borderRadius: 16,
-    padding: 21,
+    backgroundColor: palette.ink,
+    borderCurve: 'continuous',
+    borderRadius: 18,
+    padding: 22,
   },
   recordTop: {
     alignItems: 'center',
@@ -181,35 +197,47 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   cardEyebrow: {
-    color: palette.forest,
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.9,
+    color: '#BCC8C1',
+    fontSize: 11,
+    fontWeight: '500',
   },
   recordCount: {
-    color: palette.ink,
-    fontSize: 23,
-    fontWeight: '700',
+    color: palette.white,
+    fontSize: 24,
+    fontWeight: '600',
+    letterSpacing: -0.3,
     marginTop: 7,
   },
   recordIcon: {
     alignItems: 'center',
-    backgroundColor: '#F1F6EF',
+    backgroundColor: '#252B28',
     borderRadius: 24,
     height: 44,
     justifyContent: 'center',
     width: 44,
   },
   rule: {
-    backgroundColor: '#C5D8C7',
+    backgroundColor: '#39413D',
     height: 1,
     marginVertical: 16,
   },
   emptyText: {
-    color: '#53685B',
+    color: '#D5DDD8',
     fontSize: 14,
     lineHeight: 21,
     maxWidth: 490,
+  },
+  retryButton: {
+    alignSelf: 'flex-start',
+    justifyContent: 'center',
+    marginTop: 8,
+    minHeight: 44,
+    paddingHorizontal: 4,
+  },
+  retryLabel: {
+    color: palette.forest,
+    fontSize: 14,
+    fontWeight: '700',
   },
   accountActions: {
     flexDirection: 'row',
@@ -220,7 +248,8 @@ const styles = StyleSheet.create({
   primaryAccountButton: {
     alignItems: 'center',
     backgroundColor: palette.forest,
-    borderRadius: 11,
+    borderCurve: 'continuous',
+    borderRadius: 8,
     justifyContent: 'center',
     minHeight: 46,
     paddingHorizontal: 16,
@@ -232,14 +261,15 @@ const styles = StyleSheet.create({
   },
   secondaryAccountButton: {
     alignItems: 'center',
-    backgroundColor: '#F4F8F4',
-    borderRadius: 11,
+    backgroundColor: '#252B28',
+    borderCurve: 'continuous',
+    borderRadius: 8,
     justifyContent: 'center',
     minHeight: 46,
     paddingHorizontal: 16,
   },
   secondaryAccountText: {
-    color: palette.forest,
+    color: palette.white,
     fontSize: 12,
     fontWeight: '700',
   },
@@ -264,12 +294,12 @@ const styles = StyleSheet.create({
   actionCard: {
     flexBasis: 220,
     flexGrow: 1,
-    minHeight: 160,
+    minHeight: 148,
   },
   actionTitle: {
     color: palette.ink,
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '600',
     marginTop: 15,
   },
   actionBody: {
@@ -299,4 +329,4 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: 4,
   },
-});
+}));

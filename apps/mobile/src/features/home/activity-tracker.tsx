@@ -7,7 +7,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { Pedometer } from 'expo-sensors';
 
 import { estimateActivity } from '@/features/home/activity-estimates';
-import { palette } from '@/ui/palette';
+import { palette, themedStyles, useScheme } from '@/ui/palette';
 
 type DayCount = { label: string; steps: number };
 type TrackerStatus = 'checking' | 'permission' | 'ready' | 'unavailable' | 'error';
@@ -16,6 +16,7 @@ const goalStorageKey = 'ihssan.activity.step-goal';
 const defaultStepGoal = 8000;
 
 export default function ActivityTracker({ detailed = false, onOpen }: Props) {
+  useScheme();
   const [status, setStatus] = useState<TrackerStatus>('checking');
   const [steps, setSteps] = useState(0);
   const [week, setWeek] = useState<DayCount[]>([]);
@@ -158,7 +159,7 @@ export default function ActivityTracker({ detailed = false, onOpen }: Props) {
   return (
     <View style={[styles.panel, detailed && styles.detailedPanel]}>
       <Pressable accessibilityHint={onOpen ? 'Opens your full activity dashboard' : undefined} accessibilityRole={onOpen ? 'button' : undefined} disabled={!onOpen} onPress={onOpen} style={styles.panelHeader}>
-        <View><Text style={styles.eyebrow}>DAILY MOVEMENT</Text><Text style={[styles.title, detailed && styles.detailedTitle]}>Steps</Text></View>
+        <View><Text style={styles.eyebrow}>Daily movement</Text><Text style={[styles.title, detailed && styles.detailedTitle]}>Steps</Text></View>
         <View style={styles.headerActions}>
           {onOpen ? <ArrowRight color={palette.forest} size={19} /> : null}
           <View style={styles.headerIcon}><Footprints color={palette.forest} size={19} /></View>
@@ -231,12 +232,12 @@ export default function ActivityTracker({ detailed = false, onOpen }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  panel: { backgroundColor: palette.white, borderRadius: 14, marginBottom: 25, padding: 18, shadowColor: '#1C1C1E', shadowOffset: { height: 2, width: 0 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
+const styles = themedStyles(() => StyleSheet.create({
+  panel: { backgroundColor: palette.white, borderColor: palette.line, borderCurve: 'continuous', borderRadius: 18, borderWidth: 1, marginBottom: 25, padding: 18 },
   detailedPanel: { padding: 20 },
   panelHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   headerActions: { alignItems: 'center', flexDirection: 'row', gap: 10 },
-  eyebrow: { color: palette.coral, fontSize: 9, fontWeight: '700', letterSpacing: 0.8 },
+  eyebrow: { color: palette.coral, fontSize: 12, fontWeight: '600' },
   title: { color: palette.ink, fontSize: 22, fontWeight: '700', marginTop: 3 },
   detailedTitle: { fontSize: 26 },
   headerIcon: { alignItems: 'center', backgroundColor: palette.leaf, borderRadius: 18, height: 36, justifyContent: 'center', width: 36 },
@@ -293,5 +294,5 @@ const styles = StyleSheet.create({
   privacyLine: { alignItems: 'center', flexDirection: 'row', gap: 6, justifyContent: 'center', marginTop: 12 },
   privacyText: { color: palette.muted, fontSize: 9 },
   platformNote: { color: palette.muted, fontSize: 9, lineHeight: 14, marginTop: 6, textAlign: 'center' },
-  error: { color: '#A83B28', fontSize: 11, lineHeight: 16, marginTop: 8 },
-});
+  error: { color: palette.dangerText, fontSize: 11, lineHeight: 16, marginTop: 8 },
+}));

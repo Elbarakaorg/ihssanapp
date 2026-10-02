@@ -1,4 +1,3 @@
-import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { Tabs } from 'expo-router';
 import { Activity, Compass, HeartHandshake, House, type LucideIcon, Menu } from 'lucide-react-native';
@@ -8,19 +7,19 @@ import type { BottomTabBarButtonProps } from 'expo-router/build/react-navigation
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RightDrawer } from '@/features/navigation/right-drawer';
-import { palette } from '@/ui/palette';
+import { palette, themedStyles, useScheme } from '@/ui/palette';
 
 function tabIcon(Icon: LucideIcon) {
   return ({ focused }: { color: ColorValue; focused: boolean; size: number }) => (
-    <AnimatedTabIcon Icon={Icon} focused={focused} />
+    <TabIcon Icon={Icon} focused={focused} />
   );
 }
 
-function AnimatedTabIcon({ Icon, focused }: { Icon: LucideIcon; focused: boolean }) {
+function TabIcon({ Icon, focused }: { Icon: LucideIcon; focused: boolean }) {
+  useScheme();
   return (
     <View style={iconStyles.slot}>
-      {focused ? <View style={[StyleSheet.absoluteFill, iconStyles.capsule]} /> : null}
-      <Icon color={focused ? palette.white : palette.muted} size={20} strokeWidth={2.1} />
+      <Icon color={focused ? palette.forest : palette.muted} size={20} strokeWidth={focused ? 2.1 : 1.8} />
     </View>
   );
 }
@@ -39,6 +38,7 @@ function TabButton({ children, href, onLongPress, onMenuPress, onPress, style, r
 }
 
 export default function TabLayout() {
+  useScheme();
   const insets = useSafeAreaInsets();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -56,31 +56,17 @@ export default function TabLayout() {
           tabBarInactiveTintColor: palette.muted,
           tabBarButton: TabButton,
           tabBarStyle: {
-            position: 'absolute',
-            left: 16,
-            right: 16,
-            bottom: insets.bottom + 12,
-            height: 66,
-            borderRadius: 26,
-            borderCurve: 'continuous',
-            borderTopWidth: 0,
-            overflow: 'hidden',
-            backgroundColor: 'transparent',
-            boxShadow: '0px 8px 24px rgba(28, 28, 30, 0.14)',
+            backgroundColor: palette.white,
+            borderTopColor: palette.line,
+            borderTopWidth: StyleSheet.hairlineWidth,
+            height: 58 + insets.bottom,
+            paddingBottom: insets.bottom,
           },
-          tabBarBackground: () => (
-            <BlurView
-              blurMethod="dimezisBlurViewSdk31Plus"
-              intensity={Platform.OS === 'ios' ? 72 : 92}
-              style={StyleSheet.absoluteFill}
-              tint={Platform.OS === 'ios' ? 'systemChromeMaterialLight' : 'light'}
-            />
-          ),
-          tabBarItemStyle: { paddingTop: 8 },
+          tabBarItemStyle: { paddingTop: 5 },
           tabBarLabelStyle: {
-            fontSize: 11,
-            fontWeight: '700',
-            marginTop: 2,
+            fontSize: 10,
+            fontWeight: '600',
+            marginTop: 1,
           },
           tabBarHideOnKeyboard: true,
         }}>
@@ -120,7 +106,7 @@ export default function TabLayout() {
               if (Platform.OS !== 'web') void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               setMenuOpen(true);
             }} />,
-            tabBarIcon: ({ focused }) => <AnimatedTabIcon Icon={Menu} focused={focused || menuOpen} />,
+            tabBarIcon: ({ focused }) => <TabIcon Icon={Menu} focused={focused || menuOpen} />,
           }}
         />
       </Tabs>
@@ -129,7 +115,7 @@ export default function TabLayout() {
   );
 }
 
-const iconStyles = StyleSheet.create({
+const iconStyles = themedStyles(() => StyleSheet.create({
   pressed: {
     opacity: 0.7,
   },
@@ -140,13 +126,8 @@ const iconStyles = StyleSheet.create({
   },
   slot: {
     alignItems: 'center',
-    borderRadius: 14,
     height: 30,
     justifyContent: 'center',
     width: 44,
   },
-  capsule: {
-    backgroundColor: palette.forest,
-    borderRadius: 14,
-  },
-});
+}));

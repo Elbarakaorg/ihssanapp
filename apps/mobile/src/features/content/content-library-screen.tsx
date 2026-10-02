@@ -5,7 +5,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 
 import { supabaseClient } from '@/platform/supabase/client';
 import { Page, PageHeading, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
-import { palette } from '@/ui/palette';
+import { palette, themedStyles, useScheme } from '@/ui/palette';
 
 type Props = { kind: 'articles' | 'blogs' };
 type PublishedArticle = {
@@ -29,6 +29,7 @@ const categories = [
 ];
 
 export default function ContentLibraryScreen({ kind }: Props) {
+  useScheme();
   const router = useRouter();
   const [articles, setArticles] = useState<PublishedArticle[]>([]);
   const [selectedArticle, setSelectedArticle] = useState<PublishedArticle | null>(null);
@@ -89,7 +90,7 @@ export default function ContentLibraryScreen({ kind }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => StyleSheet.create({
   backButton: { alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', gap: 8, marginBottom: 16, minHeight: 35 },
   backText: { color: palette.ink, fontSize: 13, fontWeight: '600' },
   categoryScroll: { flexGrow: 0, marginBottom: 18, marginHorizontal: -3 },
@@ -101,9 +102,9 @@ const styles = StyleSheet.create({
   articleList: { gap: 9 },
   articleCard: { gap: 8, padding: 14 },
   articleMeta: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-  categoryTag: { color: palette.coral, fontSize: 9, fontWeight: '700', textTransform: 'uppercase' },
+  categoryTag: { color: palette.coral, fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
   date: { color: palette.muted, fontSize: 9 },
-  articleTitle: { color: palette.ink, fontFamily: 'Georgia', fontSize: 20, lineHeight: 26 },
+  articleTitle: { color: palette.ink, fontSize: 19, fontWeight: '600', lineHeight: 25 },
   body: { color: palette.muted, fontSize: 12, lineHeight: 18 },
   readMore: { alignItems: 'center', flexDirection: 'row', gap: 6, marginTop: 2 },
   readMoreText: { color: palette.forest, fontSize: 11, fontWeight: '700' },
@@ -116,7 +117,7 @@ const styles = StyleSheet.create({
   articleModal: { backgroundColor: palette.paper, borderTopLeftRadius: 12, borderTopRightRadius: 12, maxHeight: '88%', padding: 20 },
   modalHeader: { alignItems: 'flex-start', flexDirection: 'row', gap: 10, justifyContent: 'space-between', marginBottom: 12 },
   modalCopy: { flex: 1, gap: 7 },
-  modalTitle: { color: palette.ink, fontFamily: 'Georgia', fontSize: 24, lineHeight: 30 },
+  modalTitle: { color: palette.ink, fontSize: 23, fontWeight: '600', lineHeight: 29 },
   closeButton: { alignItems: 'center', height: 34, justifyContent: 'center', width: 34 },
   articleBody: { color: palette.ink, fontSize: 14, lineHeight: 23, paddingBottom: 25 },
-});
+}));

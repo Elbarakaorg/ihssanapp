@@ -4,9 +4,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import ActivityTracker from '@/features/home/activity-tracker';
 import { Page, PageHeading, PreviewNotice } from '@/ui/patient-ui';
-import { palette } from '@/ui/palette';
+import { palette, themedStyles, useScheme } from '@/ui/palette';
 
 export default function ActivityScreen() {
+  useScheme();
   const router = useRouter();
   return <Page>
     <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.back}><ArrowLeft color={palette.ink} size={18} /><Text style={styles.backText}>Home</Text></Pressable>
@@ -17,9 +18,9 @@ export default function ActivityScreen() {
   </Page>;
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => StyleSheet.create({
   back: { alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', gap: 8, marginBottom: 16, minHeight: 42 },
   backText: { color: palette.ink, fontSize: 13, fontWeight: '600' },
   disclaimer: { backgroundColor: palette.sky, borderRadius: 12, marginTop: 2, padding: 14 },
   disclaimerText: { color: palette.muted, fontSize: 12, lineHeight: 18 },
-});
+}));

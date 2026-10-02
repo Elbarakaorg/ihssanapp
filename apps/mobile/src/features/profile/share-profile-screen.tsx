@@ -6,12 +6,13 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 
 import { useAuth } from '@/features/auth/auth-provider';
 import { Page } from '@/ui/patient-ui';
-import { palette } from '@/ui/palette';
+import { palette, themedStyles, useScheme } from '@/ui/palette';
 import { supabaseClient } from '@/platform/supabase/client';
 
 type ShareCodeResult = { share_code: string; expires_at: string };
 
 export default function ShareProfileScreen() {
+  useScheme();
   const router = useRouter();
   const { session } = useAuth();
   const [shareCode, setShareCode] = useState('');
@@ -57,7 +58,7 @@ export default function ShareProfileScreen() {
     <Page>
       <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.backButton}><ArrowLeft color={palette.ink} size={18} /><Text style={styles.backLabel}>Medical profile</Text></Pressable>
       <View style={styles.heading}>
-        <Text style={styles.eyebrow}>PATIENT-CONTROLLED SHARING</Text>
+        <Text style={styles.eyebrow}>Patient-controlled sharing</Text>
         <Text style={styles.title}>Share with a doctor</Text>
         <Text style={styles.description}>Let a verified clinician scan this temporary code to request access. Your information stays private until you approve the request in your medical profile.</Text>
       </View>
@@ -82,14 +83,14 @@ export default function ShareProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => StyleSheet.create({
   backButton: { alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', gap: 8, marginBottom: 20, minHeight: 42 },
   backLabel: { color: palette.ink, fontSize: 13, fontWeight: '600' },
   heading: { marginBottom: 19 },
-  eyebrow: { color: palette.forest, fontSize: 10, fontWeight: '700', letterSpacing: 0.6, marginBottom: 7 },
+  eyebrow: { color: palette.forest, fontSize: 12, fontWeight: '600', marginBottom: 7 },
   title: { color: palette.ink, fontSize: 29, fontWeight: '700' },
   description: { color: palette.muted, fontSize: 13, lineHeight: 20, marginTop: 8 },
-  qrCard: { alignItems: 'center', backgroundColor: palette.white, borderRadius: 18, minHeight: 315, justifyContent: 'center', padding: 20, shadowColor: '#1C1C1E', shadowOffset: { height: 2, width: 0 }, shadowOpacity: 0.07, shadowRadius: 10, elevation: 2 },
+  qrCard: { alignItems: 'center', backgroundColor: palette.white, borderColor: palette.line, borderCurve: 'continuous', borderRadius: 18, borderWidth: 1, minHeight: 315, justifyContent: 'center', padding: 20 },
   qrLoading: { alignItems: 'center', gap: 12, height: 220, justifyContent: 'center' },
   body: { color: palette.muted, fontSize: 12 },
   error: { color: '#9A3E2A', fontSize: 12, lineHeight: 18, marginTop: 12, textAlign: 'center' },
@@ -105,4 +106,4 @@ const styles = StyleSheet.create({
   refreshButton: { alignItems: 'center', alignSelf: 'center', flexDirection: 'row', gap: 8, justifyContent: 'center', marginTop: 14, minHeight: 46, paddingHorizontal: 14 },
   refreshDisabled: { opacity: 0.45 },
   refreshLabel: { color: palette.forest, fontSize: 12, fontWeight: '700' },
-});
+}));

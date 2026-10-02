@@ -2,9 +2,10 @@ import { BadgeCheck, HeartHandshake, Landmark } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Page, PageHeading, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
-import { palette } from '@/ui/palette';
+import { palette, themedStyles, useScheme } from '@/ui/palette';
 
 export default function DonationsScreen() {
+  useScheme();
   return (
     <Page>
       <PreviewNotice />
@@ -41,31 +42,35 @@ export default function DonationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => StyleSheet.create({
   emptyCase: {
     alignItems: 'center',
-    backgroundColor: palette.leaf,
-    borderRadius: 8,
+    backgroundColor: palette.white,
+    borderColor: palette.line,
+    borderCurve: 'continuous',
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 24,
     paddingVertical: 31,
   },
   heartTile: {
     alignItems: 'center',
-    backgroundColor: '#F3F7F1',
-    borderRadius: 28,
-    height: 54,
+    backgroundColor: palette.leaf,
+    borderCurve: 'continuous',
+    borderRadius: 10,
+    height: 44,
     justifyContent: 'center',
-    width: 54,
+    width: 44,
   },
   emptyTitle: {
     color: palette.ink,
-    fontFamily: 'Georgia',
-    fontSize: 22,
+    fontSize: 20,
+    fontWeight: '600',
     marginTop: 16,
     textAlign: 'center',
   },
   emptyBody: {
-    color: '#596F60',
+    color: palette.muted,
     fontSize: 13,
     lineHeight: 20,
     marginTop: 8,
@@ -76,7 +81,7 @@ const styles = StyleSheet.create({
     gap: 9,
   },
   stepCard: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     flexDirection: 'row',
     gap: 12,
     padding: 14,
@@ -84,7 +89,8 @@ const styles = StyleSheet.create({
   stepIcon: {
     alignItems: 'center',
     backgroundColor: palette.leaf,
-    borderRadius: 6,
+    borderCurve: 'continuous',
+    borderRadius: 8,
     height: 38,
     justifyContent: 'center',
     width: 38,
@@ -95,7 +101,7 @@ const styles = StyleSheet.create({
   stepTitle: {
     color: palette.ink,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   stepBody: {
     color: palette.muted,
@@ -103,4 +109,4 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     marginTop: 4,
   },
-});
+}));

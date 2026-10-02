@@ -87,16 +87,12 @@ export const supabaseAuthRepository: AuthRepository = {
           finishWith(event.data);
         };
         channel.onmessage = (event: MessageEvent<{ source?: string; code?: string; error?: string }>) => finishWith(event.data);
-        const closeCheck = window.setInterval(() => {
-          if (popup.closed) finish(() => reject(new Error('Google sign-in was cancelled.')));
-        }, 500);
         const timeout = window.setTimeout(() => {
           popup.close();
           finish(() => reject(new Error('Google sign-in timed out. Please try again.')));
         }, 120000);
         const finish = (callback: () => void) => {
           window.removeEventListener('message', onMessage);
-          window.clearInterval(closeCheck);
           window.clearTimeout(timeout);
           channel.close();
           callback();

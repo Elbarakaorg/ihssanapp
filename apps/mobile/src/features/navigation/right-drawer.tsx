@@ -1,14 +1,12 @@
 import { useRouter, type Href } from 'expo-router';
-import { Activity, BookOpenText, ChevronRight, Compass, Footprints, Globe2, HeartHandshake, House, type LucideIcon, LogIn, LogOut, Moon, Newspaper, Share2, Sun, UserRound, UsersRound, X } from 'lucide-react-native';
+import { Activity, BookOpenText, ChevronRight, Compass, Footprints, HeartHandshake, House, type LucideIcon, LogIn, LogOut, Newspaper, Share2, UserRound, UsersRound, X } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, ScrollView, Share, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/features/auth/auth-provider';
 import { getCurrentUserProfile } from '@/features/profile/profile-repository';
-import { type AppLocale, useLocale } from '@/platform/locale/locale-provider';
-import { useThemeMode } from '@/platform/theme/theme-provider';
-import { palette } from '@/ui/palette';
+import { palette, themedStyles, useScheme } from '@/ui/palette';
 
 type NavItem = { label: string; href: Href; icon: LucideIcon; clinicianOnly?: boolean };
 
@@ -24,19 +22,13 @@ const navItems: NavItem[] = [
   { href: '/blogs', icon: Newspaper, label: 'Blogs' },
 ];
 
-const languageOptions: { code: AppLocale; label: string }[] = [
-  { code: 'en', label: 'EN' },
-  { code: 'fr', label: 'FR' },
-  { code: 'ar', label: 'AR' },
-];
 
 export function RightDrawer({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  useScheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { session, signOut } = useAuth();
-  const { locale, setLocale } = useLocale();
-  const { scheme, setMode } = useThemeMode();
   const [profileName, setProfileName] = useState('');
   const [profileType, setProfileType] = useState<'patient' | 'clinician'>('patient');
   const [mounted, setMounted] = useState(visible);
@@ -118,7 +110,7 @@ export function RightDrawer({ visible, onClose }: { visible: boolean; onClose: (
             <ChevronRight color={palette.muted} size={18} />
           </Pressable>
 
-          <Text style={styles.sectionLabel}>NAVIGATE</Text>
+          <Text style={styles.sectionLabel}>Navigate</Text>
           <View style={styles.navList}>
             {navItems.filter((item) => !item.clinicianOnly || profileType === 'clinician').map((item) => {
               const Icon = item.icon;
@@ -131,36 +123,6 @@ export function RightDrawer({ visible, onClose }: { visible: boolean; onClose: (
             })}
           </View>
 
-          <Text style={styles.sectionLabel}>PREFERENCES</Text>
-          <View style={styles.prefRow}>
-            <View style={styles.prefLabelGroup}><Globe2 color={palette.forest} size={18} /><Text style={styles.prefLabel}>Language</Text></View>
-            <View style={styles.chipRow}>
-              {languageOptions.map((option) => (
-                <Pressable
-                  accessibilityRole="button"
-                  key={option.code}
-                  onPress={() => setLocale(option.code)}
-                  style={[styles.chip, locale === option.code && styles.chipActive]}>
-                  <Text style={[styles.chipText, locale === option.code && styles.chipTextActive]}>{option.label}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-          <View style={styles.prefRow}>
-            <View style={styles.prefLabelGroup}>
-              {scheme === 'dark' ? <Moon color={palette.forest} size={18} /> : <Sun color={palette.forest} size={18} />}
-              <Text style={styles.prefLabel}>Appearance</Text>
-            </View>
-            <View style={styles.chipRow}>
-              <Pressable accessibilityRole="button" onPress={() => setMode('light')} style={[styles.chip, scheme === 'light' && styles.chipActive]}>
-                <Text style={[styles.chipText, scheme === 'light' && styles.chipTextActive]}>Light</Text>
-              </Pressable>
-              <Pressable accessibilityRole="button" onPress={() => setMode('dark')} style={[styles.chip, scheme === 'dark' && styles.chipActive]}>
-                <Text style={[styles.chipText, scheme === 'dark' && styles.chipTextActive]}>Dark</Text>
-              </Pressable>
-            </View>
-          </View>
-
           <Pressable accessibilityRole="button" onPress={() => void shareApp()} style={styles.actionRow}>
             <Share2 color={palette.forest} size={18} strokeWidth={1.9} />
             <Text style={styles.actionLabel}>Share with friends</Text>
@@ -168,7 +130,7 @@ export function RightDrawer({ visible, onClose }: { visible: boolean; onClose: (
 
           {session ? (
             <Pressable accessibilityRole="button" onPress={() => { onClose(); void signOut(); }} style={[styles.actionRow, styles.signOutRow]}>
-              <LogOut color="#A83B28" size={18} strokeWidth={1.9} />
+              <LogOut color={palette.coral} size={18} strokeWidth={1.9} />
               <Text style={[styles.actionLabel, styles.signOutLabel]}>Sign out</Text>
             </Pressable>
           ) : (
@@ -183,7 +145,7 @@ export function RightDrawer({ visible, onClose }: { visible: boolean; onClose: (
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => StyleSheet.create({
   backdrop: {
     backgroundColor: 'rgba(12, 20, 16, 0.42)',
     flex: 1,
@@ -194,10 +156,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     position: 'absolute',
     right: 0,
-    shadowColor: '#000',
-    shadowOffset: { height: 0, width: -6 },
-    shadowOpacity: 0.16,
-    shadowRadius: 24,
+    borderLeftColor: palette.line,
+    borderLeftWidth: StyleSheet.hairlineWidth,
     top: 0,
   },
   headerRow: {
@@ -213,25 +173,29 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     alignItems: 'center',
-    backgroundColor: palette.paper,
-    borderRadius: 17,
-    height: 34,
+    backgroundColor: 'transparent',
+    borderCurve: 'continuous',
+    borderRadius: 8,
+    height: 44,
     justifyContent: 'center',
-    width: 34,
+    width: 44,
   },
   accountCard: {
     alignItems: 'center',
-    backgroundColor: palette.leaf,
-    borderRadius: 14,
+    backgroundColor: 'transparent',
+    borderBottomColor: palette.line,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderRadius: 0,
     flexDirection: 'row',
     gap: 12,
     marginBottom: 20,
-    padding: 13,
+    paddingBottom: 16,
   },
   avatar: {
     alignItems: 'center',
-    backgroundColor: palette.white,
-    borderRadius: 21,
+    backgroundColor: palette.leaf,
+    borderCurve: 'continuous',
+    borderRadius: 8,
     height: 42,
     justifyContent: 'center',
     width: 42,
@@ -250,10 +214,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   sectionLabel: {
-    color: palette.muted,
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.6,
+    color: palette.ink,
+    fontSize: 14,
+    fontWeight: '600',
     marginBottom: 8,
   },
   navList: {
@@ -261,10 +224,10 @@ const styles = StyleSheet.create({
   },
   navRow: {
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: 6,
     flexDirection: 'row',
     gap: 12,
-    minHeight: 42,
+    minHeight: 46,
     paddingHorizontal: 6,
   },
   navLabel: {
@@ -272,47 +235,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  prefRow: {
-    marginBottom: 14,
-  },
-  prefLabelGroup: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 8,
-  },
-  prefLabel: {
-    color: palette.ink,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  chipRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  chip: {
-    alignItems: 'center',
-    backgroundColor: palette.paper,
-    borderRadius: 9,
-    justifyContent: 'center',
-    minHeight: 36,
-    paddingHorizontal: 14,
-  },
-  chipActive: {
-    backgroundColor: palette.forest,
-  },
-  chipText: {
-    color: palette.muted,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  chipTextActive: {
-    color: palette.white,
-  },
   actionRow: {
     alignItems: 'center',
     borderTopColor: palette.line,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
     gap: 12,
     minHeight: 48,
@@ -328,6 +254,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   signOutLabel: {
-    color: '#A83B28',
+    color: palette.dangerText,
   },
-});
+}));

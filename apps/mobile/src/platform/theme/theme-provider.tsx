@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createContext, useContext, useEffect, useState, type PropsWithChildren } from 'react';
+import { createContext, useContext, useEffect, useLayoutEffect, useState, type PropsWithChildren } from 'react';
 import { useColorScheme } from 'react-native';
+
+import { applyScheme, notifySchemeChange } from '@/ui/palette';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 export type ResolvedScheme = 'light' | 'dark';
@@ -30,6 +32,12 @@ export function ThemeProvider({ children }: PropsWithChildren) {
   };
 
   const scheme: ResolvedScheme = mode === 'system' ? (systemScheme === 'dark' ? 'dark' : 'light') : mode;
+
+  // Palette is updated before children render; subscribers are told once the commit lands.
+  applyScheme(scheme);
+  useLayoutEffect(() => {
+    notifySchemeChange();
+  }, [scheme]);
 
   return (
     <ThemeContext.Provider value={{ mode, scheme, setMode }}>

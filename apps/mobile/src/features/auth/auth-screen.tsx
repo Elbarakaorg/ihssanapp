@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { ArrowLeft, Check, ShieldCheck } from 'lucide-react-native';
+import { Check, ShieldCheck } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -7,10 +7,11 @@ import { useAuth } from './auth-provider';
 import type { ProfileType } from './auth-contract';
 import { normalizeEmailConfirmationToken, validateAuthForm, type AuthMode } from './auth-validation';
 import { getCurrentUserProfile } from '@/features/profile/profile-repository';
-import { Page, PreviewNotice } from '@/ui/patient-ui';
-import { palette } from '@/ui/palette';
+import { DarkAuthShell, ink } from './dark-auth-shell';
+import { themedStyles, useScheme } from '@/ui/palette';
 
 export default function AuthScreen() {
+  useScheme();
   const router = useRouter();
   const { mode: requestedMode } = useLocalSearchParams<{ mode?: string }>();
   const { isConfigured, isReady, session, signIn, signInWithGoogle, signOut, signUp, confirmSignup, resendSignupConfirmation } = useAuth();
@@ -136,17 +137,11 @@ export default function AuthScreen() {
   };
 
   return (
-    <Page>
-      <Stack.Screen options={{ title: 'Ihssan account' }} />
-      <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.backButton}>
-        <ArrowLeft color={palette.ink} size={19} />
-        <Text style={styles.backLabel}>Back</Text>
-      </Pressable>
-      <PreviewNotice />
-
+    <DarkAuthShell>
+      <Stack.Screen options={{ headerShown: false }} />
       {session ? (
         <View style={styles.signedIn}>
-          <View style={styles.successIcon}><ShieldCheck color={palette.forest} size={23} /></View>
+          <View style={styles.successIcon}><ShieldCheck color={ink.accent} size={23} /></View>
           <Text style={styles.title}>You're signed in</Text>
           <Text style={styles.description}>{session.identity.email ?? 'Account'}</Text>
           <Text style={styles.supporting}>Your saved results stay in your account unless you choose to share them with a clinician.</Text>
@@ -156,8 +151,7 @@ export default function AuthScreen() {
         </View>
       ) : (
         <>
-          <Text style={styles.eyebrow}>ACCOUNT</Text>
-          <Text style={styles.title}>{pendingSignupEmail ? 'Verify your email' : mode === 'sign-up' ? 'Create your account' : 'Sign in'}</Text>
+                    <Text style={styles.title}>{pendingSignupEmail ? 'Verify your email' : mode === 'sign-up' ? 'Create your account' : 'Sign in'}</Text>
           <Text style={styles.description}>
             {pendingSignupEmail
               ? `We sent a verification code to ${pendingSignupEmail}. Enter it below to finish creating your account.`
@@ -171,12 +165,11 @@ export default function AuthScreen() {
           ) : null}
 
           {!isReady ? (
-            <View style={styles.loadingRow}><ActivityIndicator color={palette.forest} /><Text style={styles.loadingText}>Restoring session</Text></View>
+            <View style={styles.loadingRow}><ActivityIndicator color={ink.accent} /><Text style={styles.loadingText}>Restoring session</Text></View>
           ) : null}
 
           {!pendingSignupEmail ? (
             <>
-              <Text style={styles.fieldLabel}>{mode === 'sign-up' ? 'Account type' : 'Sign in as'}</Text>
               <View style={styles.profileTypeRow}>
                 {(['patient', 'clinician'] as ProfileType[]).map((type) => (
                   <Pressable
@@ -200,7 +193,7 @@ export default function AuthScreen() {
                 autoCapitalize="words"
                 onChangeText={setDisplayName}
                 placeholder="Your name"
-                placeholderTextColor="#8A958E"
+                placeholderTextColor={ink.faint}
                 style={styles.input}
                 value={displayName}
               />
@@ -215,7 +208,7 @@ export default function AuthScreen() {
             keyboardType="email-address"
             onChangeText={setEmail}
             placeholder="name@example.com"
-            placeholderTextColor="#8A958E"
+            placeholderTextColor={ink.faint}
             style={styles.input}
             textContentType="emailAddress"
             value={email}
@@ -230,7 +223,7 @@ export default function AuthScreen() {
                 autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'}
                 onChangeText={setPassword}
                 placeholder="At least 8 characters"
-                placeholderTextColor="#8A958E"
+                placeholderTextColor={ink.faint}
                 secureTextEntry
                 style={styles.input}
                 textContentType={mode === 'sign-up' ? 'newPassword' : 'password'}
@@ -249,9 +242,10 @@ export default function AuthScreen() {
                 keyboardType="number-pad"
                 onChangeText={setConfirmationToken}
                 placeholder="123456"
-                placeholderTextColor="#8A958E"
-                style={styles.input}
+                placeholderTextColor={ink.faint}
+                style={[styles.input, styles.codeInput]}
                 value={confirmationToken}
+                maxLength={8}
               />
               <Pressable accessibilityRole="button" onPress={() => void handleResendConfirmation()} style={styles.resendButton}>
                 <Text style={styles.resendText}>Resend code</Text>
@@ -269,7 +263,7 @@ export default function AuthScreen() {
               onPress={() => setAdultConfirmed((confirmed) => !confirmed)}
               style={styles.adultRow}>
               <View style={[styles.checkbox, adultConfirmed && styles.checkboxChecked]}>
-                {adultConfirmed ? <Check color={palette.white} size={14} strokeWidth={2.5} /> : null}
+                {adultConfirmed ? <Check color={ink.bg} size={14} strokeWidth={2.5} /> : null}
               </View>
               <Text style={styles.adultText}>I confirm that I am 18 years old or older.</Text>
             </Pressable>
@@ -283,14 +277,14 @@ export default function AuthScreen() {
             disabled={submitting || !isConfigured}
             onPress={() => void handleSubmit()}
             style={[styles.primaryButton, (submitting || !isConfigured) && styles.buttonDisabled]}>
-            {submitting ? <ActivityIndicator color={palette.white} /> : <Text style={styles.primaryLabel}>{pendingSignupEmail ? 'Confirm account' : mode === 'sign-up' ? 'Create account' : 'Sign in'}</Text>}
+            {submitting ? <ActivityIndicator color={ink.bg} /> : <Text style={styles.primaryLabel}>{pendingSignupEmail ? 'Confirm account' : mode === 'sign-up' ? 'Create account' : 'Sign in'}</Text>}
           </Pressable>
 
           {!pendingSignupEmail ? (
             <>
               <View style={styles.separator}>
                 <View style={styles.separatorLine} />
-                <Text style={styles.separatorLabel}>OR</Text>
+                <Text style={styles.separatorLabel}>or</Text>
                 <View style={styles.separatorLine} />
               </View>
               <Pressable
@@ -298,7 +292,7 @@ export default function AuthScreen() {
                 disabled={googleSubmitting || !isConfigured}
                 onPress={() => void handleGoogleSignIn()}
                 style={[styles.googleButton, (googleSubmitting || !isConfigured) && styles.buttonDisabled]}>
-                {googleSubmitting ? <ActivityIndicator color={palette.ink} /> : <>
+                {googleSubmitting ? <ActivityIndicator color={ink.text} /> : <>
                   <Text style={styles.googleMark}>G</Text>
                   <Text style={styles.googleLabel}>Continue with Google</Text>
                 </>}
@@ -311,277 +305,142 @@ export default function AuthScreen() {
               accessibilityRole="button"
               onPress={() => changeMode(mode === 'sign-up' ? 'sign-in' : 'sign-up')}
               style={styles.modeButton}>
-              <Text style={styles.modeText}>{mode === 'sign-up' ? 'Already have an account? Sign in' : 'Need an account? Create one'}</Text>
+              <Text style={styles.modeText}>{mode === 'sign-up' ? 'Already have an account? Sign in' : 'New here? Create an account'}</Text>
             </Pressable>
           ) : null}
         </>
       )}
-    </Page>
+    </DarkAuthShell>
   );
 }
 
-const styles = StyleSheet.create({
-  backButton: {
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 17,
-    minHeight: 36,
-  },
-  backLabel: {
-    color: palette.ink,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  eyebrow: {
-    color: palette.coral,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-    marginBottom: 8,
-    marginTop: 3,
-  },
-  title: {
-    color: palette.ink,
-    fontFamily: 'Georgia',
-    fontSize: 31,
-    lineHeight: 38,
-  },
-  description: {
-    color: palette.muted,
-    fontSize: 14,
-    lineHeight: 21,
-    marginTop: 7,
-    maxWidth: 470,
-  },
-  fieldLabel: {
-    color: palette.ink,
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: 7,
-    marginTop: 18,
-  },
+const styles = themedStyles(() => StyleSheet.create({
+  title: { color: ink.text, fontSize: 38, fontWeight: '300', letterSpacing: -1, lineHeight: 44 },
+  description: { color: ink.muted, fontSize: 15, lineHeight: 22, marginTop: 10 },
+  fieldLabel: { color: ink.muted, fontSize: 12, fontWeight: '500', marginBottom: 8, marginTop: 22 },
   profileTypeRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 4,
-  },
-  profileTypeOption: {
-    backgroundColor: palette.white,
-    borderColor: palette.line,
-    borderRadius: 999,
+    backgroundColor: ink.panel,
+    borderColor: ink.edge,
+    borderCurve: 'continuous',
+    borderRadius: 12,
     borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
+    flexDirection: 'row',
+    marginTop: 28,
+    padding: 3,
   },
-  profileTypeOptionSelected: {
-    backgroundColor: palette.leaf,
-    borderColor: palette.forest,
-  },
-  profileTypeText: {
-    color: palette.muted,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  profileTypeTextSelected: {
-    color: palette.forest,
-  },
+  profileTypeOption: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 9, flex: 1, justifyContent: 'center', minHeight: 40 },
+  profileTypeOptionSelected: { backgroundColor: 'rgba(63,214,162,0.16)' },
+  profileTypeText: { color: ink.muted, fontSize: 14, fontWeight: '500' },
+  profileTypeTextSelected: { color: ink.accent },
   input: {
-    backgroundColor: palette.white,
-    borderColor: palette.line,
-    borderRadius: 7,
+    backgroundColor: ink.panel,
+    borderBottomColor: ink.edge,
+    borderBottomWidth: 1,
+    borderColor: ink.edge,
+    borderCurve: 'continuous',
+    borderRadius: 12,
     borderWidth: 1,
-    color: palette.ink,
-    fontSize: 15,
-    minHeight: 49,
-    paddingHorizontal: 14,
+    color: ink.text,
+    fontSize: 16,
+    minHeight: 54,
+    paddingHorizontal: 16,
   },
-  adultRow: {
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 17,
-    minHeight: 40,
-  },
+  codeInput: { fontSize: 26, fontVariant: ['tabular-nums'], fontWeight: '300', letterSpacing: 8, textAlign: 'center' },
+  adultRow: { alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', gap: 12, marginTop: 20, minHeight: 44 },
   checkbox: {
     alignItems: 'center',
-    backgroundColor: palette.white,
-    borderColor: palette.line,
-    borderRadius: 4,
+    borderColor: ink.edge,
+    borderRadius: 6,
     borderWidth: 1,
-    height: 21,
+    height: 22,
     justifyContent: 'center',
-    width: 21,
+    width: 22,
   },
-  checkboxChecked: {
-    backgroundColor: palette.forest,
-    borderColor: palette.forest,
-  },
-  adultText: {
-    color: palette.ink,
-    fontSize: 13,
-  },
-  resendButton: {
-    alignSelf: 'flex-start',
-    marginTop: 10,
-    paddingVertical: 6,
-  },
-  resendText: {
-    color: palette.forest,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  error: {
-    color: '#A83B28',
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 14,
-  },
+  checkboxChecked: { backgroundColor: ink.accent, borderColor: ink.accent },
+  adultText: { color: ink.muted, flex: 1, fontSize: 13 },
+  resendButton: { alignSelf: 'flex-start', minHeight: 40, justifyContent: 'center' },
+  resendText: { color: ink.accent, fontSize: 13, fontWeight: '500' },
+  error: { color: ink.error, fontSize: 13, lineHeight: 19, marginTop: 16 },
   notice: {
-    backgroundColor: '#E8F0E6',
-    borderRadius: 6,
-    color: palette.forest,
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 14,
-    padding: 12,
+    backgroundColor: 'rgba(63,214,162,0.1)',
+    borderCurve: 'continuous',
+    borderRadius: 12,
+    color: ink.accent,
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 16,
+    overflow: 'hidden',
+    padding: 14,
   },
-  messageBox: {
-    backgroundColor: '#F3E8D9',
-    borderRadius: 6,
-    marginTop: 18,
-    padding: 12,
-  },
-  messageText: {
-    color: '#765331',
-    fontSize: 12,
-    lineHeight: 18,
-  },
+  messageBox: { backgroundColor: 'rgba(255,190,110,0.12)', borderCurve: 'continuous', borderRadius: 12, marginTop: 20, padding: 14 },
+  messageText: { color: '#F0C48A', fontSize: 13, lineHeight: 19 },
   primaryButton: {
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: palette.forest,
-    borderRadius: 7,
+    alignSelf: 'stretch',
+    backgroundColor: ink.accent,
+    borderCurve: 'continuous',
+    borderRadius: 12,
+    boxShadow: '0 0 28px rgba(63,214,162,0.35)',
     justifyContent: 'center',
-    marginTop: 22,
-    minHeight: 48,
-    minWidth: 146,
-    paddingHorizontal: 18,
+    marginTop: 28,
+    minHeight: 54,
   },
-  buttonDisabled: {
-    opacity: 0.55,
-  },
-  primaryLabel: {
-    color: palette.white,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  modeButton: {
-    alignSelf: 'flex-start',
-    justifyContent: 'center',
-    marginTop: 15,
-    minHeight: 40,
-  },
-  modeText: {
-    color: palette.forest,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  separator: {
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    gap: 11,
-    marginTop: 19,
-    width: '100%',
-  },
-  separatorLine: {
-    backgroundColor: palette.line,
-    flex: 1,
-    height: 1,
-  },
-  separatorLabel: {
-    color: palette.muted,
-    fontSize: 10,
-    fontWeight: '700',
-  },
+  buttonDisabled: { opacity: 0.5 },
+  primaryLabel: { color: ink.bg, fontSize: 16, fontWeight: '600' },
+  modeButton: { alignItems: 'center', alignSelf: 'center', justifyContent: 'center', marginTop: 18, minHeight: 44 },
+  modeText: { color: ink.muted, fontSize: 14 },
+  separator: { alignItems: 'center', flexDirection: 'row', gap: 12, marginTop: 24, width: '100%' },
+  separatorLine: { backgroundColor: ink.edge, flex: 1, height: StyleSheet.hairlineWidth },
+  separatorLabel: { color: ink.faint, fontSize: 12 },
   googleButton: {
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: palette.white,
-    borderColor: palette.line,
-    borderRadius: 7,
+    alignSelf: 'stretch',
+    borderColor: ink.edge,
+    borderCurve: 'continuous',
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: 'row',
     gap: 10,
     justifyContent: 'center',
-    marginTop: 14,
-    minHeight: 47,
-    paddingHorizontal: 15,
+    marginTop: 24,
+    minHeight: 52,
   },
-  googleMark: {
-    color: '#4285F4',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  googleLabel: {
-    color: palette.ink,
-    fontSize: 13,
-    fontWeight: '700',
-  },
+  googleMark: { color: ink.text, fontSize: 16, fontWeight: '700' },
+  googleLabel: { color: ink.text, fontSize: 15, fontWeight: '500' },
   signedIn: {
     alignItems: 'flex-start',
-    backgroundColor: palette.white,
-    borderColor: palette.line,
-    borderRadius: 8,
+    backgroundColor: ink.panel,
+    borderColor: ink.edge,
+    borderCurve: 'continuous',
+    borderRadius: 16,
     borderWidth: 1,
-    maxWidth: 480,
-    padding: 21,
+    padding: 22,
   },
   successIcon: {
     alignItems: 'center',
-    backgroundColor: palette.leaf,
+    backgroundColor: 'rgba(63,214,162,0.14)',
     borderRadius: 22,
     height: 44,
     justifyContent: 'center',
     marginBottom: 16,
     width: 44,
   },
-  supporting: {
-    color: palette.muted,
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: 12,
-  },
+  supporting: { color: ink.muted, fontSize: 14, lineHeight: 20, marginTop: 12 },
   secondaryButton: {
     alignItems: 'center',
-    borderColor: palette.line,
-    borderRadius: 7,
+    borderColor: ink.edge,
+    borderCurve: 'continuous',
+    borderRadius: 12,
     borderWidth: 1,
     justifyContent: 'center',
-    marginTop: 19,
-    minHeight: 44,
-    paddingHorizontal: 15,
+    marginTop: 20,
+    minHeight: 48,
+    paddingHorizontal: 18,
   },
-  secondaryLabel: {
-    color: palette.ink,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  loadingRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 9,
-    marginTop: 18,
-  },
-  loadingText: {
-    color: palette.muted,
-    fontSize: 12,
-  },
-});
+  secondaryLabel: { color: ink.text, fontSize: 14, fontWeight: '500' },
+  loadingRow: { alignItems: 'center', flexDirection: 'row', gap: 9, marginTop: 18 },
+  loadingText: { color: ink.muted, fontSize: 13 },
+}));
 
 function isGatewayTimeout(error: unknown) {
   if (!error || typeof error !== 'object') return false;

@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { type Href, useRouter } from 'expo-router';
 import { Globe2, LockKeyhole, ShieldCheck, UserRound } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -10,8 +10,8 @@ import { palette } from '@/ui/palette';
 
 const settings = [
   { title: 'Language', detail: 'English · preview', icon: Globe2 },
-  { title: 'Account and sign-in', detail: 'Account setup is not connected', icon: UserRound },
-  { title: 'Data and privacy', detail: 'Sharing controls will live here', icon: LockKeyhole },
+  { title: 'Account and sign-in', detail: 'Manage your account details and sign-in', icon: UserRound },
+  { title: 'Data and privacy', detail: 'Review consent and sharing controls', icon: LockKeyhole },
 ];
 
 export default function ProfileScreen() {
@@ -48,7 +48,7 @@ export default function ProfileScreen() {
   return (
     <Page>
       <PreviewNotice />
-      <PageHeading eyebrow="YOUR ACCOUNT" title="Profile and privacy">
+      <PageHeading eyebrow="Your account" title="Profile and privacy">
         Manage your account, language, and who can access your health record.
       </PageHeading>
 
@@ -61,7 +61,7 @@ export default function ProfileScreen() {
       </View>
       {session ? (
         <View style={styles.accountActions}>
-          <Pressable accessibilityRole="button" onPress={() => router.push('/auth')} style={styles.authButton}>
+          <Pressable accessibilityRole="button" onPress={() => router.push('/account' as Href)} style={styles.authButton}>
             <Text style={styles.authButtonText}>Open your account</Text>
           </Pressable>
           <Pressable accessibilityRole="button" onPress={() => void signOut()} style={[styles.authButton, styles.signOutButton]}>

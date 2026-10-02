@@ -34,7 +34,25 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Ihssan to access a profile photo."
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Allow Ihssan to count steps and show your activity trends."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Ihssan to use the camera to scan QR codes."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

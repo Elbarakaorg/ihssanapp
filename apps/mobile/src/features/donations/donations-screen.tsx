@@ -8,7 +8,7 @@ export default function DonationsScreen() {
   return (
     <Page>
       <PreviewNotice />
-      <PageHeading eyebrow="IHSSAN FOUNDATION" title="Give with purpose">
+      <PageHeading eyebrow="Ihssan Foundation" title="Give with purpose">
         Support verified cases across Morocco. Donations and fund distribution will be handled by Ihssan's foundation.
       </PageHeading>
 

@@ -97,7 +97,7 @@ apps/
     src/features/                   # overview, patients, scan, document capture
   admin-portal/
     src/routes.tsx                  # one route table; protected layouts are presentation guards
-    src/features/                   # verification, metric catalog, donations, audit
+    src/features/                   # owner, support, verification, metric catalog, articles, donations, audit
   api/                              # server-side modular monolith
     src/modules/                    # identity, health, sharing, directory, donations
 packages/
@@ -157,11 +157,20 @@ Doctor portal (React Router)
 
 Admin portal (React Router)
   /sign-in                         # staff authentication and MFA
-  /queue                           # role-scoped work queues
+  /owner                            # platform owner: oversight and pending queues
+  /team                             # platform owner only: add, permission changes, revoke support access
+  /team/:membershipId               # platform owner only: support member details and access history
+  /support                          # support.requests.manage: assigned/open requests only
+  /support/:requestId               # support thread and status actions
+  /queue                            # permission-scoped work queues
   /providers/:providerId/review    # clinician verification; pharmacy onboarding later
   /metrics                         # Metric Catalog and review-due queue
   /metrics/:metricId               # metric versions, sources, and content
   /metrics/:metricId/edit          # draft editor; never directly publishes
+  /articles                        # editorial list and review queue
+  /articles/new                    # article draft editor
+  /articles/:articleId             # article versions, source citations, review state
+  /articles/:articleId/edit        # author-owned draft editor
   /donations/:caseId/review        # case verification and moderation history
   /audit                           # purpose-limited, audited read-only review
 
@@ -208,8 +217,13 @@ The following is the recommended information architecture, to validate with Moro
 
 ### Internal admin portal
 
-- **Work queues:** clinician/pharmacy verification (pharmacy operations are future scope), donation-case review, metric-content review/publication, and security/access audit. Keep each queue scoped to the operator's permission; do not make general patient health browsing an admin capability.
-- **Metric Catalog UX:** search/select metric; edit a draft definition/content; attach evidence and applicability; preview Arabic/French/English; submit for clinician review; show reviewer comments and required fields; publish only an approved immutable version with effective date; inspect change history and roll back. Clearly distinguish technical administrator, clinical editor, clinical reviewer, and publisher permissions. Provide a visible review-due/withdrawn-source queue.
+- **Platform owner workspace:** the owner has the only `admin.memberships.manage` authority. The `/team` area adds an existing account as a support administrator, assigns an explicit least-privilege permission set, displays active/revoked membership history, and allows immediate revocation or permission changes. Support admins cannot delegate access, manage memberships, or promote another owner. Bootstrap the first owner once through the documented privileged database procedure.
+- **Support workspace:** `/support` and `/queue` show only work allowed by the support member's permissions: customer requests, metric/article drafts, provider verification, or donation review. The UI hides inaccessible routes, but the API/RLS checks enforce every action. Support administrators never receive broad health-record browsing by virtue of admin membership.
+- **Doctor plus support:** one person may be both a verified clinician and a support administrator because clinician status and admin membership are separate records. Metric/article editing is a support permission; clinical review also requires an active verified clinician identity and a different author. A doctor profile alone grants no admin access, and support membership alone grants no clinician or patient access.
+- **Support inbox:** customer requests are private to their requester and permitted support staff. Staff may assign, reply, change status, and close requests with audit history. Ticket identity and requester ownership are immutable, and assignments must target an active support member.
+- **Metric Catalog UX:** search/select metric; edit a draft definition/content; attach evidence and applicability; preview Arabic/French/English; submit for clinical review; show reviewer comments and required fields; publish only an approved immutable version with effective date; inspect change history and roll back. Provide a visible review-due/withdrawn-source queue.
+- **Articles are separate from metrics:** editors create localized blog/article versions, sources, category, and summaries. Articles publish through their own draft/review/publish workflow and Home feed; they do not become metric definitions or change test ranges.
+- **Support inbox:** customer requests are private to their requester and permitted support staff. Staff assign, respond, change status, and close requests with audit history. Do not collect medical records in general support messages; direct users to secure clinician/report-sharing flows instead.
 - **Moderation and audit:** case verification shows evidence and decision history; access/audit views are read-only, purpose-limited, and themselves audited. High-impact actions require confirmation and an attributable reason.
 
 ### Future booking, consultation, and pharmacy UX
@@ -331,7 +345,8 @@ Required checks for every change:
 - Type checking, linting, formatting, unit tests, API contract checks, and migration validation in CI.
 - Domain tests for metric conversions/validation, consent transitions, appointment boundaries/time zones, and donation/payment state transitions.
 - Integration tests for database constraints, transactions, RLS, webhook idempotency, and object-storage permissions.
-- End-to-end tests for patient, verified clinician, administrator, and donor workflows, including denied access, grant-QR replay/revocation, report-link expiry/revocation, account switching, and document-scan review before persistence.
+- End-to-end tests for patient, verified clinician, platform owner, scoped support admin, and donor workflows, including denied access, grant-QR replay/revocation, report-link expiry/revocation, account switching, and document-scan review before persistence.
+- Authorization tests prove support admins cannot manage memberships, patient records require a patient grant, clinician review requires separate verified status, and only the platform owner can grant/revoke support permissions.
 - Test Metric Catalog role separation, required source citations/reviews, version publication, future-only effective dates, and rollback; no unapproved range or alert can become active.
 - For booking, test concurrent claims, hold expiry, time-zone boundaries, calendar sync retries/conflicts, duplicate events, cancellations, and reconciliation with the authoritative schedule.
 - For consultations and pharmacy orders, test payment callback idempotency, refund/reversal paths, failed calls, stock reservation/release, stale inventory rejection, pharmacist review, and patient-approved substitutions.
@@ -353,7 +368,7 @@ Create the monorepo/workspaces, Expo app, API service, PostgreSQL migration pipe
 
 ### Phase 2: Identity and authorization spine
 
-Implement sign-in, recovery, profiles, verified clinician memberships, patient-care consent, authorization checks, audit events, and negative access tests. Deliver separate doctor and admin portals with MFA for staff; doctor access is limited to records the patient has explicitly shared. Implement short-lived, single-use profile QR challenges that establish an ongoing, no-automatic-expiry grant only after patient confirmation. Add patient-visible active shares, access history, and immediate revocation. Let doctors save a private label/list/history reference, while rechecking authorization on every view. Implement report share previews and link/QR/PDF/text export with suitable revocation/expiry and user warnings. **Exit:** tests cover invalid/replayed QR, revoked grants, clinician suspension, stale saved references, report-link expiry, and cross-patient denial.
+Implement sign-in, recovery, profiles, verified clinician memberships, patient-care consent, authorization checks, audit events, and negative access tests. Bootstrap one platform owner and build owner-managed support-admin memberships with scoped permissions, MFA, grant/revoke history, and no self-service elevation. Deliver separate doctor and admin portals; doctor access is limited to records the patient has explicitly shared. Implement short-lived, single-use profile QR challenges that establish an ongoing, no-automatic-expiry grant only after patient confirmation. Add patient-visible active shares, access history, and immediate revocation. Let doctors save a private label/list/history reference, while rechecking authorization on every view. Implement report share previews and link/QR/PDF/text export with suitable revocation/expiry and user warnings. **Exit:** tests cover invalid/replayed QR, revoked grants, clinician suspension, stale saved references, report-link expiry, support-role escalation denial, and cross-patient denial.
 
 ### Phase 3: First health-tracking vertical slice
 
@@ -394,6 +409,7 @@ Keep the initial service adult-only. Before enabling child profiles, obtain juri
 ## Documentation to Maintain
 
 - `docs/implementation-plan.md`: this architecture and delivery baseline.
+- `docs/admin-operating-model.md`: owner/support membership, permission matrix, bootstrap, and admin operating procedures.
 - Architecture decision records for identity provider, database hosting, API framework, maps, payments, and data representation.
 - Data inventory and authorization matrix, including examples of allowed and denied access.
 - Developer setup, environment variables (names only, never values), migrations, test commands, and deployment process.

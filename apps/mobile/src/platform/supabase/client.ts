@@ -29,7 +29,7 @@ export const supabaseClient = supabaseUrl && publishableKey
         storage: Platform.OS === 'web' ? browserStorage : secureStorage,
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: Platform.OS === 'web',
+        detectSessionInUrl: false,
       },
     })
   : null;

@@ -1,21 +1,64 @@
 import { useRouter } from 'expo-router';
-import { ArrowRight, Heart, MapPin, ShieldCheck } from 'lucide-react-native';
+import { ArrowRight, Heart, MapPin, QrCode, ShieldCheck } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useAuth } from '@/features/auth/auth-provider';
+import ActivityTracker from '@/features/home/activity-tracker';
+import { listMeasurementsForCurrentUser } from '@/features/health/measurement-repository';
+import { summarizeMeasurements } from '@/features/health/measurement-summary';
+import { getCurrentUserProfile } from '@/features/profile/profile-repository';
 import { BrandMark, Page, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { palette } from '@/ui/palette';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { session } = useAuth();
+  const [displayName, setDisplayName] = useState('');
+  const [summary, setSummary] = useState({ count: 0, latestMeasurementDate: null as string | null });
+  const [summaryReady, setSummaryReady] = useState(false);
+
+  useEffect(() => {
+    if (!session) {
+      setDisplayName('');
+      setSummary({ count: 0, latestMeasurementDate: null });
+      setSummaryReady(true);
+      return;
+    }
+
+    let active = true;
+    setSummaryReady(false);
+
+    void Promise.all([getCurrentUserProfile(), listMeasurementsForCurrentUser()]).then(([profile, measurements]) => {
+      if (!active) return;
+      setDisplayName(profile.display_name);
+      setSummary(summarizeMeasurements(measurements));
+      setSummaryReady(true);
+    }).catch(() => {
+      if (!active) return;
+      setDisplayName('');
+      setSummary({ count: 0, latestMeasurementDate: null });
+      setSummaryReady(true);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [session]);
 
   return (
     <Page>
-      <BrandMark />
+      <View style={styles.topNav}>
+        <BrandMark />
+        <Pressable accessibilityLabel="Scan a QR code" accessibilityRole="button" onPress={() => router.push('/scan')} style={styles.scanButton}>
+          <QrCode color={palette.forest} size={19} strokeWidth={1.9} />
+        </Pressable>
+      </View>
       <PreviewNotice />
 
       <View style={styles.intro}>
-        <Text style={styles.eyebrow}>YOUR HEALTH, YOUR PACE</Text>
-        <Text style={styles.title}>A clearer view{'\n'}of your health.</Text>
+        <Text style={styles.eyebrow}>{session ? `WELCOME BACK${displayName ? `, ${displayName}` : ''}` : 'YOUR HEALTH, YOUR PACE'}</Text>
+        <Text style={styles.title}>{session ? 'Your health,\nyour pace.' : 'A clearer view\nof your health.'}</Text>
         <Text style={styles.description}>
           Keep your test results together, learn what each test measures, and choose when to share them with a doctor.
         </Text>
@@ -25,27 +68,50 @@ export default function HomeScreen() {
         <View style={styles.recordTop}>
           <View>
             <Text style={styles.cardEyebrow}>YOUR HEALTH RECORD</Text>
-            <Text style={styles.recordCount}>Ready when you are</Text>
+            <Text style={styles.recordCount}>
+              {!summaryReady ? 'Loading your record' : summary.count ? `${summary.count} ${summary.count === 1 ? 'result' : 'results'} recorded` : 'Ready when you are'}
+            </Text>
           </View>
           <View style={styles.recordIcon}>
             <Heart color={palette.forest} size={21} strokeWidth={1.8} />
           </View>
         </View>
         <View style={styles.rule} />
-        <Text style={styles.emptyText}>No measurements yet. Your results will appear here after you add them.</Text>
-        <View style={styles.accountActions}>
-          <Pressable accessibilityRole="button" onPress={() => router.navigate('/auth')} style={styles.primaryAccountButton}>
-            <Text style={styles.primaryAccountText}>Sign in to your account</Text>
+        <Text style={styles.emptyText}>
+          {!session
+            ? 'Sign in to see your saved measurements and keep your health history in one place.'
+            : summary.count
+              ? `Your latest result is dated ${new Date(summary.latestMeasurementDate ?? '').toLocaleDateString()}.`
+              : 'No measurements saved yet. Add your first result to start your health timeline.'}
+        </Text>
+        {session ? (
+          <View style={styles.accountActions}>
+            <Pressable accessibilityRole="button" onPress={() => router.navigate('/health')} style={styles.primaryAccountButton}>
+              <Text style={styles.primaryAccountText}>{summary.count ? 'View health record' : 'Add a result'}</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => router.navigate('/profile')} style={styles.secondaryAccountButton}>
+              <Text style={styles.secondaryAccountText}>Your account</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={styles.accountActions}>
+            <Pressable accessibilityRole="button" onPress={() => router.navigate('/auth')} style={styles.primaryAccountButton}>
+              <Text style={styles.primaryAccountText}>Sign in</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => router.navigate({ pathname: '/auth', params: { mode: 'sign-up' } })} style={styles.secondaryAccountButton}>
+              <Text style={styles.secondaryAccountText}>Create account</Text>
+            </Pressable>
+          </View>
+        )}
+        {session ? null : (
+          <Pressable accessibilityRole="button" onPress={() => router.navigate('/health')} style={styles.textAction}>
+            <Text style={styles.textActionLabel}>Explore health tracking</Text>
+            <ArrowRight color={palette.forest} size={17} />
           </Pressable>
-          <Pressable accessibilityRole="button" onPress={() => router.navigate('/auth')} style={styles.secondaryAccountButton}>
-            <Text style={styles.secondaryAccountText}>Create an account</Text>
-          </Pressable>
-        </View>
-        <Pressable accessibilityRole="button" onPress={() => router.navigate('/health')} style={styles.textAction}>
-          <Text style={styles.textActionLabel}>Explore health tracking</Text>
-          <ArrowRight color={palette.forest} size={17} />
-        </Pressable>
+        )}
       </View>
+
+      <ActivityTracker onOpen={() => router.push('/activity')} />
 
       <SectionHeading title="Start here" detail="Choose a next step" />
       <View style={styles.actionGrid}>
@@ -69,7 +135,7 @@ export default function HomeScreen() {
         <ShieldCheck color={palette.forest} size={19} strokeWidth={1.8} />
         <View style={styles.privacyCopy}>
           <Text style={styles.privacyTitle}>Your record is yours to share</Text>
-          <Text style={styles.privacyBody}>Doctor access starts with your approval. This preview does not connect to an account or save health data.</Text>
+          <Text style={styles.privacyBody}>Doctor access starts with your approval. Your account shows its saved results here.</Text>
         </View>
       </View>
     </Page>
@@ -77,9 +143,11 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  topNav: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  scanButton: { alignItems: 'center', backgroundColor: palette.white, borderRadius: 21, height: 42, justifyContent: 'center', shadowColor: '#1C1C1E', shadowOffset: { height: 1, width: 0 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, width: 42 },
   intro: {
-    marginBottom: 25,
-    paddingTop: 5,
+    marginBottom: 28,
+    paddingTop: 8,
   },
   eyebrow: {
     color: palette.coral,
@@ -91,9 +159,9 @@ const styles = StyleSheet.create({
   title: {
     color: palette.ink,
     fontFamily: 'Georgia',
-    fontSize: 39,
-    fontWeight: '400',
-    lineHeight: 46,
+    fontSize: 38,
+    fontWeight: '700',
+    lineHeight: 44,
   },
   description: {
     color: palette.muted,
@@ -104,8 +172,8 @@ const styles = StyleSheet.create({
   },
   recordCard: {
     backgroundColor: palette.leaf,
-    borderRadius: 8,
-    padding: 20,
+    borderRadius: 16,
+    padding: 21,
   },
   recordTop: {
     alignItems: 'center',
@@ -120,8 +188,8 @@ const styles = StyleSheet.create({
   },
   recordCount: {
     color: palette.ink,
-    fontFamily: 'Georgia',
     fontSize: 23,
+    fontWeight: '700',
     marginTop: 7,
   },
   recordIcon: {
@@ -152,10 +220,10 @@ const styles = StyleSheet.create({
   primaryAccountButton: {
     alignItems: 'center',
     backgroundColor: palette.forest,
-    borderRadius: 7,
+    borderRadius: 11,
     justifyContent: 'center',
-    minHeight: 42,
-    paddingHorizontal: 14,
+    minHeight: 46,
+    paddingHorizontal: 16,
   },
   primaryAccountText: {
     color: palette.white,
@@ -165,10 +233,10 @@ const styles = StyleSheet.create({
   secondaryAccountButton: {
     alignItems: 'center',
     backgroundColor: '#F4F8F4',
-    borderRadius: 7,
+    borderRadius: 11,
     justifyContent: 'center',
-    minHeight: 42,
-    paddingHorizontal: 14,
+    minHeight: 46,
+    paddingHorizontal: 16,
   },
   secondaryAccountText: {
     color: palette.forest,
@@ -196,11 +264,11 @@ const styles = StyleSheet.create({
   actionCard: {
     flexBasis: 220,
     flexGrow: 1,
-    minHeight: 154,
+    minHeight: 160,
   },
   actionTitle: {
     color: palette.ink,
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     marginTop: 15,
   },

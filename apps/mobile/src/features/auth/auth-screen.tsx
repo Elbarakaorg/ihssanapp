@@ -1,4 +1,4 @@
-import { useRouter, Stack } from 'expo-router';
+import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ArrowLeft, Check, ShieldCheck } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -6,13 +6,15 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { useAuth } from './auth-provider';
 import type { ProfileType } from './auth-contract';
 import { normalizeEmailConfirmationToken, validateAuthForm, type AuthMode } from './auth-validation';
+import { getCurrentUserProfile } from '@/features/profile/profile-repository';
 import { Page, PreviewNotice } from '@/ui/patient-ui';
 import { palette } from '@/ui/palette';
 
 export default function AuthScreen() {
   const router = useRouter();
-  const { isConfigured, isReady, session, signIn, signOut, signUp, confirmSignup, resendSignupConfirmation } = useAuth();
-  const [mode, setMode] = useState<AuthMode>('sign-in');
+  const { mode: requestedMode } = useLocalSearchParams<{ mode?: string }>();
+  const { isConfigured, isReady, session, signIn, signInWithGoogle, signOut, signUp, confirmSignup, resendSignupConfirmation } = useAuth();
+  const [mode, setMode] = useState<AuthMode>(requestedMode === 'sign-up' ? 'sign-up' : 'sign-in');
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,6 +25,20 @@ export default function AuthScreen() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
+
+  const continueToAccount = async (expectedType: ProfileType) => {
+    const profile = await getCurrentUserProfile();
+    if (profile.profile_type !== expectedType) {
+      await signOut();
+      throw new Error(`This account is registered as a ${profile.profile_type}. Choose ${profile.profile_type === 'clinician' ? 'Clinician' : 'Patient'} to sign in.`);
+    }
+    if (!profile.setup_completed_at) {
+      router.replace({ pathname: '/auth/complete-profile', params: { profile_type: profile.profile_type } });
+      return;
+    }
+    router.replace(profile.profile_type === 'clinician' ? '/my-patients' : '/(tabs)');
+  };
 
   const handleSubmit = async () => {
     const validation = validateAuthForm({ mode, email, password, displayName, adultConfirmed, profileType });
@@ -48,7 +64,7 @@ export default function AuthScreen() {
         await signIn(pendingSignupEmail, password);
         setPendingSignupEmail(null);
         setConfirmationToken('');
-        router.back();
+        await continueToAccount(profileType);
         return;
       }
 
@@ -62,14 +78,21 @@ export default function AuthScreen() {
         }
 
         await signIn(validation.email, password);
-        router.back();
+        await continueToAccount(profileType);
         return;
       }
 
       await signIn(validation.email, password);
-      router.back();
+      await continueToAccount(profileType);
     } catch (authError) {
-      setError(authError instanceof Error ? authError.message : 'Authentication failed. Please try again.');
+      if (mode === 'sign-up' && isGatewayTimeout(authError)) {
+        setPendingSignupEmail(validation.email);
+        setConfirmationToken('');
+        setError('');
+        setNotice('Sign-up timed out, so we cannot confirm whether your account was created. Check your email for a code; resend it if needed, or return and retry sign-up.');
+      } else {
+        setError(authError instanceof Error ? authError.message : 'Authentication failed. Please try again.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -85,6 +108,22 @@ export default function AuthScreen() {
       setNotice('A new confirmation code has been sent to your email.');
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : 'We could not resend the confirmation code.');
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setGoogleSubmitting(true);
+    setError('');
+    try {
+      await signInWithGoogle(profileType);
+      router.replace({
+        pathname: '/auth/callback',
+        params: { profile_type: profileType },
+      });
+    } catch (authError) {
+      setError(authError instanceof Error ? authError.message : 'Google sign-in could not be started.');
+    } finally {
+      setGoogleSubmitting(false);
     }
   };
 
@@ -110,7 +149,7 @@ export default function AuthScreen() {
           <View style={styles.successIcon}><ShieldCheck color={palette.forest} size={23} /></View>
           <Text style={styles.title}>You're signed in</Text>
           <Text style={styles.description}>{session.identity.email ?? 'Account'}</Text>
-          <Text style={styles.supporting}>This development session is connected to Supabase Auth. Health records are not connected yet.</Text>
+          <Text style={styles.supporting}>Your saved results stay in your account unless you choose to share them with a clinician.</Text>
           <Pressable accessibilityRole="button" disabled={submitting} onPress={() => void signOut()} style={styles.secondaryButton}>
             <Text style={styles.secondaryLabel}>Sign out</Text>
           </Pressable>
@@ -135,9 +174,9 @@ export default function AuthScreen() {
             <View style={styles.loadingRow}><ActivityIndicator color={palette.forest} /><Text style={styles.loadingText}>Restoring session</Text></View>
           ) : null}
 
-          {!pendingSignupEmail && mode === 'sign-up' ? (
+          {!pendingSignupEmail ? (
             <>
-              <Text style={styles.fieldLabel}>Account type</Text>
+              <Text style={styles.fieldLabel}>{mode === 'sign-up' ? 'Account type' : 'Sign in as'}</Text>
               <View style={styles.profileTypeRow}>
                 {(['patient', 'clinician'] as ProfileType[]).map((type) => (
                   <Pressable
@@ -150,7 +189,11 @@ export default function AuthScreen() {
                   </Pressable>
                 ))}
               </View>
+            </>
+          ) : null}
 
+          {!pendingSignupEmail && mode === 'sign-up' ? (
+            <>
               <Text style={styles.fieldLabel}>Display name</Text>
               <TextInput
                 accessibilityLabel="Display name"
@@ -213,6 +256,9 @@ export default function AuthScreen() {
               <Pressable accessibilityRole="button" onPress={() => void handleResendConfirmation()} style={styles.resendButton}>
                 <Text style={styles.resendText}>Resend code</Text>
               </Pressable>
+              <Pressable accessibilityRole="button" onPress={() => { setPendingSignupEmail(null); setConfirmationToken(''); setNotice(''); setError(''); }} style={styles.resendButton}>
+                <Text style={styles.resendText}>Back and retry sign-up</Text>
+              </Pressable>
             </>
           ) : null}
 
@@ -239,6 +285,26 @@ export default function AuthScreen() {
             style={[styles.primaryButton, (submitting || !isConfigured) && styles.buttonDisabled]}>
             {submitting ? <ActivityIndicator color={palette.white} /> : <Text style={styles.primaryLabel}>{pendingSignupEmail ? 'Confirm account' : mode === 'sign-up' ? 'Create account' : 'Sign in'}</Text>}
           </Pressable>
+
+          {!pendingSignupEmail ? (
+            <>
+              <View style={styles.separator}>
+                <View style={styles.separatorLine} />
+                <Text style={styles.separatorLabel}>OR</Text>
+                <View style={styles.separatorLine} />
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                disabled={googleSubmitting || !isConfigured}
+                onPress={() => void handleGoogleSignIn()}
+                style={[styles.googleButton, (googleSubmitting || !isConfigured) && styles.buttonDisabled]}>
+                {googleSubmitting ? <ActivityIndicator color={palette.ink} /> : <>
+                  <Text style={styles.googleMark}>G</Text>
+                  <Text style={styles.googleLabel}>Continue with Google</Text>
+                </>}
+              </Pressable>
+            </>
+          ) : null}
 
           {!pendingSignupEmail ? (
             <Pressable
@@ -424,6 +490,48 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
+  separator: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    gap: 11,
+    marginTop: 19,
+    width: '100%',
+  },
+  separatorLine: {
+    backgroundColor: palette.line,
+    flex: 1,
+    height: 1,
+  },
+  separatorLabel: {
+    color: palette.muted,
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  googleButton: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: palette.white,
+    borderColor: palette.line,
+    borderRadius: 7,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'center',
+    marginTop: 14,
+    minHeight: 47,
+    paddingHorizontal: 15,
+  },
+  googleMark: {
+    color: '#4285F4',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  googleLabel: {
+    color: palette.ink,
+    fontSize: 13,
+    fontWeight: '700',
+  },
   signedIn: {
     alignItems: 'flex-start',
     backgroundColor: palette.white,
@@ -474,3 +582,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 });
+
+function isGatewayTimeout(error: unknown) {
+  if (!error || typeof error !== 'object') return false;
+  const status = 'status' in error ? error.status : undefined;
+  const message = 'message' in error ? String(error.message) : '';
+  return status === 504 || /gateway timeout|\b504\b|timed out/i.test(message);
+}

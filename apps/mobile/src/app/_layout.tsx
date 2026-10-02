@@ -4,19 +4,41 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { AuthProvider } from '@/features/auth/auth-provider';
+import { LocaleProvider } from '@/platform/locale/locale-provider';
 import { supabaseAuthRepository } from '@/platform/auth/supabase-auth-repository';
+import { ThemeProvider, useThemeMode } from '@/platform/theme/theme-provider';
+
+function AppShell() {
+  const { scheme } = useThemeMode();
+
+  return (
+    <>
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: scheme === 'dark' ? '#000000' : '#F2F2F7' } }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="auth/index" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="auth/callback" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="auth/complete-profile" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="account" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="measurement/[metricId]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="scan" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="share/profile" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="my-patients/[grantId]" options={{ presentation: 'card', animation: 'slide_from_right' }} />
+      </Stack>
+    </>
+  );
+}
 
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" />
-      <AuthProvider repository={supabaseAuthRepository}>
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F4F6F2' } }}>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="auth/index" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-          <Stack.Screen name="measurement/[metricId]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-        </Stack>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider repository={supabaseAuthRepository}>
+          <LocaleProvider>
+            <AppShell />
+          </LocaleProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

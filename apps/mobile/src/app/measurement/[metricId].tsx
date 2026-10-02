@@ -1,11 +1,11 @@
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ArrowLeft, Check, ChevronDown } from 'lucide-react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/auth-provider';
-import { isMetricId, localDateString, metricDefinitions, validateMeasurementInput } from '@/features/health/metric-input';
-import { saveMeasurement } from '@/features/health/measurement-repository';
+import { isMetricId, localDateString, metricDefinitions, validateBloodPressureInput, validateMeasurementInput } from '@/features/health/metric-input';
+import { getMetricSupportedUnits, saveCompositeMeasurement, saveMeasurement } from '@/features/health/measurement-repository';
 import { Page, PreviewNotice } from '@/ui/patient-ui';
 import { palette } from '@/ui/palette';
 
@@ -15,12 +15,28 @@ export default function MeasurementEntryScreen() {
   const { session } = useAuth();
   const isSupported = metricId !== undefined && isMetricId(metricId);
   const definition = isSupported ? metricDefinitions[metricId] : null;
+  const [supportedUnits, setSupportedUnits] = useState<string[]>(definition ? [...definition.units] : []);
   const [value, setValue] = useState('');
+  const [systolic, setSystolic] = useState('');
+  const [diastolic, setDiastolic] = useState('');
+  const [glucoseTiming, setGlucoseTiming] = useState('unspecified');
   const [unit, setUnit] = useState(definition?.units[0] ?? '');
   const [date, setDate] = useState(localDateString());
   const [error, setError] = useState('');
   const [review, setReview] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    if (!session || !isSupported) return () => { active = false; };
+    void getMetricSupportedUnits(metricId).then((units) => {
+      if (active && units.length) {
+        setSupportedUnits(units);
+        setUnit((currentUnit) => units.includes(currentUnit) ? currentUnit : units[0]);
+      }
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, [isSupported, metricId, session]);
 
   if (!definition || !isSupported) {
     return (
@@ -36,7 +52,18 @@ export default function MeasurementEntryScreen() {
   }
 
   const handleReview = () => {
-    const result = validateMeasurementInput({ metricId, value, unit, date });
+    if (metricId === 'blood_pressure') {
+      const result = validateBloodPressureInput({ systolic, diastolic, date });
+      if (!result.valid) {
+        setError(result.error);
+        return;
+      }
+      setError('');
+      setReview(true);
+      return;
+    }
+
+    const result = validateMeasurementInput({ metricId, value, unit, date }, undefined, supportedUnits);
     if (!result.valid) {
       setError(result.error);
       return;
@@ -57,12 +84,18 @@ export default function MeasurementEntryScreen() {
 
       <Text style={styles.eyebrow}>{review ? 'CHECK YOUR ENTRY' : 'ADD A RESULT'}</Text>
       <Text style={styles.title}>{review ? 'Review result' : definition.name}</Text>
-      <Text style={styles.description}>{review ? 'Check the details before finishing this preview.' : definition.explanation}</Text>
+      <Text style={styles.description}>{review ? 'Check these details before saving the result to your health record.' : definition.explanation}</Text>
 
       {review ? (
         <View style={styles.reviewCard}>
-          <Text style={styles.fieldLabel}>{definition.fieldLabel}</Text>
-          <Text style={styles.reviewValue}>{value.trim().replace(',', '.')} <Text style={styles.reviewUnit}>{unit}</Text></Text>
+          {metricId === 'blood_pressure' ? <>
+            <Text style={styles.fieldLabel}>Blood pressure</Text>
+            <Text style={styles.reviewValue}>{systolic.trim()} <Text style={styles.reviewUnit}>/</Text> {diastolic.trim()} <Text style={styles.reviewUnit}>mm Hg</Text></Text>
+          </> : <>
+            <Text style={styles.fieldLabel}>{definition.fieldLabel}</Text>
+            <Text style={styles.reviewValue}>{value.trim().replace(',', '.')} <Text style={styles.reviewUnit}>{unit}</Text></Text>
+          </>}
+          {metricId === 'glucose' ? <Text style={styles.helper}>Context: {glucoseTiming.replaceAll('_', ' ')}</Text> : null}
           <View style={styles.divider} />
           <Text style={styles.fieldLabel}>Test date</Text>
           <Text style={styles.reviewDate}>{date}</Text>
@@ -86,13 +119,21 @@ export default function MeasurementEntryScreen() {
               try {
                 setSaving(true);
                 setError('');
-                const numericValue = validateMeasurementInput({ metricId, value, unit, date });
-                if (!numericValue.valid) {
-                  setError(numericValue.error);
-                  return;
+                if (metricId === 'blood_pressure') {
+                  const pressure = validateBloodPressureInput({ systolic, diastolic, date });
+                  if (!pressure.valid) {
+                    setError(pressure.error);
+                    return;
+                  }
+                  await saveCompositeMeasurement(metricId, pressure.componentValues, `${date}T00:00:00+00:00`);
+                } else {
+                  const numericValue = validateMeasurementInput({ metricId, value, unit, date }, undefined, supportedUnits);
+                  if (!numericValue.valid) {
+                    setError(numericValue.error);
+                    return;
+                  }
+                  await saveMeasurement(metricId, numericValue.numericValue, unit, `${date}T00:00:00+00:00`, metricId === 'glucose' ? { timing: glucoseTiming } : {});
                 }
-
-                await saveMeasurement(metricId, numericValue.numericValue, unit, `${date}T00:00:00+00:00`);
                 router.back();
               } catch (saveError) {
                 setError(saveError instanceof Error ? saveError.message : 'The result could not be saved.');
@@ -107,30 +148,29 @@ export default function MeasurementEntryScreen() {
         </View>
       ) : (
         <View style={styles.form}>
-          <Text style={styles.fieldLabel}>{definition.fieldLabel}</Text>
-          <View style={styles.valueRow}>
-            <TextInput
-              accessibilityLabel={definition.fieldLabel}
-              keyboardType="decimal-pad"
-              onChangeText={(nextValue) => {
-                setValue(nextValue);
-                setError('');
-              }}
-              placeholder="Enter result"
-              placeholderTextColor="#8A958E"
-              style={styles.valueInput}
-              value={value}
-            />
-            {definition.units.length === 1 ? (
-              <View style={styles.fixedUnit}><Text style={styles.fixedUnitText}>{definition.units[0]}</Text></View>
-            ) : null}
-          </View>
+          {metricId === 'blood_pressure' ? <>
+            <Text style={styles.fieldLabel}>Systolic (upper number)</Text>
+            <View style={styles.valueRow}><TextInput accessibilityLabel="Systolic blood pressure" keyboardType="number-pad" onChangeText={setSystolic} placeholder="120" placeholderTextColor="#8A958E" style={styles.valueInput} value={systolic} /><View style={styles.fixedUnit}><Text style={styles.fixedUnitText}>mm Hg</Text></View></View>
+            <Text style={styles.fieldLabel}>Diastolic (lower number)</Text>
+            <View style={styles.valueRow}><TextInput accessibilityLabel="Diastolic blood pressure" keyboardType="number-pad" onChangeText={setDiastolic} placeholder="80" placeholderTextColor="#8A958E" style={styles.valueInput} value={diastolic} /><View style={styles.fixedUnit}><Text style={styles.fixedUnitText}>mm Hg</Text></View></View>
+          </> : <>
+            <Text style={styles.fieldLabel}>{definition.fieldLabel}</Text>
+            <View style={styles.valueRow}>
+              <TextInput accessibilityLabel={definition.fieldLabel} keyboardType="decimal-pad" onChangeText={(nextValue) => { setValue(nextValue); setError(''); }} placeholder="Enter result" placeholderTextColor="#8A958E" style={styles.valueInput} value={value} />
+              {supportedUnits.length === 1 ? <View style={styles.fixedUnit}><Text style={styles.fixedUnitText}>{supportedUnits[0]}</Text></View> : null}
+            </View>
+          </>}
 
-          {definition.units.length > 1 ? (
+          {metricId === 'glucose' ? <>
+            <Text style={styles.fieldLabel}>When was the test taken?</Text>
+            <View style={styles.unitOptions}>{[['unspecified', 'Not specified'], ['fasting', 'Fasting'], ['postprandial_1_2h', '1-2h after meal'], ['random', 'Other time']].map(([option, label]) => <Pressable accessibilityRole="button" accessibilityState={{ selected: glucoseTiming === option }} key={option} onPress={() => setGlucoseTiming(option)} style={[styles.unitOption, glucoseTiming === option && styles.unitOptionSelected]}><Text style={[styles.unitOptionText, glucoseTiming === option && styles.unitOptionTextSelected]}>{label}</Text></Pressable>)}</View>
+          </> : null}
+
+          {supportedUnits.length > 1 ? (
             <>
               <Text style={styles.fieldLabel}>Unit shown on your test</Text>
               <View style={styles.unitOptions}>
-                {definition.units.map((option) => (
+                {supportedUnits.map((option) => (
                   <Pressable
                     accessibilityRole="button"
                     accessibilityState={{ selected: unit === option }}
@@ -170,7 +210,7 @@ export default function MeasurementEntryScreen() {
           <Pressable accessibilityRole="button" onPress={handleReview} style={styles.primaryButton}>
             <Text style={styles.primaryLabel}>Review result</Text>
           </Pressable>
-          <Text style={styles.formFooter}>No clinical ranges or interpretation are shown in this preview.</Text>
+          <Text style={styles.formFooter}>Clinical ranges and interpretation will appear only after clinician-approved metric guidance is published.</Text>
         </View>
       )}
     </Page>

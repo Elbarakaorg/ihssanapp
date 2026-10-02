@@ -1,5 +1,11 @@
 import type { AuthRepository, AuthSession, ProfileType } from '@/features/auth/auth-contract';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
+import { Platform } from 'react-native';
+
 import { supabaseClient } from '@/platform/supabase/client';
+
+if (Platform.OS !== 'web') WebBrowser.maybeCompleteAuthSession();
 
 function toAuthSession(session: { user: { id: string; email?: string } } | null): AuthSession | null {
   if (!session) return null;
@@ -30,6 +36,92 @@ export const supabaseAuthRepository: AuthRepository = {
     });
 
     return () => data.subscription.unsubscribe();
+  },
+
+  async signInWithGoogle(profileType?: ProfileType) {
+    if (!supabaseClient) throw new Error('Authentication is not configured.');
+
+    const popup = Platform.OS === 'web'
+      ? window.open('about:blank', 'ihssan-google-auth', 'popup,width=480,height=680')
+      : null;
+    if (Platform.OS === 'web' && !popup) throw new Error('Allow pop-ups to continue with Google.');
+    const oauthChannelId = Platform.OS === 'web' ? crypto.randomUUID() : undefined;
+
+    const redirectTo = Linking.createURL('auth/callback', {
+      queryParams: {
+        ...(profileType ? { profile_type: profileType } : {}),
+        ...(oauthChannelId ? { oauth_channel: oauthChannelId } : {}),
+      },
+    });
+    const { data, error } = await supabaseClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo,
+        skipBrowserRedirect: true,
+        queryParams: { prompt: 'select_account' },
+      },
+    });
+
+    if (error) {
+      popup?.close();
+      throw error;
+    }
+    if (!data.url) {
+      popup?.close();
+      throw new Error('Google sign-in could not be started.');
+    }
+
+    if (Platform.OS === 'web' && popup) {
+      const code = await new Promise<string>((resolve, reject) => {
+        const channel = new BroadcastChannel(`ihssan-google-auth-${oauthChannelId}`);
+        const finishWith = (data: { source?: string; code?: string; error?: string }) => {
+          if (data.source !== 'ihssan-google-auth') return;
+          finish(() => data.error
+            ? reject(new Error(data.error))
+            : data.code
+              ? resolve(data.code)
+              : reject(new Error('Google sign-in returned an invalid response.')));
+        };
+        const onMessage = (event: MessageEvent<{ source?: string; code?: string; error?: string }>) => {
+          if (event.origin !== window.location.origin || event.source !== popup || event.data?.source !== 'ihssan-google-auth') return;
+          finishWith(event.data);
+        };
+        channel.onmessage = (event: MessageEvent<{ source?: string; code?: string; error?: string }>) => finishWith(event.data);
+        const closeCheck = window.setInterval(() => {
+          if (popup.closed) finish(() => reject(new Error('Google sign-in was cancelled.')));
+        }, 500);
+        const timeout = window.setTimeout(() => {
+          popup.close();
+          finish(() => reject(new Error('Google sign-in timed out. Please try again.')));
+        }, 120000);
+        const finish = (callback: () => void) => {
+          window.removeEventListener('message', onMessage);
+          window.clearInterval(closeCheck);
+          window.clearTimeout(timeout);
+          channel.close();
+          callback();
+        };
+
+        window.addEventListener('message', onMessage);
+        popup.location.href = data.url;
+      });
+      const { error: exchangeError } = await supabaseClient.auth.exchangeCodeForSession(code);
+      if (exchangeError) throw exchangeError;
+      return;
+    }
+
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    if (result.type !== 'success') throw new Error('Google sign-in was cancelled.');
+
+    const { queryParams } = Linking.parse(result.url);
+    const callbackError = queryParams?.error_description ?? queryParams?.error;
+    if (typeof callbackError === 'string') throw new Error(callbackError);
+
+    const code = queryParams?.code;
+    if (typeof code !== 'string') throw new Error('Google sign-in returned an invalid response.');
+
+    const { error: exchangeError } = await supabaseClient.auth.exchangeCodeForSession(code);
+    if (exchangeError) throw exchangeError;
   },
 
   async signIn(email, password) {
@@ -66,6 +158,13 @@ export const supabaseAuthRepository: AuthRepository = {
     if (!supabaseClient) throw new Error('Authentication is not configured.');
 
     const { error } = await supabaseClient.auth.resend({ type: 'signup', email });
+    if (error) throw error;
+  },
+
+  async updatePassword(password) {
+    if (!supabaseClient) throw new Error('Authentication is not configured.');
+
+    const { error } = await supabaseClient.auth.updateUser({ password });
     if (error) throw error;
   },
 

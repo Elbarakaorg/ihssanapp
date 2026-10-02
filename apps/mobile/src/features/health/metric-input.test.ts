@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { validateMeasurementInput, type MeasurementInput } from './metric-input';
+import { validateBloodPressureInput, validateMeasurementInput, type MeasurementInput } from './metric-input';
 
 const baseInput: MeasurementInput = {
   metricId: 'glucose',
@@ -46,5 +46,20 @@ describe('validateMeasurementInput', () => {
       valid: false,
       error: 'The test date cannot be in the future.',
     });
+  });
+});
+
+describe('validateBloodPressureInput', () => {
+  it('accepts systolic and diastolic values together', () => {
+    expect(validateBloodPressureInput({ systolic: '122', diastolic: '78', date: '2026-09-25' }, '2026-09-26')).toEqual({
+      valid: true,
+      componentValues: { systolic: 122, diastolic: 78 },
+    });
+  });
+
+  it('rejects missing, implausible, and future pressure entries', () => {
+    expect(validateBloodPressureInput({ systolic: '', diastolic: '80', date: '2026-09-25' }, '2026-09-26').valid).toBe(false);
+    expect(validateBloodPressureInput({ systolic: '301', diastolic: '80', date: '2026-09-25' }, '2026-09-26').valid).toBe(false);
+    expect(validateBloodPressureInput({ systolic: '120', diastolic: '80', date: '2026-09-27' }, '2026-09-26').valid).toBe(false);
   });
 });

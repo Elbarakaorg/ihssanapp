@@ -31,7 +31,7 @@ export function Field({ label, ...props }: TextInputProps & { label: string }) {
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <TextInput accessibilityLabel={label} placeholderTextColor={palette.muted} {...props} style={[styles.input, props.multiline && styles.multiline]} />
+      <TextInput accessibilityLabel={label} placeholderTextColor={palette.muted} {...props} value={props.value ?? ''} style={[styles.input, props.multiline && styles.multiline]} />
     </View>
   );
 }

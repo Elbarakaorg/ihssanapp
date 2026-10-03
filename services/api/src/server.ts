@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 import { createApi } from './app.js';
 import { createCareService } from './care-service.js';
 import { createHirassaClient } from './guard.js';
+import { createOpenAiCvExtractor } from './cv-extract.js';
 import { createGooglePlacesClient } from './places.js';
 import { createResendInvitationMailer } from './invitation-mailer.js';
 import { createSupabaseDataAccess } from './supabase-data-access.js';
@@ -44,6 +45,7 @@ const careService = createCareService({
     ? createHirassaClient({ guardsUrl: hirassaUrl, apiKey: hirassaKey, authHeader: process.env.HIRASSA_AUTH_HEADER })
     : null,
 });
-const app = createApi(createSupabaseDataAccess(supabaseUrl, publishableKey), allowedOrigins, invitationMailer, careService);
+const app = createApi(createSupabaseDataAccess(supabaseUrl, publishableKey), allowedOrigins, invitationMailer, careService,
+  createOpenAiCvExtractor({ apiKey: process.env.OPENAI_API_KEY, model: process.env.AI_MODEL }));
 
 serve({ fetch: app.fetch, hostname: '0.0.0.0', port });

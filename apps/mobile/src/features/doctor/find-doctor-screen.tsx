@@ -1,11 +1,12 @@
 import { type Href, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, Text } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { RemoteImage } from '@/features/doctor/doctor-image';
 import { type DoctorSummary, searchDoctors } from '@/features/doctor/doctor-api';
 import { BackLink, Field, Message, doctorStyles as s } from '@/features/doctor/ui';
 import { Page } from '@/ui/patient-ui';
-import { useScheme } from '@/ui/palette';
+import { themedStyles, useScheme } from '@/ui/palette';
 
 export default function FindDoctorScreen() {
   useScheme();
@@ -36,11 +37,22 @@ export default function FindDoctorScreen() {
       {rows?.length === 0 && !error ? <Message kind="info">No doctors found.</Message> : null}
       {rows?.map((d) => (
         <Pressable key={d.clinician_id} accessibilityRole="button" onPress={() => router.push(`/doctors/${d.clinician_id}` as Href)} style={s.card}>
-          <Text style={s.cardTitle}>{d.name}</Text>
-          {d.headline ? <Text style={s.meta}>{d.headline}</Text> : null}
-          <Text style={s.meta}>{[...d.specialties.slice(0, 3), ...d.cities.slice(0, 2)].join(' · ')}</Text>
+          <View style={styles.row}>
+            <RemoteImage bucket={d.image_bucket} path={d.image_path} style={styles.avatar} placeholderSize={22} />
+            <View style={styles.copy}>
+              <Text style={s.cardTitle}>{d.name}</Text>
+              {d.headline ? <Text style={s.meta}>{d.headline}</Text> : null}
+              <Text style={s.meta}>{[...d.specialties.slice(0, 3), ...d.cities.slice(0, 2)].join(' · ')}</Text>
+            </View>
+          </View>
         </Pressable>
       ))}
     </Page>
   );
 }
+
+const styles = themedStyles(() => StyleSheet.create({
+  row: { alignItems: 'center', flexDirection: 'row', gap: 12 },
+  copy: { flex: 1, gap: 2 },
+  avatar: { borderRadius: 28, height: 56, overflow: 'hidden', width: 56 },
+}));

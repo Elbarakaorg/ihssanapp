@@ -1,10 +1,12 @@
 import { cors } from 'hono/cors';
 import { Hono } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import { z } from 'zod';
 
 import { canAccessAdminPortal, canManageMemberships, hasPermission, supportPermissions } from './admin-permissions.js';
 import { DataAccessError, type AdminMembership, type AuthIdentity, type DataAccess } from './data-access.js';
 import { NotConfiguredError, RateLimitError, type CareService } from './care-service.js';
+import { CvExtractionError, type CvExtractor } from './cv-extract.js';
 import type { SupportInvitationMailer } from './invitation-mailer.js';
 
 type Variables = {
@@ -50,7 +52,7 @@ const searchQuerySchema = z.object({
   lang: languageSchema,
 });
 
-export function createApi(dataAccess: DataAccess, allowedOrigins: string[] = [], invitationMailer: SupportInvitationMailer | null = null, careService: CareService | null = null) {
+export function createApi(dataAccess: DataAccess, allowedOrigins: string[] = [], invitationMailer: SupportInvitationMailer | null = null, careService: CareService | null = null, cvExtractor: CvExtractor | null = null) {
   const app = new Hono<{ Variables: Variables }>();
   const origins = new Set(allowedOrigins);
 
@@ -75,6 +77,27 @@ export function createApi(dataAccess: DataAccess, allowedOrigins: string[] = [],
     context.set('identity', identity);
     context.set('accessToken', accessToken);
     await next();
+  });
+
+  const cvUses = new Map<string, number[]>();
+  app.post('/v1/doctor/cv-extract', bodyLimit({ maxSize: 7_200_000, onError: (c) => c.json({ error: 'Upload a PDF smaller than 5 MB.' }, 413) }), async (context) => {
+    if (!cvExtractor) return context.json({ error: 'CV reading is not configured yet. Fill your profile in manually.' }, 503);
+    const body = z.object({ pdfBase64: z.string().min(100).max(7_000_000).regex(/^[A-Za-z0-9+/=]+$/) }).strict().safeParse(await context.req.json().catch(() => null));
+    if (!body.success) return context.json({ error: 'Upload a PDF smaller than 5 MB.' }, 400);
+    if (!body.data.pdfBase64.startsWith('JVBERi')) return context.json({ error: 'Only PDF files are supported.' }, 400);
+
+    const userId = context.get('identity').id;
+    const now = Date.now();
+    const recent = (cvUses.get(userId) ?? []).filter((time) => now - time < 3_600_000);
+    if (recent.length >= 5) return context.json({ error: 'You can read up to 5 CVs per hour. Try again later.' }, 429);
+    cvUses.set(userId, [...recent, now]);
+
+    try {
+      return context.json({ extraction: await cvExtractor(body.data.pdfBase64) });
+    } catch (error) {
+      if (error instanceof CvExtractionError) return context.json({ error: error.message }, error.status);
+      return context.json({ error: 'The CV could not be read.' }, 502);
+    }
   });
 
   app.get('/v1/care/nearby', async (context) => {

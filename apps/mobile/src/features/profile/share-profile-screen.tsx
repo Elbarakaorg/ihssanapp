@@ -78,8 +78,10 @@ export default function ShareProfileScreen() {
     setLoading(true);
     setError('');
     try {
-      const { data, error: requestError } = await supabaseClient.rpc('get_or_create_patient_profile_share_code', { p_force: force });
-      if (requestError) throw requestError;
+      let { data, error: requestError } = await supabaseClient.rpc('get_or_create_patient_profile_share_code', { p_force: force });
+      // Older databases without the resumable-code migration still work with the original function.
+      if (requestError?.code === 'PGRST202') ({ data, error: requestError } = await supabaseClient.rpc('create_patient_profile_share_code'));
+      if (requestError) throw new Error(requestError.message);
       const row = (Array.isArray(data) ? data[0] : data) as ShareCodeResult | null;
       if (!row?.share_code || !row.expires_at) throw new Error('Could not create a share code. Try again.');
       setShareCode(row.share_code);

@@ -2,53 +2,39 @@
 
 ## Sources
 
-| What | Source | Stored in our database? |
+| What | Source | Stored by us |
 | --- | --- | --- |
-| Pharmacy and clinic locations, hours, phone | Google Places API (New) | **Only `google_place_id`** (see terms below) |
-| Pharmacy on-duty status (day guard, night guard) | Hirassa API | Guard shifts only, once terms are known |
-| Doctors without their own clinic | Doctors register in the app | Yes: `clinician_practice_locations` |
-| Hand-entered listings and test data | Admin / SQL | Yes: `care_providers` |
+| Pharmacies, clinics, hospitals (names, addresses, phones, coordinates) | Google Places API (New), via the Ihssan API | Nothing, except `google_place_id` and the doctor's own chosen location |
+| Directions | Google Maps link (`google.com/maps/dir`) opened from the card | Nothing |
+| Which pharmacies are on duty (day, night, 24h) | Hirassa API, via the Ihssan API | Nothing (short in-memory cache only) |
+| Doctors without their own clinic | Doctors register in the app and pick their clinic/hospital from Google search | `clinician_practice_locations` |
 
-## Google Places: what the terms allow
+Google opening hours are deliberately **not** requested or shown: they are unreliable for guard duty. Only Hirassa decides "on duty".
 
-Google Maps Platform terms restrict copying and caching Places content. In practice:
-- You **may store `place_id` indefinitely**. Everything else (names, addresses, phones, hours, ratings, photos) must be fetched live, or cached only briefly. Latitude/longitude may be cached for up to 30 days.
-- Place content must be shown on a Google map or with Google attribution. Our map screen does this.
-- Do not bulk-download or scrape the Places database to build our own provider list.
+## Flow
 
-Re-check the current Google Maps Platform Service Specific Terms before launch; they change.
+- `GET /v1/care/nearby?lat&lng&radius&kind` (auth required) calls Google Places, then asks Hirassa for each distinct city in the results, matches guard pharmacies to Google places, and returns `guard: day | night | 24h | null` plus `guardStatus: live | unavailable | not_applicable`.
+- Matching: by coordinates within 150 m when Hirassa provides them, otherwise by exact normalised name within the same city. Ambiguous names are not matched, so a pharmacy is never wrongly shown as on duty.
+- If Hirassa fails or is not configured, `guardStatus` is `unavailable` and the app says so. It never guesses.
+- `GET /v1/care/search?q=` lets a doctor find their clinic or hospital (health-related places only).
+- Safeguards: per-user rate limit (30/min), short in-memory caches (places 2 min, search 5 min, guard 10 min), strict input validation, Google key kept server-side with a minimal field mask.
 
-### Design
+## Google terms
 
-1. A small server endpoint in `services/api` (for example `GET /v1/places/nearby?lat=&lng=&kind=pharmacy`) calls Places API (New) Nearby/Text Search with a **server-side key** and a field mask that asks only for what is shown. The key never ships to the app.
-2. The endpoint needs per-user rate limiting and a short response cache (seconds to minutes) to control cost.
-3. The app shows Google results and our verified doctors on the same map. Rows are matched by `google_place_id`.
-4. Use a different Google key for the server (restricted by server IP, Places API only) than for the map (referrer-restricted).
+Google restricts storing Places content. We store only `google_place_id` for our own listings, plus the venue name, address and coordinates the doctor confirmed for their own profile (needed to show a doctor's pin). Re-check the current Google Maps Platform terms before launch, and consider refreshing those fields from the place id periodically. Content must appear on a Google map (it does).
 
-Status: **not built yet.** It needs the server key and a billing budget alert in Google Cloud.
+## Hirassa (needs documentation)
 
-## Hirassa (pharmacy guard schedule)
-
-Status: **blocked.** We have a contact but no documentation. Before any code, get from Hirassa in writing:
-- Authentication method and a sandbox key
-- Endpoints and response format; how pharmacies are identified (name, address, coordinates, or an ID we can match to a Google `place_id`)
-- Which guard types are returned (day, night, 24h, holiday) and the date range available
-- Rate limits and pricing
-- **Whether we may store and redisplay their data**, and any attribution they require
-- Uptime and support contacts
-
-Planned design once known: a server-side adapter fetches shifts on a schedule, stores only what the terms allow in a `pharmacy_guard_shifts` table (pharmacy `google_place_id`, shift type, start/end, fetched_at), and the app shows an "On duty tonight" filter and badge. Rows are written by the server only; the app only reads. Display a "last updated" time and a disclaimer to call the pharmacy first, since guard information can be wrong.
+We have a contact but no documentation. `services/api/src/guard.ts` contains the adapter. Its response parser (`parseHirassaGuards`) is an **assumption** (array or `{data: [...]}`, with fields like `name`, `type`, `lat`, `lng`, `city`). Configure `HIRASSA_GUARDS_URL` (HTTPS, with `{city}`), `HIRASSA_API_KEY`, `HIRASSA_AUTH_HEADER`, then adjust the parser to the real format. Ask Hirassa for: auth method, endpoints and format, how pharmacies are identified, guard types and date range, rate limits and price, and whether we may cache and redisplay their data.
 
 ## Doctors without their own clinic
 
-Implemented in migration `202610030002_clinician_practice_locations.sql`.
+- A registered clinician searches Google for their clinic or hospital in **Menu > My practice locations** and adds it with specialty, hours and video option.
+- New or edited locations are `pending`; only the Ihssan team (`providers.verify`) can approve. Doctors cannot self-approve. The public doctor name comes from the verified registration, not from client input.
+- Only `verified` locations are public, and they disappear automatically if the doctor stops being verified.
+- Approved locations show as doctor pins on the map.
 
-- A clinician (already registered in `clinician_verifications`) adds one or more **practice locations**: a clinic, a hospital, or a private office, with city, coordinates, specialty, consultation modes (in person, video) and schedule.
-- New locations start as `pending`. The Ihssan team (permission `providers.verify`) approves them. Editing a location sends it back to `pending`; doctors cannot approve themselves.
-- A location can only be verified if the doctor is verified. If a doctor stops being verified, all their locations are automatically retired.
-- Only `verified` locations are publicly readable.
-
-Still to build: the doctor-facing screen to add and manage locations, the admin review screen, and showing these locations as pins on the map (the map currently reads `care_providers` only).
+Still to build: the admin portal screen for reviewing practice locations (until then, approve them in the Supabase table editor).
 
 ## Open questions for the product owner
 

@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { canAccessAdminPortal, canManageMemberships, hasPermission, supportPermissions } from './admin-permissions.js';
 import { DataAccessError, type AdminMembership, type AuthIdentity, type DataAccess } from './data-access.js';
+import { NotConfiguredError, RateLimitError, type CareService } from './care-service.js';
 import type { SupportInvitationMailer } from './invitation-mailer.js';
 
 type Variables = {
@@ -34,7 +35,22 @@ const measurementSchema = z.object({
   measuredAt: z.string().datetime({ offset: true }),
 }).strict();
 
-export function createApi(dataAccess: DataAccess, allowedOrigins: string[] = [], invitationMailer: SupportInvitationMailer | null = null) {
+const languageSchema = z.enum(['ar', 'fr', 'en']).default('fr');
+const nearbyQuerySchema = z.object({
+  lat: z.coerce.number().min(-90).max(90),
+  lng: z.coerce.number().min(-180).max(180),
+  radius: z.coerce.number().int().min(500).max(20000).default(5000),
+  kind: z.enum(['pharmacy', 'hospital', 'clinic', 'all']).default('all'),
+  lang: languageSchema,
+});
+const searchQuerySchema = z.object({
+  q: z.string().trim().min(2).max(120),
+  lat: z.coerce.number().min(-90).max(90).optional(),
+  lng: z.coerce.number().min(-180).max(180).optional(),
+  lang: languageSchema,
+});
+
+export function createApi(dataAccess: DataAccess, allowedOrigins: string[] = [], invitationMailer: SupportInvitationMailer | null = null, careService: CareService | null = null) {
   const app = new Hono<{ Variables: Variables }>();
   const origins = new Set(allowedOrigins);
 
@@ -59,6 +75,30 @@ export function createApi(dataAccess: DataAccess, allowedOrigins: string[] = [],
     context.set('identity', identity);
     context.set('accessToken', accessToken);
     await next();
+  });
+
+  app.get('/v1/care/nearby', async (context) => {
+    const parsed = nearbyQuerySchema.safeParse(context.req.query());
+    if (!parsed.success) return context.json({ error: 'Search parameters are invalid.' }, 400);
+    if (!careService) return context.json({ error: 'Care directory is not available.' }, 503);
+    try {
+      const { lat, lng, radius, kind, lang } = parsed.data;
+      return context.json(await careService.nearby(context.get('identity').id, { latitude: lat, longitude: lng, radiusMeters: radius, kind, language: lang }));
+    } catch (error) {
+      return respondToCareError(context, error);
+    }
+  });
+
+  app.get('/v1/care/search', async (context) => {
+    const parsed = searchQuerySchema.safeParse(context.req.query());
+    if (!parsed.success) return context.json({ error: 'Search parameters are invalid.' }, 400);
+    if (!careService) return context.json({ error: 'Care directory is not available.' }, 503);
+    try {
+      const { q, lat, lng, lang } = parsed.data;
+      return context.json({ places: await careService.search(context.get('identity').id, { query: q, latitude: lat, longitude: lng, language: lang }) });
+    } catch (error) {
+      return respondToCareError(context, error);
+    }
   });
 
   app.get('/v1/me', async (context) => {
@@ -249,4 +289,9 @@ async function getAdminMembership(dataAccess: DataAccess, accessToken: string, i
 function respondToDataError(context: { json: (body: unknown, status?: number) => Response }, error: unknown, fallback: string) {
   if (error instanceof DataAccessError) return context.json({ error: error.message }, error.statusCode);
   return context.json({ error: fallback }, 500);
+}
+function respondToCareError(context: { json: (body: unknown, status?: number) => Response }, error: unknown) {
+  if (error instanceof RateLimitError) return context.json({ error: 'Too many requests. Please wait a moment.' }, 429);
+  if (error instanceof NotConfiguredError) return context.json({ error: 'Care directory is not available.' }, 503);
+  return context.json({ error: 'Could not load places right now.' }, 502);
 }

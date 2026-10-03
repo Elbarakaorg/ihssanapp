@@ -2,35 +2,33 @@ import { useEffect, useRef } from 'react';
 import { StyleSheet } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 
-import { MOROCCO_CENTER, type ProviderMapProps } from './provider-types';
+import { DEFAULT_CENTER, pinColors, type ProviderMapProps } from './provider-types';
 
-export default function ProviderMap({ providers, selectedId, onSelect }: ProviderMapProps) {
+export default function ProviderMap({ pins, selectedId, onSelect, onCenterChange }: ProviderMapProps) {
   const mapRef = useRef<MapView>(null);
 
   useEffect(() => {
-    const selected = providers.find((item) => item.id === selectedId);
+    const selected = pins.find((item) => item.id === selectedId);
     if (selected) {
-      mapRef.current?.animateToRegion({ latitude: selected.latitude, longitude: selected.longitude, latitudeDelta: 0.05, longitudeDelta: 0.05 }, 350);
-    } else if (providers.length > 1) {
-      mapRef.current?.fitToCoordinates(providers, { animated: true, edgePadding: { top: 160, right: 50, bottom: 120, left: 50 } });
+      mapRef.current?.animateToRegion({ latitude: selected.latitude, longitude: selected.longitude, latitudeDelta: 0.02, longitudeDelta: 0.02 }, 350);
     }
-  }, [providers, selectedId]);
+  }, [pins, selectedId]);
 
   return (
     <MapView
-      initialRegion={{ ...MOROCCO_CENTER, latitudeDelta: 9, longitudeDelta: 9 }}
+      initialRegion={{ ...DEFAULT_CENTER, latitudeDelta: 0.08, longitudeDelta: 0.08 }}
       onPress={() => onSelect(null)}
+      onRegionChangeComplete={(region) => onCenterChange({ latitude: region.latitude, longitude: region.longitude })}
       provider={PROVIDER_GOOGLE}
       ref={mapRef}
-      showsUserLocation
       style={StyleSheet.absoluteFill}>
-      {providers.map((item) => (
+      {pins.map((item) => (
         <Marker
           coordinate={{ latitude: item.latitude, longitude: item.longitude }}
           key={item.id}
           onPress={() => onSelect(item.id)}
-          pinColor={item.kind === 'doctor' ? '#1F6B4F' : '#D9604A'}
-          title={item.name}
+          pinColor={item.onDuty ? '#F2B01E' : pinColors[item.kind]}
+          title={item.title}
         />
       ))}
     </MapView>

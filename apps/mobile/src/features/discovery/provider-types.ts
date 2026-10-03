@@ -1,20 +1,24 @@
-export type Provider = {
+export type MapPin = {
   id: string;
-  kind: 'doctor' | 'pharmacy';
-  name: string;
-  specialty: string | null;
-  city: string;
-  address: string | null;
-  phone: string | null;
-  opening_hours: string | null;
+  kind: 'pharmacy' | 'hospital' | 'clinic' | 'doctor';
   latitude: number;
   longitude: number;
+  title: string;
+  onDuty: boolean;
 };
 
 export type ProviderMapProps = {
-  providers: Provider[];
+  pins: MapPin[];
   selectedId: string | null;
   onSelect: (id: string | null) => void;
+  onCenterChange: (center: { latitude: number; longitude: number }) => void;
 };
 
-export const MOROCCO_CENTER = { latitude: 31.79, longitude: -7.09 };
+export const DEFAULT_CENTER = { latitude: 33.5731, longitude: -7.5898 };
+
+export const pinColors: Record<MapPin['kind'], string> = {
+  pharmacy: '#1F6B4F',
+  hospital: '#2C5DA8',
+  clinic: '#7A4BA8',
+  doctor: '#D9604A',
+};

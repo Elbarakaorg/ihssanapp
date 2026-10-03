@@ -1,30 +1,32 @@
 import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { AdvancedMarker, APIProvider, Map, Pin, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
+import { AdvancedMarker, APIProvider, Map, Pin, useMap } from '@vis.gl/react-google-maps';
 
-import { MOROCCO_CENTER, type ProviderMapProps } from './provider-types';
+import { DEFAULT_CENTER, pinColors, type ProviderMapProps } from './provider-types';
 
 const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
-function Viewport({ providers, selectedId }: Pick<ProviderMapProps, 'providers' | 'selectedId'>) {
+function Viewport({ pins, selectedId, onCenterChange }: Pick<ProviderMapProps, 'pins' | 'selectedId' | 'onCenterChange'>) {
   const map = useMap();
-  const core = useMapsLibrary('core');
   useEffect(() => {
-    if (!map || !core) return;
-    const selected = providers.find((item) => item.id === selectedId);
-    if (selected) {
+    if (!map) return;
+    const listener = map.addListener('idle', () => {
+      const center = map.getCenter();
+      if (center) onCenterChange({ latitude: center.lat(), longitude: center.lng() });
+    });
+    return () => listener.remove();
+  }, [map, onCenterChange]);
+  useEffect(() => {
+    const selected = pins.find((item) => item.id === selectedId);
+    if (map && selected) {
       map.panTo({ lat: selected.latitude, lng: selected.longitude });
-      map.setZoom(14);
-    } else if (providers.length) {
-      const bounds = new core.LatLngBounds();
-      providers.forEach((item) => bounds.extend({ lat: item.latitude, lng: item.longitude }));
-      map.fitBounds(bounds, 80);
+      if ((map.getZoom() ?? 0) < 14) map.setZoom(14);
     }
-  }, [map, core, providers, selectedId]);
+  }, [map, pins, selectedId]);
   return null;
 }
 
-export default function ProviderMap({ providers, selectedId, onSelect }: ProviderMapProps) {
+export default function ProviderMap({ pins, selectedId, onSelect, onCenterChange }: ProviderMapProps) {
   if (!apiKey) {
     return (
       <View style={styles.missing}>
@@ -36,17 +38,17 @@ export default function ProviderMap({ providers, selectedId, onSelect }: Provide
     <View style={StyleSheet.absoluteFill}>
       <APIProvider apiKey={apiKey}>
         <Map
-          defaultCenter={{ lat: MOROCCO_CENTER.latitude, lng: MOROCCO_CENTER.longitude }}
-          defaultZoom={6}
+          defaultCenter={{ lat: DEFAULT_CENTER.latitude, lng: DEFAULT_CENTER.longitude }}
+          defaultZoom={13}
           disableDefaultUI
           gestureHandling="greedy"
           mapId={process.env.EXPO_PUBLIC_GOOGLE_MAPS_MAP_ID ?? 'DEMO_MAP_ID'}
           onClick={() => onSelect(null)}
           zoomControl>
-          <Viewport providers={providers} selectedId={selectedId} />
-          {providers.map((item) => (
-            <AdvancedMarker key={item.id} onClick={() => onSelect(item.id)} position={{ lat: item.latitude, lng: item.longitude }} title={item.name}>
-              <Pin background={item.kind === 'doctor' ? '#1F6B4F' : '#D9604A'} borderColor="#ffffff" glyphColor="#ffffff" />
+          <Viewport onCenterChange={onCenterChange} pins={pins} selectedId={selectedId} />
+          {pins.map((item) => (
+            <AdvancedMarker key={item.id} onClick={() => onSelect(item.id)} position={{ lat: item.latitude, lng: item.longitude }} title={item.title}>
+              <Pin background={item.onDuty ? '#F2B01E' : pinColors[item.kind]} borderColor="#ffffff" glyphColor="#ffffff" />
             </AdvancedMarker>
           ))}
         </Map>

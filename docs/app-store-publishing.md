@@ -188,9 +188,9 @@ You do not need a Mac for any of this; EAS builds in the cloud.
 
 ## Appendix: Making the care directory show data
 
-The map screen reads verified rows from `care_providers`. For it to show pins:
+The directory has no database of providers. Pharmacies, clinics and hospitals come live from Google Places through the Ihssan API, and pharmacy guard status comes from Hirassa. See `docs/care-directory-data-sources.md`. To see pins:
 
-1. Apply the migrations in `supabase/migrations/` (especially `202610030001_directory_and_donation_cases.sql`).
-2. Create at least one account in the app, then run `supabase/dev-seed-care-providers.sql` in the Supabase SQL editor to add fictional test doctors and pharmacies (development projects only).
-3. Make sure `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` is set locally and in Vercel, with the Maps JavaScript API enabled and your domain allowed in the key's referrer list.
-4. Real listings must be inserted with `status = 'verified'`, a `verified_by` user, `verified_at`, and coordinates, otherwise the database refuses them.
+1. Apply all migrations in `supabase/migrations/`.
+2. Create a **server-side** Google key restricted to your API server IP and to **Places API (New)** only, and put it in `services/api/.env.local` as `GOOGLE_PLACES_API_KEY`. Enable billing and a budget alert. Never reuse the app map keys.
+3. Run the API (`npm run dev` in `services/api`) and set `EXPO_PUBLIC_API_BASE_URL` in `apps/mobile/.env.local` (HTTPS in production, also in Vercel and EAS).
+4. Fill `HIRASSA_GUARDS_URL`, `HIRASSA_API_KEY` and `HIRASSA_AUTH_HEADER` once Hirassa provides them. Without them the map still works and shows a notice that guard information is unavailable.

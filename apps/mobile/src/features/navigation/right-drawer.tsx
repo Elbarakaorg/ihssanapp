@@ -1,5 +1,5 @@
 import { useRouter, type Href } from 'expo-router';
-import { Activity, BookOpenText, ChevronRight, Compass, Footprints, HeartHandshake, House, type LucideIcon, LogIn, LogOut, Newspaper, Share2, UserRound, UsersRound, X } from 'lucide-react-native';
+import { Activity, BookOpenText, ChevronRight, Compass, Footprints, HeartHandshake, House, type LucideIcon, LogIn, LogOut, MapPinned, Newspaper, Share2, UserRound, UsersRound, X } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, ScrollView, Share, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +17,7 @@ const navItems: NavItem[] = [
   { href: '/give', icon: HeartHandshake, label: 'Give' },
   { href: '/profile', icon: UserRound, label: 'Medical profile' },
   { href: '/my-patients', icon: UsersRound, label: 'My patients', clinicianOnly: true },
+  { href: '/practice-locations', icon: MapPinned, label: 'My practice locations', clinicianOnly: true },
   { href: '/activity', icon: Footprints, label: 'Steps & activity' },
   { href: '/articles', icon: BookOpenText, label: 'Articles' },
   { href: '/blogs', icon: Newspaper, label: 'Blogs' },

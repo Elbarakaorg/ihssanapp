@@ -4,7 +4,7 @@ import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 
 import { DEFAULT_CENTER, pinColors, type ProviderMapProps } from './provider-types';
 
-export default function ProviderMap({ pins, selectedId, onSelect, onCenterChange }: ProviderMapProps) {
+export default function ProviderMap({ pins, selectedId, onSelect, onCenterChange, userLocation, focus }: ProviderMapProps) {
   const mapRef = useRef<MapView>(null);
 
   useEffect(() => {
@@ -14,12 +14,18 @@ export default function ProviderMap({ pins, selectedId, onSelect, onCenterChange
     }
   }, [pins, selectedId]);
 
+  useEffect(() => {
+    if (focus) mapRef.current?.animateToRegion({ latitude: focus.latitude, longitude: focus.longitude, latitudeDelta: 0.04, longitudeDelta: 0.04 }, 450);
+  }, [focus]);
+
   return (
     <MapView
       initialRegion={{ ...DEFAULT_CENTER, latitudeDelta: 0.08, longitudeDelta: 0.08 }}
       onPress={() => onSelect(null)}
       onRegionChangeComplete={(region) => onCenterChange({ latitude: region.latitude, longitude: region.longitude })}
       provider={PROVIDER_GOOGLE}
+      showsMyLocationButton={false}
+      showsUserLocation={userLocation !== null}
       ref={mapRef}
       style={StyleSheet.absoluteFill}>
       {pins.map((item) => (

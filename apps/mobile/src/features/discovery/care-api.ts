@@ -46,8 +46,9 @@ export async function searchCarePlaces(input: { query: string; latitude?: number
   return result.places;
 }
 
-export function directionsUrl(place: { latitude: number; longitude: number; placeId?: string }) {
+export function directionsUrl(place: { latitude: number; longitude: number; placeId?: string }, origin?: { latitude: number; longitude: number } | null) {
   const params = new URLSearchParams({ api: '1', destination: `${place.latitude},${place.longitude}` });
+  if (origin) params.set('origin', `${origin.latitude},${origin.longitude}`);
   if (place.placeId) params.set('destination_place_id', place.placeId);
   return `https://www.google.com/maps/dir/?${params}`;
 }

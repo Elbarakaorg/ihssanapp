@@ -11,6 +11,8 @@ export type ProviderMapProps = {
   pins: MapPin[];
   selectedId: string | null;
   onSelect: (id: string | null) => void;
+  userLocation: { latitude: number; longitude: number } | null;
+  focus: { latitude: number; longitude: number; key: number } | null;
   onCenterChange: (center: { latitude: number; longitude: number }) => void;
 };
 

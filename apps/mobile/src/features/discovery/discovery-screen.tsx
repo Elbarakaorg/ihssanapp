@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import * as Location from 'expo-location';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Building2, Clock, Hospital, List, Map as MapIcon, MapPin, Navigation, Phone, Pill, RefreshCw, Stethoscope, X } from 'lucide-react-native';
+import { Building2, Clock, Hospital, List, Map as MapIcon, MapPin, LocateFixed, Navigation, Phone, Pill, RefreshCw, Stethoscope, X } from 'lucide-react-native';
 
 import { supabaseClient } from '@/platform/supabase/client';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
@@ -81,7 +82,7 @@ function KindIcon({ kind, color }: { kind: Pin['kind']; color: string }) {
   return <Icon color={color} size={18} strokeWidth={1.8} />;
 }
 
-function PlaceCard({ item, onClose }: { item: Item; onClose?: () => void }) {
+function PlaceCard({ item, onClose, origin }: { item: Item; onClose?: () => void; origin: { latitude: number; longitude: number } | null }) {
   return (
     <View style={styles.card}>
       <View style={styles.cardHead}>
@@ -96,7 +97,7 @@ function PlaceCard({ item, onClose }: { item: Item; onClose?: () => void }) {
       {item.address ? <View style={styles.row}><MapPin color={palette.muted} size={14} /><Text style={styles.body}>{item.address}</Text></View> : null}
       {item.detail ? <View style={styles.row}><Clock color={palette.muted} size={14} /><Text style={styles.body}>{item.detail}</Text></View> : null}
       <View style={styles.actions}>
-        <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(directionsUrl(item))} style={styles.action}>
+        <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(directionsUrl(item, origin))} style={styles.action}>
           <Navigation color={palette.white} size={14} /><Text style={styles.actionText}>Directions</Text>
         </Pressable>
         {item.phone ? (
@@ -121,6 +122,38 @@ export default function DiscoveryScreen() {
   const [error, setError] = useState('');
   const [searched, setSearched] = useState(false);
   const center = useRef(DEFAULT_CENTER);
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [focus, setFocus] = useState<{ latitude: number; longitude: number; key: number } | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState('');
+
+  const locateMe = useCallback(async () => {
+    setLocating(true);
+    setLocationError('');
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (permission.status !== 'granted') {
+        setLocationError('Location permission is off. Allow it in your browser or phone settings to find care near you.');
+        return;
+      }
+      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const next = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+      setUserLocation(next);
+      center.current = next;
+      setFocus({ ...next, key: Date.now() });
+      setLoading(true);
+      setError('');
+      const result = await fetchNearbyCare({ ...next, radius: 5000, kind: 'all' });
+      setPlaces(result.places);
+      setGuardStatus(result.guardStatus);
+      setSearched(true);
+    } catch {
+      setLocationError('Could not detect your location. Check that location services are on and try again.');
+    } finally {
+      setLocating(false);
+      setLoading(false);
+    }
+  }, []);
 
   const searchHere = useCallback(async () => {
     setLoading(true);
@@ -160,7 +193,7 @@ export default function DiscoveryScreen() {
 
   return (
     <View style={styles.screen}>
-      <ProviderMap onCenterChange={onCenterChange} onSelect={setSelectedId} pins={pins} selectedId={selected?.id ?? null} />
+      <ProviderMap focus={focus} onCenterChange={onCenterChange} onSelect={setSelectedId} pins={pins} selectedId={selected?.id ?? null} userLocation={userLocation} />
 
       <SafeAreaView edges={['top', 'left', 'right']} pointerEvents="box-none" style={styles.overlay}>
         <ScrollView contentContainerStyle={styles.filterRow} horizontal showsHorizontalScrollIndicator={false}>
@@ -175,7 +208,7 @@ export default function DiscoveryScreen() {
             </Pressable>
           ))}
         </ScrollView>
-        {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+        {error || locationError ? <Text accessibilityRole="alert" style={styles.error}>{error || locationError}</Text> : null}
         {guardStatus === 'unavailable' ? <Text style={styles.notice}>On-duty pharmacy information is temporarily unavailable. Call a pharmacy to confirm it is open.</Text> : null}
         {searched && !loading && !error && !items.length ? <Text style={styles.notice}>Nothing found here. Move the map and search this area.</Text> : null}
         <Pressable accessibilityRole="button" disabled={loading} onPress={() => void searchHere()} style={styles.searchHere}>
@@ -183,9 +216,13 @@ export default function DiscoveryScreen() {
         </Pressable>
       </SafeAreaView>
 
+      <Pressable accessibilityLabel="Use my location" accessibilityRole="button" disabled={locating} onPress={() => void locateMe()} style={styles.locate}>
+        <LocateFixed color={userLocation ? '#1A73E8' : palette.ink} size={20} />
+      </Pressable>
+
       {selected && !showList ? (
         <View pointerEvents="box-none" style={styles.bottomCard}>
-          <PlaceCard item={selected} onClose={() => setSelectedId(null)} />
+          <PlaceCard item={selected} onClose={() => setSelectedId(null)} origin={userLocation} />
         </View>
       ) : null}
 
@@ -195,7 +232,7 @@ export default function DiscoveryScreen() {
             <Text style={styles.listTitle}>{items.length} places</Text>
             {items.map((item) => (
               <Pressable key={item.id} onPress={() => { setSelectedId(item.id); setShowList(false); }}>
-                <PlaceCard item={item} />
+                <PlaceCard item={item} origin={userLocation} />
               </Pressable>
             ))}
           </ScrollView>
@@ -220,6 +257,7 @@ const styles = themedStyles(() => StyleSheet.create({
   chipTextActive: { color: palette.white },
   error: { backgroundColor: '#FCE9E5', borderRadius: 8, color: '#9A3E2A', fontSize: 12, marginTop: 10, padding: 10 },
   notice: { alignSelf: 'flex-start', backgroundColor: palette.white, borderRadius: 8, color: palette.muted, fontSize: 12, lineHeight: 17, marginTop: 10, overflow: 'hidden', padding: 10 },
+  locate: { alignItems: 'center', backgroundColor: palette.white, borderRadius: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.25)', height: 48, justifyContent: 'center', position: 'absolute', right: 14, bottom: 84, width: 48 },
   searchHere: { alignItems: 'center', alignSelf: 'center', backgroundColor: palette.white, borderRadius: 18, boxShadow: '0 2px 8px rgba(0,0,0,0.18)', flexDirection: 'row', gap: 6, marginTop: 10, minHeight: 36, paddingHorizontal: 14 },
   searchHereText: { color: palette.forest, fontSize: 12, fontWeight: '700' },
   bottomCard: { bottom: 76, left: 14, position: 'absolute', right: 14 },

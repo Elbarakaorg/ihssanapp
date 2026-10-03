@@ -38,6 +38,12 @@
       ],
       "expo-secure-store",
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Ihssan to use your location to find pharmacies, clinics and hospitals near you."
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "Allow Ihssan to access a profile photo."

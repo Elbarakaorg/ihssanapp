@@ -209,3 +209,5 @@ td small { color: #89958d; display: block; font-size: 9px; margin-top: 4px; }
   .auth-panel { padding: 26px 20px; }
   .auth-panel .brand-lockup { margin-bottom: 40px; }
 }
+.button-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.panel textarea { width: 100%; min-height: 64px; margin: 8px 0; }

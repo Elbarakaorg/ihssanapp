@@ -9,6 +9,7 @@ import { hasPermission, type AdminMembership } from '../../lib/permission';
 import { supabase } from '../../lib/supabase';
 import TeamPage from '../team/TeamPage';
 import MetricCatalogPage from '../metrics/MetricCatalogPage';
+import ProvidersPage from '../providers/ProvidersPage';
 import RestrictedPage from '../workspace/RestrictedPage';
 import WorkspacePageContent from '../workspace/WorkspacePageContent';
 
@@ -172,7 +173,7 @@ function AdminShell({ membership, session }: { membership: AdminMembership; sess
             <Route path="/support" element={<RestrictedPage title="Support inbox" eyebrow="CUSTOMER OPERATIONS" description="Requests are visible only to their requester and support members with the support.requests.manage capability." detail="The support data contract is defined in Supabase. The API inbox endpoints are the next delivery slice; this route is permission-gated and ready to connect." />} />
             <Route path="/metrics" element={<MetricCatalogPage membership={membership} session={session} />} />
             <Route path="/articles" element={<RestrictedPage title="Articles" eyebrow="EDITORIAL" description="Home-feed articles are managed separately from structured metric explanations and ranges." detail="Localized article schema, permissions, review, and publication flow are defined. The article editor and feed API are the next feature slice." />} />
-            <Route path="/providers" element={<RestrictedPage title="Provider verification" eyebrow="DIRECTORY" description="Review clinician/provider verification evidence and decisions." detail="Provider verification screens are permission-gated. Review queues and evidence storage will connect in the directory phase." />} />
+            <Route path="/providers" element={<ProvidersPage />} />
             <Route path="/donations" element={<RestrictedPage title="Donation review" eyebrow="FOUNDATION" description="Review cases and distribution evidence before publication." detail="Case moderation and fund-distribution workflows will connect to the foundation operations module." />} />
             <Route path="/audit" element={<RestrictedPage title="Audit log" eyebrow="SECURITY" description="Review administrative changes for which you have audit permission." detail="Audit access is read-only and purpose-limited. Audit export and filters will be added with the operations API." />} />
             <Route path="*" element={<Navigate to="/" replace />} />

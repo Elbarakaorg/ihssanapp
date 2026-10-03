@@ -3,6 +3,7 @@ import { ArrowLeft, CalendarDays, Droplets, HeartPulse, Pill, ShieldCheck, UserR
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { PatientNotesSection } from '@/features/doctor/patient-notes-section';
 import { getMySharedPatientProfile, listSharedPatientMeasurements, type SharedMeasurement, type SharedPatientProfile } from '@/features/profile/clinician-patients-repository';
 import { Page, PageHeading, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
@@ -71,6 +72,8 @@ export default function SharedPatientScreen() {
             <Text style={styles.measurementValue}>{formatMeasurement(measurement)}</Text>
           </View>)}</View> : <View style={styles.empty}><Text style={styles.body}>No measurements are available in the shared history.</Text></View>}
         </> : <View style={styles.scopeNote}><ShieldCheck color={palette.forest} size={17} /><Text style={styles.scopeText}>The patient shared their medical profile, but not measurement history.</Text></View>}
+
+        <PatientNotesSection grantId={grantId} />
 
         <View style={styles.privacyNote}><ShieldCheck color={palette.forest} size={17} /><Text style={styles.privacyText}>Access is limited to the categories the patient approved. Do not save or share this information outside the authorized care relationship.</Text></View>
       </> : null}

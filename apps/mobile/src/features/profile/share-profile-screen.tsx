@@ -70,12 +70,15 @@ export default function ShareProfileScreen() {
     }
   };
 
-  const createCode = async () => {
-    if (!supabaseClient || !session) return;
+  const userId = session?.identity.id;
+
+  // force=false resumes the active code (page reloads reuse it); force=true is only for the explicit button.
+  const loadCode = async (force: boolean) => {
+    if (!supabaseClient || !userId) return;
     setLoading(true);
     setError('');
     try {
-      const { data, error: requestError } = await supabaseClient.rpc('create_patient_profile_share_code');
+      const { data, error: requestError } = await supabaseClient.rpc('get_or_create_patient_profile_share_code', { p_force: force });
       if (requestError) throw requestError;
       const row = (Array.isArray(data) ? data[0] : data) as ShareCodeResult | null;
       if (!row?.share_code || !row.expires_at) throw new Error('Could not create a share code. Try again.');
@@ -88,19 +91,24 @@ export default function ShareProfileScreen() {
     }
   };
 
+  // Keyed on the user id, not the session object, so token refreshes never mint a new code.
   useEffect(() => {
-    void createCode();
-  }, [session]);
+    void loadCode(false);
+  }, [userId]);
 
   useEffect(() => {
     if (!expiresAt) return undefined;
-    const updateCountdown = () => setSecondsLeft(Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000)));
-    updateCountdown();
+    const updateCountdown = () => {
+      const left = Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
+      setSecondsLeft(left);
+      if (left === 0) clearInterval(timer);
+    };
     const timer = setInterval(updateCountdown, 1000);
+    updateCountdown();
     return () => clearInterval(timer);
   }, [expiresAt]);
 
-  const qrValue = shareCode ? `ihssan://share/profile?token=${encodeURIComponent(shareCode)}` : '';
+  const qrValue = shareCode && (!expiresAt || secondsLeft > 0) ? `ihssan://share/profile?token=${encodeURIComponent(shareCode)}` : '';
   const countdown = `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`;
 
   return (
@@ -116,7 +124,7 @@ export default function ShareProfileScreen() {
         {loading && !qrValue ? <View style={styles.qrLoading}><ActivityIndicator color={palette.forest} /><Text style={styles.body}>Creating a secure code</Text></View> : qrValue ? <QRCode value={qrValue} size={220} color={palette.ink} backgroundColor={palette.white} /> : null}
         {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
         <View style={styles.expiry}><View style={[styles.expiryDot, secondsLeft === 0 && styles.expiredDot]} /><Text style={styles.expiryText}>{secondsLeft > 0 ? `Code expires in ${countdown}` : 'Code expired'}</Text></View>
-        <Text style={styles.qrHint}>This code expires after 10 minutes and can only be used once.</Text>
+        <Text style={styles.qrHint}>This code is valid for 30 minutes and can only be used once. Reopening this page reuses it.</Text>
       </View>
 
       <View style={styles.inviteCard}>
@@ -149,9 +157,9 @@ export default function ShareProfileScreen() {
         <View style={styles.privacyCopy}><Text style={styles.privacyTitle}>You stay in control</Text><Text style={styles.privacyBody}>Scanning creates an access request, not access. You choose whether to share your medical profile, measurement history, both, or neither.</Text></View>
       </View>
 
-      <Pressable accessibilityRole="button" disabled={loading || secondsLeft > 0} onPress={() => void createCode()} style={[styles.refreshButton, (loading || secondsLeft > 0) && styles.refreshDisabled]}>
+      <Pressable accessibilityRole="button" disabled={loading} onPress={() => void loadCode(true)} style={[styles.refreshButton, loading && styles.refreshDisabled]}>
         {loading ? <ActivityIndicator color={palette.forest} /> : <RefreshCw color={palette.forest} size={17} />}
-        <Text style={styles.refreshLabel}>{secondsLeft > 0 ? 'Generate another code after expiry' : 'Generate a new code'}</Text>
+        <Text style={styles.refreshLabel}>{secondsLeft > 0 ? 'Replace with a new code' : 'Generate a new code'}</Text>
       </Pressable>
     </Page>
   );

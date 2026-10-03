@@ -1,5 +1,5 @@
 import { type Href, useFocusEffect, useRouter } from 'expo-router';
-import { ArrowRight, Clock3, LockKeyhole, QrCode, UsersRound } from 'lucide-react-native';
+import { ArrowRight, Clock3, KeyRound, LockKeyhole, QrCode, UsersRound } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -62,6 +62,12 @@ export default function ClinicianPatientsScreen() {
         <ArrowRight color={palette.forest} size={19} />
       </Pressable>
 
+      <Pressable accessibilityRole="button" disabled={verificationStatus !== 'verified'} onPress={() => router.push('/share/accept' as Href)} style={[styles.scanButton, verificationStatus !== 'verified' && styles.scanDisabled]}>
+        <View style={styles.scanIcon}><KeyRound color={palette.white} size={20} /></View>
+        <View style={styles.scanCopy}><Text style={styles.scanTitle}>Enter a patient code</Text><Text style={styles.scanDetail}>Preview a profile shared with a code or link, then save it</Text></View>
+        <ArrowRight color={palette.forest} size={19} />
+      </Pressable>
+
       {!loading && verificationStatus !== 'verified' ? <View style={styles.verificationNotice}>
         <Text style={styles.verificationTitle}>{verificationStatus === 'pending' ? 'Clinician verification pending' : verificationStatus === 'suspended' ? 'Clinician access suspended' : verificationStatus === 'rejected' ? 'Clinician verification not approved' : 'Clinician verification required'}</Text>
         <Text style={styles.emptyText}>{verificationStatus === 'pending' ? 'Your account is ready, but patient QR scanning becomes available after Ihssan verifies your professional credentials.' : 'Patient profiles are available only to verified clinicians. Contact Ihssan support if you need help with verification.'}</Text>
@@ -79,7 +85,7 @@ export default function ClinicianPatientsScreen() {
           </View>
           <ArrowRight color={palette.muted} size={17} />
         </Pressable>)}</View>
-      ) : <View style={styles.emptyState}><View style={styles.emptyIcon}><LockKeyhole color={palette.forest} size={20} /></View><Text style={styles.emptyTitle}>No shared profiles yet</Text><Text style={styles.emptyText}>Scan a patient’s temporary QR code. You’ll see their profile only after they approve access.</Text></View>}
+      ) : <View style={styles.emptyState}><View style={styles.emptyIcon}><LockKeyhole color={palette.forest} size={20} /></View><Text style={styles.emptyTitle}>No shared profiles yet</Text><Text style={styles.emptyText}>Enter a patient’s share code or scan their QR code. You’ll see their profile only after they have chosen to share it.</Text></View>}
 
       {pastPatients.length ? <>
         <SectionHeading title="Past access" detail="Revoked by the patient" />

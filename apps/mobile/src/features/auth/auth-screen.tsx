@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { Check, ShieldCheck } from 'lucide-react-native';
-import { useState } from 'react';
+import { ArrowRight, Check, ShieldCheck } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useAuth } from './auth-provider';
@@ -27,6 +27,30 @@ export default function AuthScreen() {
   const [notice, setNotice] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
+
+  const [welcomeProfile, setWelcomeProfile] = useState<{ name: string; type: ProfileType; setupDone: boolean } | null>(null);
+
+  useEffect(() => {
+    if (!session) {
+      setWelcomeProfile(null);
+      return;
+    }
+    let active = true;
+    void getCurrentUserProfile()
+      .then((profile) => {
+        if (active) setWelcomeProfile({ name: profile.display_name ?? '', type: profile.profile_type, setupDone: Boolean(profile.setup_completed_at) });
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [session]);
+
+  const startApp = () => {
+    if (welcomeProfile && !welcomeProfile.setupDone) {
+      router.replace({ pathname: '/auth/complete-profile', params: { profile_type: welcomeProfile.type } });
+      return;
+    }
+    router.replace(welcomeProfile?.type === 'clinician' ? '/my-patients' : '/(tabs)');
+  };
 
   const continueToAccount = async (expectedType: ProfileType) => {
     const profile = await getCurrentUserProfile();
@@ -65,7 +89,6 @@ export default function AuthScreen() {
         await signIn(pendingSignupEmail, password);
         setPendingSignupEmail(null);
         setConfirmationToken('');
-        await continueToAccount(profileType);
         return;
       }
 
@@ -142,9 +165,17 @@ export default function AuthScreen() {
       {session ? (
         <View style={styles.signedIn}>
           <View style={styles.successIcon}><ShieldCheck color={ink.accent} size={23} /></View>
-          <Text style={styles.title}>You're signed in</Text>
-          <Text style={styles.description}>{session.identity.email ?? 'Account'}</Text>
-          <Text style={styles.supporting}>Your saved results stay in your account unless you choose to share them with a clinician.</Text>
+          <Text style={styles.title}>{welcomeProfile?.name ? `Welcome, ${welcomeProfile.name.split(' ')[0]}` : 'Welcome to Ihssan'}</Text>
+          <Text style={styles.description}>{session.identity.email ?? 'Your account is ready'}</Text>
+          <Text style={styles.supporting}>
+            {welcomeProfile?.type === 'clinician'
+              ? 'Your clinician account is ready. Add patients with a code, set up your practice locations and help people find care.'
+              : 'Your account is ready. Find pharmacies, clinics and hospitals near you, track your health and keep your records private.'}
+          </Text>
+          <Pressable accessibilityRole="button" onPress={startApp} style={[styles.primaryButton, styles.welcomeButton]}>
+            <Text style={styles.primaryLabel}>{welcomeProfile?.type === 'clinician' ? 'Open my workspace' : 'Discover Ihssan'}</Text>
+            <ArrowRight color={ink.bg} size={18} />
+          </Pressable>
           <Pressable accessibilityRole="button" disabled={submitting} onPress={() => void signOut()} style={styles.secondaryButton}>
             <Text style={styles.secondaryLabel}>Sign out</Text>
           </Pressable>
@@ -386,6 +417,7 @@ const styles = themedStyles(() => StyleSheet.create({
     minHeight: 54,
   },
   buttonDisabled: { opacity: 0.5 },
+  welcomeButton: { flexDirection: 'row', gap: 8, marginTop: 24 },
   primaryLabel: { color: ink.bg, fontSize: 16, fontWeight: '600' },
   modeButton: { alignItems: 'center', alignSelf: 'center', justifyContent: 'center', marginTop: 18, minHeight: 44 },
   modeText: { color: ink.muted, fontSize: 14 },

@@ -1,13 +1,15 @@
 import { useRouter } from 'expo-router';
-import { ArrowLeft, RefreshCw, ShieldCheck } from 'lucide-react-native';
+import * as Clipboard from 'expo-clipboard';
+import { ArrowLeft, Copy, Link2, RefreshCw, Share2, ShieldCheck } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import QRCode from 'react-native-qrcode-svg';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Share, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/auth-provider';
 import { Page } from '@/ui/patient-ui';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
 import { supabaseClient } from '@/platform/supabase/client';
+import { createShareInvite, revokeMyShareInvites, shareInviteLink, type ShareInvite } from './share-invite';
 
 type ShareCodeResult = { share_code: string; expires_at: string };
 
@@ -20,6 +22,53 @@ export default function ShareProfileScreen() {
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const [shareProfile, setShareProfile] = useState(true);
+  const [shareMeasurements, setShareMeasurements] = useState(false);
+  const [invite, setInvite] = useState<ShareInvite | null>(null);
+  const [inviteBusy, setInviteBusy] = useState(false);
+  const [inviteMessage, setInviteMessage] = useState('');
+
+  const createInvite = async () => {
+    setInviteBusy(true);
+    setInviteMessage('');
+    try {
+      setInvite(await createShareInvite({ medicalProfile: shareProfile, measurements: shareMeasurements, validHours: 24 }));
+    } catch (inviteError) {
+      setInviteMessage(inviteError instanceof Error ? inviteError.message : 'Could not create a code.');
+    } finally {
+      setInviteBusy(false);
+    }
+  };
+
+  const stopSharing = async () => {
+    setInviteBusy(true);
+    try {
+      await revokeMyShareInvites();
+      setInvite(null);
+      setInviteMessage('Code revoked. It no longer works.');
+    } catch (revokeError) {
+      setInviteMessage(revokeError instanceof Error ? revokeError.message : 'Could not revoke the code.');
+    } finally {
+      setInviteBusy(false);
+    }
+  };
+
+  const copyText = async (text: string, done: string) => {
+    await Clipboard.setStringAsync(text);
+    setInviteMessage(done);
+  };
+
+  const shareInvite = async () => {
+    if (!invite) return;
+    const link = shareInviteLink(invite.code);
+    const message = `Ihssan patient code: ${invite.code}\nOpen with a verified clinician account: ${link}`;
+    try {
+      await Share.share({ message });
+    } catch {
+      await copyText(message, 'Code and link copied.');
+    }
+  };
 
   const createCode = async () => {
     if (!supabaseClient || !session) return;
@@ -70,6 +119,31 @@ export default function ShareProfileScreen() {
         <Text style={styles.qrHint}>This code expires after 10 minutes and can only be used once.</Text>
       </View>
 
+      <View style={styles.inviteCard}>
+        <View style={styles.inviteHead}><Link2 color={palette.forest} size={18} /><Text style={styles.inviteTitle}>Share by code or link</Text></View>
+        <Text style={styles.body}>Create a code for a verified doctor. They can preview what you share and choose to save you as a patient. Valid for 24 hours, one use.</Text>
+        {invite ? (
+          <>
+            <Text accessibilityLabel={`Share code ${invite.code}`} selectable style={styles.codeText}>{invite.code}</Text>
+            <View style={styles.inviteActions}>
+              <Pressable accessibilityRole="button" onPress={() => void copyText(invite.code, 'Code copied.')} style={styles.chipButton}><Copy color={palette.forest} size={14} /><Text style={styles.chipLabel}>Copy code</Text></Pressable>
+              <Pressable accessibilityRole="button" onPress={() => void copyText(shareInviteLink(invite.code), 'Link copied.')} style={styles.chipButton}><Link2 color={palette.forest} size={14} /><Text style={styles.chipLabel}>Copy link</Text></Pressable>
+              <Pressable accessibilityRole="button" onPress={() => void shareInvite()} style={styles.chipButton}><Share2 color={palette.forest} size={14} /><Text style={styles.chipLabel}>Share</Text></Pressable>
+            </View>
+            <Pressable accessibilityRole="button" disabled={inviteBusy} onPress={() => void stopSharing()} style={styles.revokeButton}><Text style={styles.revokeLabel}>Revoke this code</Text></Pressable>
+          </>
+        ) : (
+          <>
+            <View style={styles.toggleRow}><Text style={styles.toggleLabel}>Medical profile</Text><Switch accessibilityLabel="Share medical profile" onValueChange={setShareProfile} value={shareProfile} /></View>
+            <View style={styles.toggleRow}><Text style={styles.toggleLabel}>Measurement history</Text><Switch accessibilityLabel="Share measurement history" onValueChange={setShareMeasurements} value={shareMeasurements} /></View>
+            <Pressable accessibilityRole="button" disabled={inviteBusy || (!shareProfile && !shareMeasurements)} onPress={() => void createInvite()} style={[styles.createButton, (inviteBusy || (!shareProfile && !shareMeasurements)) && styles.refreshDisabled]}>
+              {inviteBusy ? <ActivityIndicator color={palette.white} /> : <Text style={styles.createLabel}>Create code</Text>}
+            </Pressable>
+          </>
+        )}
+        {inviteMessage ? <Text accessibilityRole="alert" style={styles.inviteMessage}>{inviteMessage}</Text> : null}
+      </View>
+
       <View style={styles.privacyCard}>
         <ShieldCheck color={palette.forest} size={20} />
         <View style={styles.privacyCopy}><Text style={styles.privacyTitle}>You stay in control</Text><Text style={styles.privacyBody}>Scanning creates an access request, not access. You choose whether to share your medical profile, measurement history, both, or neither.</Text></View>
@@ -99,6 +173,20 @@ const styles = themedStyles(() => StyleSheet.create({
   expiredDot: { backgroundColor: palette.coral },
   expiryText: { color: palette.ink, fontSize: 12, fontWeight: '700' },
   qrHint: { color: palette.muted, fontSize: 10, lineHeight: 15, marginTop: 6, textAlign: 'center' },
+  inviteCard: { backgroundColor: palette.white, borderColor: palette.line, borderRadius: 18, borderWidth: 1, gap: 10, marginTop: 16, padding: 16 },
+  inviteHead: { alignItems: 'center', flexDirection: 'row', gap: 8 },
+  inviteTitle: { color: palette.ink, fontSize: 15, fontWeight: '700' },
+  codeText: { color: palette.ink, fontSize: 28, fontVariant: ['tabular-nums'], fontWeight: '700', letterSpacing: 3, textAlign: 'center', paddingVertical: 8 },
+  inviteActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
+  chipButton: { alignItems: 'center', backgroundColor: palette.leaf, borderRadius: 18, flexDirection: 'row', gap: 6, minHeight: 36, paddingHorizontal: 12 },
+  chipLabel: { color: palette.forest, fontSize: 12, fontWeight: '700' },
+  revokeButton: { alignItems: 'center', justifyContent: 'center', minHeight: 40 },
+  revokeLabel: { color: '#9A3E2A', fontSize: 12, fontWeight: '700' },
+  toggleRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  toggleLabel: { color: palette.ink, fontSize: 13, fontWeight: '600' },
+  createButton: { alignItems: 'center', backgroundColor: palette.forest, borderRadius: 12, justifyContent: 'center', minHeight: 46 },
+  createLabel: { color: palette.white, fontSize: 14, fontWeight: '700' },
+  inviteMessage: { color: palette.muted, fontSize: 12, textAlign: 'center' },
   privacyCard: { alignItems: 'flex-start', backgroundColor: palette.leaf, borderRadius: 14, flexDirection: 'row', gap: 11, marginTop: 16, padding: 14 },
   privacyCopy: { flex: 1 },
   privacyTitle: { color: palette.ink, fontSize: 13, fontWeight: '700' },

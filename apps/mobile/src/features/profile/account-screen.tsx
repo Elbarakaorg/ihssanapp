@@ -5,7 +5,8 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/auth-provider';
-import { getAvatarUrl, getCurrentUserProfile, type AccountProfile, updateCurrentUserProfile, uploadCurrentUserAvatar } from '@/features/profile/profile-repository';
+import { getAvatarUrl, getClinicianVerificationStatus, getCurrentUserProfile, type AccountProfile, updateCurrentUserProfile, uploadCurrentUserAvatar } from '@/features/profile/profile-repository';
+import { getMyCredentials, type Credentials } from '@/features/doctor/doctor-api';
 import { Page, PageHeading, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
 
@@ -27,6 +28,7 @@ export default function AccountScreen() {
   const [savingPhoto, setSavingPhoto] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [verification, setVerification] = useState<{ status: string | null; creds: Credentials | null } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -41,6 +43,10 @@ export default function AccountScreen() {
       setDisplayName(nextProfile.display_name);
       setBio(nextProfile.bio);
       setAvatarUrl(await getAvatarUrl(nextProfile.avatar_path));
+      if (nextProfile.profile_type === 'clinician') {
+        const [status, creds] = await Promise.all([getClinicianVerificationStatus().catch(() => null), getMyCredentials().catch(() => null)]);
+        if (active) setVerification({ status, creds });
+      }
     }).catch((profileError) => {
       if (active) setError(profileError instanceof Error ? profileError.message : 'Could not load your account.');
     }).finally(() => {
@@ -164,6 +170,25 @@ export default function AccountScreen() {
         </View>
       </View>
 
+      {verification ? (
+        <>
+          <SectionHeading title="Clinician verification" />
+          <View style={[uiStyles.card, styles.formCard]}>
+            <Text style={styles.verifyStatus}>{({ verified: 'Verified', pending: 'Pending review', rejected: 'Rejected', suspended: 'Suspended' } as Record<string, string>)[verification.status ?? ''] ?? 'Not submitted'}</Text>
+            {verification.creds ? (
+              <>
+                <Text style={styles.securityDetail}>License: {verification.creds.license_number}</Text>
+                <Text style={styles.securityDetail}>Issued by: {verification.creds.issuing_body}</Text>
+                <Text style={styles.securityDetail}>Specialty: {verification.creds.specialty} · {verification.creds.city}</Text>
+              </>
+            ) : <Text style={styles.securityDetail}>No credentials submitted yet.</Text>}
+            <Pressable accessibilityRole="button" onPress={() => router.push('/doctor-profile')} style={styles.secondaryButton}>
+              <ShieldCheck color={palette.forest} size={17} /><Text style={styles.secondaryLabel}>{verification.creds ? 'Manage doctor profile' : 'Submit credentials'}</Text>
+            </Pressable>
+          </View>
+        </>
+      ) : null}
+
       <SectionHeading title="Profile details" />
       <View style={[uiStyles.card, styles.formCard]}>
         <Text style={styles.fieldLabel}>Display name</Text>
@@ -214,6 +239,7 @@ const styles = themedStyles(() => StyleSheet.create({
   primaryButton: { alignItems: 'center', backgroundColor: palette.forest, borderRadius: 11, flexDirection: 'row', gap: 8, justifyContent: 'center', marginTop: 20, minHeight: 48, paddingHorizontal: 16 },
   primaryLabel: { color: palette.white, fontSize: 13, fontWeight: '700' },
   securityHeading: { alignItems: 'flex-start', flexDirection: 'row', gap: 10 },
+  verifyStatus: { color: palette.forest, fontSize: 16, fontWeight: '700', marginBottom: 6 },
   securityTitle: { color: palette.ink, fontSize: 14, fontWeight: '700' },
   securityDetail: { color: palette.muted, flexShrink: 1, fontSize: 12, lineHeight: 18, marginTop: 3 },
   secondaryButton: { alignItems: 'center', backgroundColor: palette.leaf, borderColor: 'transparent', borderRadius: 11, borderWidth: 1, flexDirection: 'row', gap: 8, justifyContent: 'center', marginTop: 20, minHeight: 48, paddingHorizontal: 16 },

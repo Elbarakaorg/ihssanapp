@@ -98,6 +98,10 @@ export default function AccountScreen() {
       setError('Choose a JPG, PNG, or WebP image.');
       return;
     }
+    if (base64.length * 0.75 > 2 * 1024 * 1024) {
+      setError('That photo is larger than 2 MB. Choose a smaller image.');
+      return;
+    }
     const extension = asset.mimeType === 'image/png' ? 'png' : asset.mimeType === 'image/webp' ? 'webp' : 'jpg';
     setSavingPhoto(true);
     try {

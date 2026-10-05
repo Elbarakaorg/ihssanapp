@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
+    "@shopify/react-native-skia": "2.6.2",
     "@supabase/supabase-js": "^2.117.2",
     "@vis.gl/react-google-maps": "^1.10.1",
     "expo": "~57.0.25",
@@ -37,7 +38,8 @@
     "react-native-screens": "~4.26.0",
     "react-native-svg": "15.15.4",
     "react-native-web": "~0.21.0",
-    "react-native-worklets": "0.10.1"
+    "react-native-worklets": "0.10.1",
+    "thinking-orbs": "^0.3.2"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",

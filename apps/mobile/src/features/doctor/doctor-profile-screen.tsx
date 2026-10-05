@@ -1,7 +1,7 @@
 import { type Href, useFocusEffect, useRouter } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/auth-provider';
 import { RemoteImage } from '@/features/doctor/doctor-image';
@@ -12,6 +12,7 @@ import {
 } from '@/features/doctor/doctor-api';
 import { BackLink, Button, Chip, Field, Message, doctorStyles as s } from '@/features/doctor/ui';
 import { getClinicianVerificationStatus } from '@/features/profile/profile-repository';
+import { ThinkingOrb } from '@/ui/thinking-orb';
 import { Page } from '@/ui/patient-ui';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
 
@@ -168,7 +169,7 @@ export default function DoctorProfileScreen() {
   });
 
   if (!session) return <Page><BackLink href="/" label="Home" /><Message kind="info">Sign in as a clinician to edit your doctor profile.</Message></Page>;
-  if (loading) return <Page><BackLink href="/" label="Home" /><ActivityIndicator /></Page>;
+  if (loading) return <Page><BackLink href="/" label="Home" /><View style={{ alignItems: 'center', marginTop: 48 }}><ThinkingOrb state="breathing" size={64} label="Loading your profile" /></View></Page>;
 
   const verified = status === 'verified';
   const locked = verified || status === 'suspended';
@@ -203,6 +204,7 @@ export default function DoctorProfileScreen() {
 
       <Text style={s.section}>Import from your CV</Text>
       <Text style={s.meta}>Upload a PDF and we will fill in your headline, summary, specialties, languages and experience for you to review. The file is sent to our AI provider (OpenAI) for reading only and is not stored by Ihssan.</Text>
+      {busy === 'cv' ? <View style={{ alignItems: 'center', flexDirection: 'row', gap: 10, marginTop: 10 }}><ThinkingOrb state="searching" size={20} label="Reading your CV" /><Text style={s.meta}>Reading your CV…</Text></View> : null}
       <Button label="Upload CV (PDF)" tone="secondary" busy={busy === 'cv'} onPress={() => void importCv()} />
 
       <Text style={s.section}>Featured photo</Text>

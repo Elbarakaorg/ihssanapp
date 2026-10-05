@@ -7,6 +7,7 @@ import QRCode from 'react-native-qrcode-svg';
 import { ActivityIndicator, Pressable, Share, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/auth-provider';
+import { ThinkingOrb } from '@/ui/thinking-orb';
 import { Page } from '@/ui/patient-ui';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
 import { supabaseClient } from '@/platform/supabase/client';
@@ -123,7 +124,7 @@ export default function ShareProfileScreen() {
       </View>
 
       <View style={styles.qrCard}>
-        {loading && !qrValue ? <View style={styles.qrLoading}><ActivityIndicator color={palette.forest} /><Text style={styles.body}>Creating a secure code</Text></View> : qrValue ? <Animated.View key={shareCode} entering={FadeIn.duration(150)}><QRCode value={qrValue} size={220} color={palette.ink} backgroundColor={palette.white} /></Animated.View> : null}
+        {loading && !qrValue ? <View style={styles.qrLoading}><ThinkingOrb state="connecting" size={64} label="Creating a secure code" /><Text style={styles.body}>Creating a secure code</Text></View> : qrValue ? <Animated.View key={shareCode} entering={FadeIn.duration(150)}><QRCode value={qrValue} size={220} color={palette.ink} backgroundColor={palette.white} /></Animated.View> : null}
         {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
         {!loading && !qrValue ? (
           <Pressable accessibilityRole="button" onPress={() => void loadCode(false)} style={styles.createButton}>

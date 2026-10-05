@@ -14,3 +14,6 @@ Vendored project skills, loaded automatically. Use them for UI/UX work:
 - Licenses for the three vendored repos are in `.claude/skills/_licenses/`.
 
 Precedence: the project's own design tokens and the `expo-*` skills win over the generic design skills. Several of the added skills are web-oriented (CSS, Tailwind, GSAP); use them for `apps/admin-portal`, and for the mobile app only take the principles (motion, hierarchy, edge cases). Use `animate-expo` for native motion, `break-ui` to test screens with worst-case data (long names, Arabic/French text, empty lists).
+
+## Loading indicator
+`apps/mobile/src/ui/thinking-orb*.tsx` wraps [thinking-orbs](https://github.com/jakubantalik/thinking-orbs) (MIT, Jakub Antalik; license in `docs/third-party/`). Web uses the published canvas component; native is Skia, adapted from the repo's React Native port (not verified on a device). Use `ThinkingOrb` for prominent loading states; keep `ActivityIndicator` in small buttons.

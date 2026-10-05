@@ -3,7 +3,7 @@ import { ArrowLeft } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, type TextInputProps, View } from 'react-native';
 
-import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme, wobble } from '@/ui/palette';
 
 export function BackLink({ label, href }: { label: string; href: Href }) {
   useScheme();
@@ -58,13 +58,13 @@ export const toDateKey = (date: Date) => {
 };
 
 export const doctorStyles = themedStyles(() => StyleSheet.create({
-  title: { color: palette.ink, fontSize: 28, fontWeight: '700' },
+  title: { ...display, color: palette.ink, fontSize: 30, lineHeight: 36 },
   body: { color: palette.muted, fontSize: 13, lineHeight: 20, marginTop: 6 },
-  card: { backgroundColor: palette.white, borderColor: palette.line, borderRadius: 14, borderWidth: 1, gap: 6, marginTop: 12, padding: 14 },
-  cardTitle: { color: palette.ink, fontSize: 15, fontWeight: '700' },
+  card: { ...wobble, backgroundColor: palette.white, borderColor: palette.line, borderWidth: 1, gap: 6, marginTop: 12, padding: 14 },
+  cardTitle: { ...display, color: palette.ink, fontSize: 18 },
   meta: { color: palette.muted, fontSize: 12, lineHeight: 18 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-  section: { color: palette.ink, fontSize: 15, fontWeight: '700', marginTop: 24 },
+  section: { ...display, color: palette.ink, fontSize: 19, marginTop: 24 },
 }));
 
 const styles = themedStyles(() => StyleSheet.create({

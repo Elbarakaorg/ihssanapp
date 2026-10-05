@@ -17,3 +17,6 @@ Precedence: the project's own design tokens and the `expo-*` skills win over the
 
 ## Loading indicator
 `apps/mobile/src/ui/thinking-orb*.tsx` wraps [thinking-orbs](https://github.com/jakubantalik/thinking-orbs) (MIT, Jakub Antalik; license in `docs/third-party/`). Web uses the published canvas component; native is Skia, adapted from the repo's React Native port (not verified on a device). Use `ThinkingOrb` for prominent loading states; keep `ActivityIndicator` in small buttons.
+
+## Visual language
+Wabi-sabi first: warm washi-paper/earth palette in `ui/palette.ts`, uneven hand-cut corners (`wobble`), restraint. Victorian touch: EB Garamond headings (`display`) and the `Ornament` fleuron divider under page headings. Conceptual-sketch touch: hand-drawn, slightly irregular SVG strokes. Body text stays on the system font. Use palette tokens, never hardcoded colors.

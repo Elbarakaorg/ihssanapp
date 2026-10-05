@@ -18,38 +18,38 @@ export type PaletteColors = {
 };
 
 export const lightPalette: PaletteColors = {
-  paper: '#F4F6F5',
-  white: '#FFFFFF',
-  ink: '#151917',
-  forest: '#087657',
-  leaf: '#E8EEEB',
-  leafDeep: '#D1DCD6',
-  coral: '#A94B3B',
-  sky: '#E9EDEC',
-  muted: '#707875',
-  line: '#E1E6E3',
-  gold: '#B89043',
-  dangerBg: '#F9EEE8',
-  dangerText: '#754334',
-  successBg: '#EAF1E8',
+  paper: '#F1EBDD',
+  white: '#FAF6EC',
+  ink: '#2A2622',
+  forest: '#4A6741',
+  leaf: '#E5E1CC',
+  leafDeep: '#D2CCB0',
+  coral: '#A4502F',
+  sky: '#E8E1D2',
+  muted: '#6B6358',
+  line: '#D9CFBD',
+  gold: '#A9822F',
+  dangerBg: '#F3E1D6',
+  dangerText: '#7A3F29',
+  successBg: '#E3E7D3',
 };
 
 // In dark mode "white" is the raised surface and "ink" the primary text, so contrast pairings invert together.
 export const darkPalette: PaletteColors = {
-  paper: '#0D100F',
-  white: '#171B1A',
-  ink: '#EDF1EF',
-  forest: '#3FD6A2',
-  leaf: '#16251F',
-  leafDeep: '#223A31',
-  coral: '#E8826E',
-  sky: '#1C2220',
-  muted: '#98A39E',
-  line: '#272D2B',
-  gold: '#D8B25F',
-  dangerBg: '#2B1B17',
-  dangerText: '#F0A898',
-  successBg: '#15251E',
+  paper: '#14110E',
+  white: '#1E1A16',
+  ink: '#EDE5D6',
+  forest: '#A5BD8F',
+  leaf: '#25241B',
+  leafDeep: '#38362A',
+  coral: '#E08A66',
+  sky: '#221E19',
+  muted: '#A39A8B',
+  line: '#322C25',
+  gold: '#D3AE62',
+  dangerBg: '#2E1D16',
+  dangerText: '#EFA98E',
+  successBg: '#1F2619',
 };
 
 // Mutated in place so existing `palette.x` reads follow the active scheme.
@@ -108,4 +108,16 @@ export const radii = {
   medium: 14,
   large: 20,
   full: 9999,
+} as const;
+
+/** Victorian-leaning serif for headings; body copy stays on the system font for legibility. */
+export const display = { fontFamily: 'EBGaramond_600SemiBold' } as const;
+export const displayRegular = { fontFamily: 'EBGaramond_500Medium' } as const;
+
+/** Hand-cut, slightly uneven corners (wabi-sabi). */
+export const wobble = {
+  borderTopLeftRadius: 16,
+  borderTopRightRadius: 12,
+  borderBottomRightRadius: 15,
+  borderBottomLeftRadius: 11,
 } as const;

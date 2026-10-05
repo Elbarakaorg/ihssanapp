@@ -9,7 +9,7 @@ import { interpretPublishedRange } from '@/features/health/metric-interpretation
 import { getPatientMetric, type SavedMeasurement } from '@/features/health/measurement-repository';
 import { useLocale } from '@/platform/locale/locale-provider';
 import { Page, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
-import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme } from '@/ui/palette';
 import { Loading } from '@/ui/loading';
 
 type DetailData = Awaited<ReturnType<typeof getPatientMetric>>;
@@ -128,7 +128,7 @@ const styles = themedStyles(() => StyleSheet.create({
   headingRow: { alignItems: 'center', flexDirection: 'row', gap: 12, justifyContent: 'space-between', marginBottom: 21 },
   headingCopy: { flex: 1 },
   eyebrow: { color: palette.muted, fontSize: 11, fontWeight: '500', marginBottom: 6 },
-  title: { color: palette.ink, fontSize: 30, fontWeight: '600', letterSpacing: -0.5, lineHeight: 37 },
+  title: { ...display, color: palette.ink, fontSize: 30, lineHeight: 37 },
   subtitle: { color: palette.muted, fontSize: 13, marginTop: 4 },
   addButton: { alignItems: 'center', backgroundColor: palette.forest, borderRadius: 7, flexDirection: 'row', gap: 5, minHeight: 42, paddingHorizontal: 12 },
   addLabel: { color: palette.white, fontSize: 12, fontWeight: '700' },

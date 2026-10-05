@@ -9,7 +9,7 @@ import { ActivityIndicator, Pressable, Share, StyleSheet, Switch, Text, View } f
 import { useAuth } from '@/features/auth/auth-provider';
 import { ThinkingOrb } from '@/ui/thinking-orb';
 import { Page } from '@/ui/patient-ui';
-import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme } from '@/ui/palette';
 import { supabaseClient } from '@/platform/supabase/client';
 import { createShareInvite, revokeMyShareInvites, shareInviteLink, type ShareInvite } from './share-invite';
 
@@ -178,7 +178,7 @@ const styles = themedStyles(() => StyleSheet.create({
   backLabel: { color: palette.ink, fontSize: 13, fontWeight: '600' },
   heading: { marginBottom: 19 },
   eyebrow: { color: palette.forest, fontSize: 12, fontWeight: '600', marginBottom: 7 },
-  title: { color: palette.ink, fontSize: 29, fontWeight: '700' },
+  title: { ...display, color: palette.ink, fontSize: 29 },
   description: { color: palette.muted, fontSize: 13, lineHeight: 20, marginTop: 8 },
   qrCard: { alignItems: 'center', backgroundColor: palette.white, borderColor: palette.line, borderCurve: 'continuous', borderRadius: 18, borderWidth: 1, minHeight: 315, justifyContent: 'center', padding: 20 },
   qrLoading: { alignItems: 'center', gap: 12, height: 220, justifyContent: 'center' },

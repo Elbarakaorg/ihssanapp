@@ -13,7 +13,7 @@ import {
   type SharePreview,
 } from '@/features/profile/share-invite';
 import { Page, uiStyles } from '@/ui/patient-ui';
-import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme } from '@/ui/palette';
 import { Loading } from '@/ui/loading';
 
 function Facts({ label, values }: { label: string; values: string[] | null }) {
@@ -169,7 +169,7 @@ export default function AcceptShareScreen() {
 const styles = themedStyles(() => StyleSheet.create({
   back: { alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', gap: 8, marginBottom: 20, minHeight: 42 },
   backLabel: { color: palette.ink, fontSize: 13, fontWeight: '600' },
-  title: { color: palette.ink, fontSize: 29, fontWeight: '700' },
+  title: { ...display, color: palette.ink, fontSize: 29 },
   body: { color: palette.muted, fontSize: 13, lineHeight: 20, marginTop: 8 },
   inputRow: { alignItems: 'center', backgroundColor: palette.white, borderColor: palette.line, borderRadius: 12, borderWidth: 1, flexDirection: 'row', gap: 10, marginTop: 20, paddingHorizontal: 14 },
   input: { color: palette.ink, flex: 1, fontSize: 18, fontVariant: ['tabular-nums'], letterSpacing: 2, minHeight: 52 },

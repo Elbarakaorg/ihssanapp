@@ -7,7 +7,7 @@ import { useAuth } from '@/features/auth/auth-provider';
 import { getAvatarUrl, getCurrentUserProfile, type AccountProfile } from '@/features/profile/profile-repository';
 import { emptyMedicalProfile, getMedicalProfile, listDoctorShares, listFavoriteDoctors, listPendingShareRequests, respondToShareRequest, revokeDoctorShare, saveMedicalProfile, setDoctorFavorite, type DoctorShare, type FavoriteDoctor, type MedicalProfile, type ShareRequest } from '@/features/profile/medical-profile-repository';
 import { Page, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
-import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme } from '@/ui/palette';
 import { Loading } from '@/ui/loading';
 
 const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -371,7 +371,7 @@ const styles = themedStyles(() => StyleSheet.create({
   muted: { color: palette.muted, fontSize: 13 },
   signInState: { alignItems: 'center', marginTop: 46, paddingHorizontal: 12 },
   heroIcon: { alignItems: 'center', backgroundColor: palette.leaf, borderRadius: 28, height: 56, justifyContent: 'center', width: 56 },
-  title: { color: palette.ink, fontSize: 23, fontWeight: '700' },
+  title: { ...display, color: palette.ink, fontSize: 23 },
   body: { color: palette.muted, fontSize: 13, lineHeight: 20, marginTop: 7, textAlign: 'center' },
   primaryButton: { alignItems: 'center', backgroundColor: palette.forest, borderRadius: 11, flexDirection: 'row', gap: 8, justifyContent: 'center', marginTop: 18, minHeight: 46, paddingHorizontal: 16 },
   primaryButtonText: { color: palette.white, fontSize: 13, fontWeight: '700' },

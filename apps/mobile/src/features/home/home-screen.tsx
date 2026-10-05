@@ -10,7 +10,7 @@ import { summarizeMeasurements } from '@/features/health/measurement-summary';
 import { getCurrentUserProfile } from '@/features/profile/profile-repository';
 import { BrandMark, Page, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { PreferenceIcons } from '@/ui/preference-icons';
-import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme } from '@/ui/palette';
 
 export default function HomeScreen() {
   useScheme();
@@ -172,11 +172,10 @@ const styles = themedStyles(() => StyleSheet.create({
     marginBottom: 11,
   },
   title: {
+    ...display,
     color: palette.ink,
-    fontSize: 39,
-    fontWeight: '600',
-    letterSpacing: -0.9,
-    lineHeight: 44,
+    fontSize: 42,
+    lineHeight: 47,
   },
   description: {
     color: palette.muted,

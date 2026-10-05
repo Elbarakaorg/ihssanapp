@@ -2,8 +2,9 @@ import type { PropsWithChildren, ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { palette, radii, spacing } from './palette';
-import { themedStyles, useScheme } from '@/ui/palette';
+import Svg, { Path, Text as SvgText } from 'react-native-svg';
+
+import { display, palette, radii, spacing, themedStyles, useScheme, wobble } from './palette';
 
 export function Page({ children }: PropsWithChildren) {
   useScheme();
@@ -35,8 +36,21 @@ export function PageHeading({ eyebrow, title, children }: { eyebrow: string; tit
     <View style={styles.heading}>
       <Text style={styles.eyebrow}>{eyebrow}</Text>
       <Text style={styles.title}>{title}</Text>
+      <Ornament />
       {children ? <Text style={styles.description}>{children}</Text> : null}
     </View>
+  );
+}
+
+/** A hand-drawn ink line with a small Victorian fleuron; the stroke is deliberately a little uneven. */
+export function Ornament({ width = 168 }: { width?: number }) {
+  useScheme();
+  return (
+    <Svg accessibilityElementsHidden height={16} importantForAccessibility="no-hide-descendants" style={{ marginVertical: 10 }} viewBox="0 0 168 16" width={width}>
+      <Path d="M1 9 C 20 6, 38 11, 62 8 S 70 8.5, 72 8" fill="none" stroke={palette.line} strokeLinecap="round" strokeWidth={1.4} />
+      <SvgText fill={palette.gold} fontSize={14} textAnchor="middle" x={84} y={12.5}>❦</SvgText>
+      <Path d="M96 8.5 C 118 10, 132 6, 150 9 S 160 8, 167 8" fill="none" stroke={palette.line} strokeLinecap="round" strokeWidth={1.4} />
+    </Svg>
   );
 }
 
@@ -67,8 +81,8 @@ export const uiStyles = themedStyles(() => StyleSheet.create({
   card: {
     backgroundColor: palette.white,
     borderColor: palette.line,
+    ...wobble,
     borderCurve: 'continuous',
-    borderRadius: radii.medium,
     borderWidth: StyleSheet.hairlineWidth,
     padding: 16,
   },
@@ -129,11 +143,10 @@ const styles = themedStyles(() => StyleSheet.create({
     marginBottom: spacing.xs,
   },
   title: {
+    ...display,
     color: palette.ink,
-    fontSize: 32,
-    fontWeight: '600',
-    letterSpacing: -0.6,
-    lineHeight: 38,
+    fontSize: 36,
+    lineHeight: 42,
   },
   description: {
     color: palette.muted,
@@ -150,9 +163,9 @@ const styles = themedStyles(() => StyleSheet.create({
     marginTop: spacing.lg,
   },
   sectionTitle: {
+    ...display,
     color: palette.ink,
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 20,
   },
   sectionDetail: {
     color: palette.muted,
@@ -186,9 +199,9 @@ const styles = themedStyles(() => StyleSheet.create({
     width: 17,
   },
   brandName: {
+    ...display,
     color: palette.ink,
-    fontSize: 19,
-    fontWeight: '600',
-    letterSpacing: 0.15,
+    fontSize: 22,
+    letterSpacing: 0.4,
   },
 }));

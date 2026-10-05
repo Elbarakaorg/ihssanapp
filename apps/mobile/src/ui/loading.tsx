@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
 
+import { palette } from '@/ui/palette';
 import { ThinkingOrb } from '@/ui/thinking-orb';
 import type { OrbState } from '@/ui/thinking-orb-types';
 
@@ -15,5 +16,5 @@ export function Loading({ label, state = 'working', style, inline = false }: { l
 
 const styles = StyleSheet.create({
   box: { alignItems: 'center', gap: 12, justifyContent: 'center', paddingVertical: 32 },
-  label: { color: '#6b7280', fontSize: 14, textAlign: 'center' },
+  label: { color: palette.muted, fontSize: 14, textAlign: 'center' },
 });

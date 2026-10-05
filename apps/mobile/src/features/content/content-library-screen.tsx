@@ -5,7 +5,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 
 import { supabaseClient } from '@/platform/supabase/client';
 import { Page, PageHeading, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
-import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme } from '@/ui/palette';
 
 type Props = { kind: 'articles' | 'blogs' };
 type PublishedArticle = {
@@ -117,7 +117,7 @@ const styles = themedStyles(() => StyleSheet.create({
   articleModal: { backgroundColor: palette.paper, borderTopLeftRadius: 12, borderTopRightRadius: 12, maxHeight: '88%', padding: 20 },
   modalHeader: { alignItems: 'flex-start', flexDirection: 'row', gap: 10, justifyContent: 'space-between', marginBottom: 12 },
   modalCopy: { flex: 1, gap: 7 },
-  modalTitle: { color: palette.ink, fontSize: 23, fontWeight: '600', lineHeight: 29 },
+  modalTitle: { ...display, color: palette.ink, fontSize: 23, lineHeight: 29 },
   closeButton: { alignItems: 'center', height: 34, justifyContent: 'center', width: 34 },
   articleBody: { color: palette.ink, fontSize: 14, lineHeight: 23, paddingBottom: 25 },
 }));

@@ -1,5 +1,5 @@
-import { useRouter } from 'expo-router';
-import { ArrowRight, Heart, MapPin, QrCode, ShieldCheck } from 'lucide-react-native';
+import { type Href, useRouter } from 'expo-router';
+import { ArrowRight, BookOpenText, Heart, MapPin, NotebookPen, Pill, QrCode, Search, ShieldCheck } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -9,6 +9,10 @@ import { listMeasurementsForCurrentUser } from '@/features/health/measurement-re
 import { summarizeMeasurements } from '@/features/health/measurement-summary';
 import { getCurrentUserProfile } from '@/features/profile/profile-repository';
 import { BrandMark, Page, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
+import { localLibrary } from '@/features/content/library';
+import { dosesForDay, progressOf, toLocalDateKey } from '@/features/medicine/schedule';
+import { useTreatments } from '@/features/medicine/use-treatments';
+import { ProgressBar } from '@/features/medicine/treatments-screen';
 import { VerseCard } from '@/features/spirit/verse-card';
 import { reflectionOfTheDay } from '@/features/spirit/verses';
 import { PreferenceIcons } from '@/ui/preference-icons';
@@ -23,6 +27,8 @@ export default function HomeScreen() {
   const [summaryReady, setSummaryReady] = useState(false);
   const [summaryError, setSummaryError] = useState('');
   const [summaryRetry, setSummaryRetry] = useState(0);
+  const { treatments, logs } = useTreatments();
+  const today = progressOf(dosesForDay(treatments, logs, toLocalDateKey(new Date())));
 
   useEffect(() => {
     if (!session) {
@@ -135,6 +141,18 @@ export default function HomeScreen() {
 
       <ActivityTracker onOpen={() => router.push('/activity')} />
 
+      {session && today.total ? (
+        <Pressable accessibilityRole="button" onPress={() => router.push('/treatments' as Href)} style={[uiStyles.card, styles.todayCard]}>
+          <View style={uiStyles.iconTile}><Pill color={palette.forest} size={19} strokeWidth={1.9} /></View>
+          <View style={styles.todayCopy}>
+            <Text style={styles.actionTitle}>Today's doses</Text>
+            <Text style={styles.actionBody}>{today.taken} of {today.total} taken</Text>
+            <ProgressBar percent={today.percent} />
+          </View>
+          <ArrowRight color={palette.forest} size={18} />
+        </Pressable>
+      ) : null}
+
       <SectionHeading title="Start here" detail="Choose a next step" />
       <View style={styles.actionGrid}>
         <Pressable accessibilityRole="button" onPress={() => router.navigate('/health')} style={[uiStyles.card, styles.actionCard]}>
@@ -151,6 +169,37 @@ export default function HomeScreen() {
           <Text style={styles.actionTitle}>Find care</Text>
           <Text style={styles.actionBody}>Doctors and pharmacies nearby</Text>
         </Pressable>
+        <Pressable accessibilityRole="button" onPress={() => router.push('/treatments' as Href)} style={[uiStyles.card, styles.actionCard]}>
+          <View style={[uiStyles.iconTile, { backgroundColor: palette.sky }]}><Pill color={palette.forest} size={19} strokeWidth={1.9} /></View>
+          <Text style={styles.actionTitle}>My treatments</Text>
+          <Text style={styles.actionBody}>Track doses and daily progress</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" onPress={() => router.push('/medicines' as Href)} style={[uiStyles.card, styles.actionCard]}>
+          <View style={uiStyles.iconTile}><Search color={palette.forest} size={19} strokeWidth={1.9} /></View>
+          <Text style={styles.actionTitle}>Medicine directory</Text>
+          <Text style={styles.actionBody}>Look up any medicine by name</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" onPress={() => router.push('/articles' as Href)} style={[uiStyles.card, styles.actionCard]}>
+          <View style={[uiStyles.iconTile, { backgroundColor: palette.sky }]}><BookOpenText color={palette.forest} size={19} strokeWidth={1.9} /></View>
+          <Text style={styles.actionTitle}>Articles</Text>
+          <Text style={styles.actionBody}>Plain-language health guides</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" onPress={() => router.push('/blogs' as Href)} style={[uiStyles.card, styles.actionCard]}>
+          <View style={uiStyles.iconTile}><NotebookPen color={palette.forest} size={19} strokeWidth={1.9} /></View>
+          <Text style={styles.actionTitle}>Health blogs</Text>
+          <Text style={styles.actionBody}>Nutrition, sleep and movement</Text>
+        </Pressable>
+      </View>
+
+      <SectionHeading title="Worth reading" detail="General information" />
+      <View style={styles.readList}>
+        {localLibrary.slice(0, 4).map((item) => (
+          <Pressable accessibilityRole="button" key={item.id} onPress={() => router.push((item.kind === 'blogs' ? '/blogs' : '/articles') as Href)} style={[uiStyles.card, styles.readCard]}>
+            <Text style={styles.readTag}>{item.category.replaceAll('_', ' ')}</Text>
+            <Text style={styles.actionTitle}>{item.title}</Text>
+            <Text style={styles.actionBody}>{item.summary}</Text>
+          </Pressable>
+        ))}
       </View>
 
       <View style={styles.privacyNote}>
@@ -293,6 +342,11 @@ const styles = themedStyles(() => StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  todayCard: { alignItems: 'center', flexDirection: 'row', gap: 14, marginBottom: 18 },
+  todayCopy: { flex: 1, gap: 6 },
+  readList: { gap: 10, marginBottom: 18 },
+  readCard: { gap: 4 },
+  readTag: { color: palette.coral, fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
   actionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

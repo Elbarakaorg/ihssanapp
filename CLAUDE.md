@@ -21,3 +21,7 @@ Precedence: the project's own design tokens and the `expo-*` skills win over the
 ## Visual language
 Verses live in `features/spirit/verses.ts` (Arabic + English, Amiri font); home shows one per day, `/verses` lists all. Keep Arabic text exact (Uthmani script).
 Wabi-sabi first: warm washi-paper/earth palette in `ui/palette.ts`, uneven hand-cut corners (`wobble`), restraint. Victorian touch: EB Garamond headings (`display`) and the `Ornament` fleuron divider under page headings. Conceptual-sketch touch: hand-drawn, slightly irregular SVG strokes. Body text stays on the system font. Use palette tokens, never hardcoded colors.
+
+## Medicine & treatments
+`features/medicine/`: static generic-name directory (no doses), patient treatments with dose logging, doctor prescribing via `prescribe_treatment` (needs an active `medical_profile` grant). Migration `202610080001`. No reminders yet.
+Built-in articles/blogs live in `features/content/library.ts` (not clinician-reviewed; needs medical review) and merge with DB `blog_articles`.

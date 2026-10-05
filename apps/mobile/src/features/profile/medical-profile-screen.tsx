@@ -6,6 +6,7 @@ import { ActivityIndicator, Alert, Image, Pressable, StyleSheet, Text, TextInput
 import { useAuth } from '@/features/auth/auth-provider';
 import { getAvatarUrl, getCurrentUserProfile, type AccountProfile } from '@/features/profile/profile-repository';
 import { emptyMedicalProfile, getMedicalProfile, listDoctorShares, listFavoriteDoctors, listPendingShareRequests, respondToShareRequest, revokeDoctorShare, saveMedicalProfile, setDoctorFavorite, type DoctorShare, type FavoriteDoctor, type MedicalProfile, type ShareRequest } from '@/features/profile/medical-profile-repository';
+import { TreatmentsSummary } from '@/features/medicine/treatments-summary';
 import { Page, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { display, palette, themedStyles, useScheme } from '@/ui/palette';
 import { Loading } from '@/ui/loading';
@@ -297,6 +298,8 @@ export default function MedicalProfileScreen() {
       {editing ? <Pressable accessibilityRole="button" disabled={saving} onPress={() => void save()} style={[styles.primaryButton, saving && styles.disabled]}>
         {saving ? <ActivityIndicator color={palette.white} /> : <><Check color={palette.white} size={17} /><Text style={styles.primaryButtonText}>Save medical profile</Text></>}
       </Pressable> : null}
+
+      <TreatmentsSummary />
 
       <SectionHeading title="Doctors with profile access" detail={`${activeShares.length} active`} />
       {activeShares.length ? <View style={styles.stack}>{activeShares.map((share) => {

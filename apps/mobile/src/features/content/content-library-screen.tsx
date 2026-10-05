@@ -7,6 +7,8 @@ import { supabaseClient } from '@/platform/supabase/client';
 import { Page, PageHeading, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { display, palette, themedStyles, useScheme } from '@/ui/palette';
 
+import { localLibrary } from '@/features/content/library';
+
 type Props = { kind: 'articles' | 'blogs' };
 type PublishedArticle = {
   id: string;
@@ -39,7 +41,8 @@ export default function ContentLibraryScreen({ kind }: Props) {
 
   const loadArticles = async () => {
     if (!supabaseClient) {
-      setError('Content is not configured yet.');
+      setArticles(localLibrary.filter((item) => item.kind === kind && (category === 'all' || item.category === category)));
+      setError('Showing built-in content only.');
       setLoading(false);
       return;
     }
@@ -57,8 +60,10 @@ export default function ContentLibraryScreen({ kind }: Props) {
       if (kind === 'blogs' && category !== 'all') query = query.eq('category', category);
       const { data, error: queryError } = await query;
       if (queryError) throw queryError;
-      setArticles((data ?? []) as PublishedArticle[]);
+      const local = localLibrary.filter((item) => item.kind === kind && (category === 'all' || item.category === category));
+      setArticles([...((data ?? []) as PublishedArticle[]), ...local]);
     } catch (loadError) {
+      setArticles(localLibrary.filter((item) => item.kind === kind && (category === 'all' || item.category === category)));
       setError(loadError instanceof Error ? loadError.message : 'Could not load published content.');
     } finally {
       setLoading(false);
@@ -74,7 +79,7 @@ export default function ContentLibraryScreen({ kind }: Props) {
       <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.backButton}><ArrowLeft color={palette.ink} size={18} /><Text style={styles.backText}>Home</Text></Pressable>
       <PreviewNotice />
       <PageHeading eyebrow={kind === 'blogs' ? 'Wellness journal' : 'Health library'} title={title}>
-        {kind === 'blogs' ? 'Browse clinician-reviewed stories by topic.' : 'Clear, reviewed health information for everyday decisions.'}
+        {kind === 'blogs' ? 'Browse wellness stories by topic. General information, not medical advice.' : 'Clear health information for everyday decisions. General information, not medical advice.'}
       </PageHeading>
 
       {kind === 'blogs' ? <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll} contentContainerStyle={styles.categoryRow}>{categories.map((item) => <Pressable accessibilityRole="button" accessibilityState={{ selected: category === item.id }} key={item.id} onPress={() => setCategory(item.id)} style={[styles.categoryButton, category === item.id && styles.categoryButtonActive]}><Text style={[styles.categoryText, category === item.id && styles.categoryTextActive]}>{item.label}</Text></Pressable>)}</ScrollView> : null}

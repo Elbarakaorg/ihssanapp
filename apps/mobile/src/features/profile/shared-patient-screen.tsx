@@ -3,6 +3,7 @@ import { ArrowLeft, CalendarDays, Droplets, HeartPulse, Pill, ShieldCheck, UserR
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { SharedTreatmentsSection } from '@/features/medicine/shared-treatments-section';
 import { PatientNotesSection } from '@/features/doctor/patient-notes-section';
 import { getMySharedPatientProfile, listSharedPatientMeasurements, type SharedMeasurement, type SharedPatientProfile } from '@/features/profile/clinician-patients-repository';
 import { Page, PageHeading, SectionHeading, uiStyles } from '@/ui/patient-ui';
@@ -65,6 +66,8 @@ export default function SharedPatientScreen() {
             </> : <Text style={styles.body}>No emergency contact provided.</Text>}
           </View>
         </> : null}
+
+        {profile.access_scope.medical_profile ? <SharedTreatmentsSection grantId={grantId} /> : null}
 
         {profile.access_scope.measurements ? <>
           <SectionHeading title="Measurement history" detail={`${measurements.length} recent`} />

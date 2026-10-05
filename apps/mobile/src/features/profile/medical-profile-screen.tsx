@@ -8,6 +8,7 @@ import { getAvatarUrl, getCurrentUserProfile, type AccountProfile } from '@/feat
 import { emptyMedicalProfile, getMedicalProfile, listDoctorShares, listFavoriteDoctors, listPendingShareRequests, respondToShareRequest, revokeDoctorShare, saveMedicalProfile, setDoctorFavorite, type DoctorShare, type FavoriteDoctor, type MedicalProfile, type ShareRequest } from '@/features/profile/medical-profile-repository';
 import { Page, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { Loading } from '@/ui/loading';
 
 const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
@@ -180,7 +181,7 @@ export default function MedicalProfileScreen() {
   };
 
   if (loading || (!isReady && !session)) {
-    return <Page><View style={styles.loading}><ActivityIndicator color={palette.forest} /><Text style={styles.muted}>Loading your medical profile</Text></View></Page>;
+    return <Page><Loading label="Loading your medical profile" /></Page>;
   }
 
   if (!session) {

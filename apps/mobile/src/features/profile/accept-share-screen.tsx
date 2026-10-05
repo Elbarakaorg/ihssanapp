@@ -14,6 +14,7 @@ import {
 } from '@/features/profile/share-invite';
 import { Page, uiStyles } from '@/ui/patient-ui';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { Loading } from '@/ui/loading';
 
 function Facts({ label, values }: { label: string; values: string[] | null }) {
   if (!values?.length) return null;
@@ -82,7 +83,7 @@ export default function AcceptShareScreen() {
     </Pressable>
   );
 
-  if (!isReady) return <Page>{back}<ActivityIndicator color={palette.forest} /></Page>;
+  if (!isReady) return <Page>{back}<Loading label="Checking share code" state="searching" /></Page>;
 
   if (!session) {
     return (

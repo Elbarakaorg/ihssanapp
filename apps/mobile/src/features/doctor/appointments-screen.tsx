@@ -1,12 +1,13 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/auth-provider';
 import { type Appointment, listMyAppointments, updateAppointmentStatus } from '@/features/doctor/doctor-api';
 import { BackLink, Button, Chip, Message, doctorStyles as s, formatDay, formatTime } from '@/features/doctor/ui';
 import { Page } from '@/ui/patient-ui';
 import { useScheme } from '@/ui/palette';
+import { Loading } from '@/ui/loading';
 
 const statusLabel: Record<string, string> = {
   requested: 'Waiting for confirmation', confirmed: 'Confirmed', declined: 'Declined', cancelled: 'Cancelled',
@@ -45,7 +46,7 @@ export default function AppointmentsScreen() {
       <Text style={s.body}>Times are shown in Morocco time.</Text>
       <View style={s.row}><Chip label="Upcoming" selected={scope === 'upcoming'} onPress={() => setScope('upcoming')} /><Chip label="Past" selected={scope === 'past'} onPress={() => setScope('past')} /></View>
       {error ? <Message kind="error">{error}</Message> : null}
-      {items === null ? <ActivityIndicator style={{ marginTop: 24 }} /> : null}
+      {items === null ? <Loading label="Loading appointments" /> : null}
       {items?.length === 0 && !error ? <Message kind="info">{scope === 'upcoming' ? 'No upcoming appointments.' : 'No past appointments yet.'}</Message> : null}
       {items?.map((a) => {
         const isDoctor = a.viewer_role === 'clinician';

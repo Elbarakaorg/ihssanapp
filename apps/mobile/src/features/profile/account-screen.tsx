@@ -9,6 +9,7 @@ import { getAvatarUrl, getClinicianVerificationStatus, getCurrentUserProfile, ty
 import { getMyCredentials, type Credentials } from '@/features/doctor/doctor-api';
 import { Page, PageHeading, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { Loading } from '@/ui/loading';
 
 const imageTypes = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -145,7 +146,7 @@ export default function AccountScreen() {
     }
   };
 
-  if (loading) return <Page><View style={styles.loading}><ActivityIndicator color={palette.forest} /><Text style={styles.muted}>Loading your account</Text></View></Page>;
+  if (loading) return <Page><Loading label="Loading your account" /></Page>;
 
   const roleLabel = profile?.profile_type === 'clinician' ? 'Clinician account' : 'Patient account';
 

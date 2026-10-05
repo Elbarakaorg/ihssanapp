@@ -1,13 +1,14 @@
 import { type Href, useFocusEffect, useRouter } from 'expo-router';
 import { ArrowRight, Clock3, KeyRound, LockKeyhole, QrCode, UsersRound } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/auth-provider';
 import { listMyPatientProfiles, type AuthorizedPatient } from '@/features/profile/clinician-patients-repository';
 import { getClinicianVerificationStatus } from '@/features/profile/profile-repository';
 import { Page, PageHeading, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { Loading } from '@/ui/loading';
 
 export default function ClinicianPatientsScreen() {
   useScheme();
@@ -75,7 +76,7 @@ export default function ClinicianPatientsScreen() {
 
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
       <SectionHeading title="Authorized profiles" detail={`${activePatients.length} active`} />
-      {loading ? <View style={styles.loading}><ActivityIndicator color={palette.forest} /><Text style={styles.emptyText}>Loading authorized profiles</Text></View> : verificationStatus !== 'verified' ? null : activePatients.length ? (
+      {loading ? <Loading label="Loading authorized profiles" /> : verificationStatus !== 'verified' ? null : activePatients.length ? (
         <View style={styles.list}>{activePatients.map((patient) => <Pressable accessibilityRole="button" key={patient.grant_id} onPress={() => router.push(`/my-patients/${patient.grant_id}` as Href)} style={[uiStyles.card, styles.patientRow]}>
           <View style={styles.patientAvatar}><UsersRound color={palette.forest} size={19} /></View>
           <View style={styles.patientCopy}>

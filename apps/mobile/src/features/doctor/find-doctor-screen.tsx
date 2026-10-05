@@ -1,12 +1,13 @@
 import { type Href, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { RemoteImage } from '@/features/doctor/doctor-image';
 import { type DoctorSummary, searchDoctors } from '@/features/doctor/doctor-api';
 import { BackLink, Field, Message, doctorStyles as s } from '@/features/doctor/ui';
 import { Page } from '@/ui/patient-ui';
 import { themedStyles, useScheme } from '@/ui/palette';
+import { Loading } from '@/ui/loading';
 
 export default function FindDoctorScreen() {
   useScheme();
@@ -32,7 +33,7 @@ export default function FindDoctorScreen() {
       <Text style={s.title}>Find a doctor</Text>
       <Text style={s.body}>Verified doctors with an approved practice location.</Text>
       <Field label="Name, specialty or city" value={query} onChangeText={setQuery} autoCorrect={false} maxLength={60} />
-      {rows === null ? <ActivityIndicator style={{ marginTop: 24 }} /> : null}
+      {rows === null ? <Loading label="Finding doctors" state="searching" /> : null}
       {error ? <Message kind="error">{error}</Message> : null}
       {rows?.length === 0 && !error ? <Message kind="info">No doctors found.</Message> : null}
       {rows?.map((d) => (

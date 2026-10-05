@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter, Stack, useFocusEffect } from 'expo-router';
 import { ArrowLeft, CircleHelp, Plus } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/auth-provider';
 import MetricTrendChart, { type ChartPeriod } from '@/features/health/metric-trend-chart';
@@ -10,6 +10,7 @@ import { getPatientMetric, type SavedMeasurement } from '@/features/health/measu
 import { useLocale } from '@/platform/locale/locale-provider';
 import { Page, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { Loading } from '@/ui/loading';
 
 type DetailData = Awaited<ReturnType<typeof getPatientMetric>>;
 
@@ -73,7 +74,7 @@ export default function MetricDetailScreen() {
       </View>
 
       {!session ? <View style={styles.messageCard}><Text style={styles.sectionTitle}>Sign in to view your history</Text><Text style={styles.body}>Your measurements and clinician-approved explanations are available in your private account.</Text><Pressable onPress={() => router.push('/auth')} style={styles.secondaryButton}><Text style={styles.secondaryLabel}>Sign in</Text></Pressable></View> : null}
-      {loading ? <View style={styles.loading}><ActivityIndicator color={palette.forest} /><Text style={styles.body}>Loading your measurements</Text></View> : null}
+      {loading ? <Loading label="Loading your measurements" /> : null}
       {error ? (
         <View accessibilityRole="alert" style={styles.errorState}>
           <Text style={styles.error}>{error}</Text>

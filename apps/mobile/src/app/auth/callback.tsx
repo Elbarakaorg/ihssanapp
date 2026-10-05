@@ -1,12 +1,13 @@
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useEffect, useLayoutEffect, useState } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, Text } from 'react-native';
+import { Platform, StyleSheet, Text } from 'react-native';
 
 import { useAuth } from '@/features/auth/auth-provider';
 import { getCurrentUserProfile } from '@/features/profile/profile-repository';
 import { supabaseClient } from '@/platform/supabase/client';
 import { Page, PageHeading, PreviewNotice } from '@/ui/patient-ui';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { Loading } from '@/ui/loading';
 
 export default function AuthCallbackScreen() {
   useScheme();
@@ -91,7 +92,7 @@ export default function AuthCallbackScreen() {
       <PageHeading eyebrow="Secure sign-in" title="Finishing your sign-in">
         We’re connecting your Google account to your Ihssan profile.
       </PageHeading>
-      {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : <ActivityIndicator color={palette.forest} />}
+      {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : <Loading label="Signing you in" state="connecting" />}
     </Page>
   );
 }

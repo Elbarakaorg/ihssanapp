@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/auth-provider';
 import { type DoctorLocation, listMyPracticeLocations } from '@/features/discovery/care-api';
@@ -8,6 +8,7 @@ import { type ScheduleRule, addScheduleRule, deleteScheduleRule, listMyScheduleR
 import { BackLink, Button, Chip, Field, Message, doctorStyles as s } from '@/features/doctor/ui';
 import { Page } from '@/ui/patient-ui';
 import { useScheme } from '@/ui/palette';
+import { Loading } from '@/ui/loading';
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const lengths = [15, 20, 30, 45, 60];
@@ -58,7 +59,7 @@ export default function ScheduleScreen() {
       <BackLink href="/" label="Home" />
       <Text style={s.title}>My schedule</Text>
       <Text style={s.body}>Set the weekly hours patients can book, per approved location. Times are Morocco time. Only approved locations can take bookings.</Text>
-      {loading ? <ActivityIndicator style={{ marginTop: 24 }} /> : null}
+      {loading ? <Loading label="Loading schedule" /> : null}
       {!loading && locations.length === 0 ? <Message kind="info">You need at least one approved practice location first. Add one from “My practice locations”.</Message> : null}
       {error ? <Message kind="error">{error}</Message> : null}
 

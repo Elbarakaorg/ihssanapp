@@ -9,6 +9,7 @@ import { normalizeEmailConfirmationToken, validateAuthForm, type AuthMode } from
 import { getCurrentUserProfile } from '@/features/profile/profile-repository';
 import { DarkAuthShell, ink } from './dark-auth-shell';
 import { themedStyles, useScheme } from '@/ui/palette';
+import { Loading } from '@/ui/loading';
 
 export default function AuthScreen() {
   useScheme();
@@ -196,7 +197,7 @@ export default function AuthScreen() {
           ) : null}
 
           {!isReady ? (
-            <View style={styles.loadingRow}><ActivityIndicator color={ink.accent} /><Text style={styles.loadingText}>Restoring session</Text></View>
+            <Loading label="Restoring session" state="connecting" />
           ) : null}
 
           {!pendingSignupEmail ? (

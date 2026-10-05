@@ -1,12 +1,13 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, CalendarDays, Droplets, HeartPulse, Pill, ShieldCheck, UserRound } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PatientNotesSection } from '@/features/doctor/patient-notes-section';
 import { getMySharedPatientProfile, listSharedPatientMeasurements, type SharedMeasurement, type SharedPatientProfile } from '@/features/profile/clinician-patients-repository';
 import { Page, PageHeading, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { Loading } from '@/ui/loading';
 
 export default function SharedPatientScreen() {
   useScheme();
@@ -41,7 +42,7 @@ export default function SharedPatientScreen() {
   return (
     <Page>
       <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.back}><ArrowLeft color={palette.ink} size={18} /><Text style={styles.backLabel}>My patients</Text></Pressable>
-      {loading ? <View style={styles.loading}><ActivityIndicator color={palette.forest} /><Text style={styles.body}>Revalidating patient access</Text></View> : error ? <View style={styles.unavailable}><ShieldCheck color={palette.muted} size={24} /><Text style={styles.unavailableTitle}>Profile unavailable</Text><Text style={styles.body}>{error}</Text></View> : profile ? <>
+      {loading ? <Loading label="Revalidating patient access" state="connecting" /> : error ? <View style={styles.unavailable}><ShieldCheck color={palette.muted} size={24} /><Text style={styles.unavailableTitle}>Profile unavailable</Text><Text style={styles.body}>{error}</Text></View> : profile ? <>
         <PageHeading eyebrow="Patient-approved access" title={profile.patient_name}>
           Shared on {formatDate(profile.granted_at)}. Access is checked each time this profile opens.
         </PageHeading>

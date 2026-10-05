@@ -1,6 +1,6 @@
 import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/auth-provider';
 import { RemoteImage } from '@/features/doctor/doctor-image';
@@ -8,6 +8,7 @@ import { type DoctorProfile, type Slot, bookAppointment, getDoctorProfile, listA
 import { BackLink, Button, Chip, Field, Message, doctorStyles as s, formatDay, formatTime, toDateKey } from '@/features/doctor/ui';
 import { Page } from '@/ui/patient-ui';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { Loading } from '@/ui/loading';
 
 export default function DoctorPublicScreen() {
   useScheme();
@@ -69,7 +70,7 @@ export default function DoctorPublicScreen() {
     } finally { setBusy(false); }
   };
 
-  if (doctor === undefined) return <Page><BackLink href="/doctors" label="Find a doctor" /><ActivityIndicator /></Page>;
+  if (doctor === undefined) return <Page><BackLink href="/doctors" label="Find a doctor" /><Loading label="Loading profile" /></Page>;
   if (!doctor) return <Page><BackLink href="/doctors" label="Find a doctor" /><Message kind="info">{error || 'This doctor profile is not available.'}</Message></Page>;
 
   return (
@@ -143,7 +144,7 @@ export default function DoctorPublicScreen() {
         <>
           {doctor.locations.filter((l) => l.bookable).length > 1 ? <View style={s.row}>{doctor.locations.filter((l) => l.bookable).map((l) => <Chip key={l.id} label={l.venue_name} selected={l.id === locationId} onPress={() => { setLocationId(l.id); setMode(l.consultation_modes[0] ?? 'in_person'); }} />)}</View> : null}
           {location.consultation_modes.length > 1 ? <View style={s.row}>{location.consultation_modes.map((m) => <Chip key={m} label={m === 'video' ? 'Video' : 'In person'} selected={mode === m} onPress={() => setMode(m)} />)}</View> : null}
-          {slots === null ? <ActivityIndicator style={{ marginTop: 16 }} /> : null}
+          {slots === null ? <Loading label="Loading times" state="searching" /> : null}
           {slots?.length === 0 ? <Message kind="info">No free times in the next 14 days.</Message> : null}
           <View style={s.row}>{dayKeys.map((k) => { const first = slots?.find((x) => toDateKey(new Date(x.starts_at)) === k); return <Chip key={k} label={first ? formatDay(first.starts_at) : k} selected={dayKey === k} onPress={() => { setDayKey(k); setSlot(''); }} />; })}</View>
           <View style={s.row}>{daySlots.map((x) => <Chip key={x.starts_at} label={formatTime(x.starts_at)} selected={slot === x.starts_at} onPress={() => setSlot(x.starts_at)} />)}</View>

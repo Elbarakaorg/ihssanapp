@@ -1,7 +1,7 @@
 import { type Href, useFocusEffect, useRouter } from 'expo-router';
 import { Activity, CircleHelp, Droplets, FlaskConical, Plus, TrendingUp, X } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/auth-provider';
 import MetricTrendChart, { type ChartPeriod } from '@/features/health/metric-trend-chart';
@@ -10,6 +10,7 @@ import { summarizeMeasurements } from '@/features/health/measurement-summary';
 import { useLocale } from '@/platform/locale/locale-provider';
 import { Page, PageHeading, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { Loading } from '@/ui/loading';
 
 type MetricCard = { id: string; databaseKey: string; category: string; name: string; detail: string; measurements: SavedMeasurement[]; content: PublishedMetricContent | null };
 const fallbackMetrics: MetricCard[] = [
@@ -122,10 +123,7 @@ export default function HealthScreen() {
       ) : null}
 
       {session && loading ? (
-        <View style={styles.loadingNotice}>
-          <ActivityIndicator color={palette.forest} />
-          <Text style={styles.loadingText}>Loading your saved measurements</Text>
-        </View>
+        <Loading label="Loading your saved measurements" />
       ) : null}
 
       {!session || hasLoaded ? <>

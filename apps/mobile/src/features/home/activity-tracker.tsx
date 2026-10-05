@@ -2,12 +2,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BarChart } from 'react-native-gifted-charts';
 import { ArrowRight, Flame, Footprints, Map, Minus, Pause, Play, Plus, ShieldCheck, Timer } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Pedometer } from 'expo-sensors';
 
 import { estimateActivity } from '@/features/home/activity-estimates';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { Loading } from '@/ui/loading';
 
 type DayCount = { label: string; steps: number };
 type TrackerStatus = 'checking' | 'permission' | 'ready' | 'unavailable' | 'error';
@@ -165,7 +166,7 @@ export default function ActivityTracker({ detailed = false, onOpen }: Props) {
           <View style={styles.headerIcon}><Footprints color={palette.forest} size={19} /></View>
         </View>
       </Pressable>
-      {status === 'checking' ? <View style={styles.stateRow}><ActivityIndicator color={palette.forest} /><Text style={styles.stateText}>Checking device pedometer</Text></View> : null}
+      {status === 'checking' ? <Loading label="Checking device pedometer" state="searching" /> : null}
       {status === 'permission' ? <View style={styles.permissionRow}><Text style={styles.stateText}>Allow motion access to count steps from your device.</Text><Pressable accessibilityRole="button" onPress={() => void enableTracking()} style={styles.enableButton}><Text style={styles.enableLabel}>Enable</Text></Pressable></View> : null}
       {status === 'unavailable' ? <Text style={styles.stateText}>Step counting is available on supported iOS and Android devices, not in this web preview.</Text> : null}
       {status === 'ready' ? <>

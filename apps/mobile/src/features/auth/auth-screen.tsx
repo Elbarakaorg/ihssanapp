@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ArrowRight, Check, ShieldCheck } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useAuth } from './auth-provider';
 import type { ProfileType } from './auth-contract';
@@ -15,7 +15,7 @@ export default function AuthScreen() {
   useScheme();
   const router = useRouter();
   const { mode: requestedMode } = useLocalSearchParams<{ mode?: string }>();
-  const { isConfigured, isReady, session, signIn, signInWithGoogle, signOut, signUp, confirmSignup, resendSignupConfirmation } = useAuth();
+  const { isConfigured, isReady, session, signIn, signInWithGoogle, signInWithApple, signOut, signUp, confirmSignup, resendSignupConfirmation } = useAuth();
   const [mode, setMode] = useState<AuthMode>(requestedMode === 'sign-up' ? 'sign-up' : 'sign-in');
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -147,6 +147,20 @@ export default function AuthScreen() {
       });
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : 'Google sign-in could not be started.');
+    } finally {
+      setGoogleSubmitting(false);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    setGoogleSubmitting(true);
+    setError('');
+    try {
+      await signInWithApple(profileType);
+      router.replace({ pathname: '/auth/callback', params: { profile_type: profileType } });
+    } catch (authError) {
+      const message = authError instanceof Error ? authError.message : 'Sign in with Apple failed.';
+      if (!/cancel/i.test(message)) setError(message);
     } finally {
       setGoogleSubmitting(false);
     }
@@ -329,6 +343,15 @@ export default function AuthScreen() {
                   <Text style={styles.googleLabel}>Continue with Google</Text>
                 </>}
               </Pressable>
+              {Platform.OS === 'ios' ? (
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={googleSubmitting || !isConfigured}
+                  onPress={() => void handleAppleSignIn()}
+                  style={[styles.googleButton, (googleSubmitting || !isConfigured) && styles.buttonDisabled]}>
+                  <Text style={styles.googleLabel}>Continue with Apple</Text>
+                </Pressable>
+              ) : null}
             </>
           ) : null}
 

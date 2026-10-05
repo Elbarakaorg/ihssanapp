@@ -7,6 +7,7 @@ type AuthContextValue = {
   isReady: boolean;
   session: AuthSession | null;
   signInWithGoogle(profileType?: ProfileType): Promise<void>;
+  signInWithApple(profileType?: ProfileType): Promise<void>;
   signIn(email: string, password: string): Promise<void>;
   signUp(email: string, password: string, displayName: string, profileType: ProfileType): Promise<SignUpResult>;
   confirmSignup(email: string, token: string): Promise<void>;
@@ -51,6 +52,7 @@ export function AuthProvider({ repository, children }: PropsWithChildren<{ repos
         isReady,
         session,
         signInWithGoogle: repository.signInWithGoogle,
+        signInWithApple: repository.signInWithApple,
         signIn: repository.signIn,
         signUp: repository.signUp,
         confirmSignup: repository.confirmSignup,

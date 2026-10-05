@@ -1,11 +1,12 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Camera, LockKeyhole, Save, ShieldCheck, UserRound } from 'lucide-react-native';
+import { ArrowLeft, Camera, Trash2, LockKeyhole, Save, ShieldCheck, UserRound } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/auth-provider';
 import { getAvatarUrl, getClinicianVerificationStatus, getCurrentUserProfile, type AccountProfile, updateCurrentUserProfile, uploadCurrentUserAvatar } from '@/features/profile/profile-repository';
+import { supabaseClient } from '@/platform/supabase/client';
 import { getMyCredentials, type Credentials } from '@/features/doctor/doctor-api';
 import { Page, PageHeading, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
@@ -16,7 +17,9 @@ const imageTypes = ['image/jpeg', 'image/png', 'image/webp'];
 export default function AccountScreen() {
   useScheme();
   const router = useRouter();
-  const { session, updatePassword } = useAuth();
+  const { session, updatePassword, signOut } = useAuth();
+  const [deleteText, setDeleteText] = useState('');
+  const [deleting, setDeleting] = useState(false);
   const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState('');
@@ -146,6 +149,21 @@ export default function AccountScreen() {
     }
   };
 
+  const deleteAccount = async () => {
+    if (deleteText.trim().toUpperCase() !== 'DELETE' || !supabaseClient) return;
+    setDeleting(true);
+    setError('');
+    try {
+      const { error: deleteError } = await supabaseClient.rpc('delete_my_account');
+      if (deleteError) throw deleteError;
+      await signOut().catch(() => undefined);
+      router.replace('/auth');
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'Could not delete your account.');
+      setDeleting(false);
+    }
+  };
+
   if (loading) return <Page><Loading label="Loading your account" /></Page>;
 
   const roleLabel = profile?.profile_type === 'clinician' ? 'Clinician account' : 'Patient account';
@@ -217,6 +235,16 @@ export default function AccountScreen() {
           {savingPassword ? <ActivityIndicator color={palette.forest} /> : <><ShieldCheck color={palette.forest} size={17} /><Text style={styles.secondaryLabel}>Set or change password</Text></>}
         </Pressable>
       </View>
+
+      <SectionHeading title="Delete account" />
+      <View style={[uiStyles.card, styles.formCard]}>
+        <Text style={styles.securityDetail}>This permanently removes your profile, health records, treatments, shared access, comments and loves. It cannot be undone. Export anything you need first.</Text>
+        <Text style={styles.fieldLabel}>Type DELETE to confirm</Text>
+        <TextInput autoCapitalize="characters" autoCorrect={false} onChangeText={setDeleteText} style={styles.input} value={deleteText} />
+        <Pressable accessibilityRole="button" disabled={deleting || deleteText.trim().toUpperCase() !== 'DELETE'} onPress={() => void deleteAccount()} style={[styles.dangerButton, (deleting || deleteText.trim().toUpperCase() !== 'DELETE') && styles.disabledButton]}>
+          {deleting ? <ActivityIndicator color={palette.white} /> : <><Trash2 color={palette.white} size={17} /><Text style={styles.primaryLabel}>Delete my account</Text></>}
+        </Pressable>
+      </View>
     </Page>
   );
 }
@@ -248,6 +276,7 @@ const styles = themedStyles(() => StyleSheet.create({
   securityTitle: { color: palette.ink, fontSize: 14, fontWeight: '700' },
   securityDetail: { color: palette.muted, flexShrink: 1, fontSize: 12, lineHeight: 18, marginTop: 3 },
   secondaryButton: { alignItems: 'center', backgroundColor: palette.leaf, borderColor: 'transparent', borderRadius: 11, borderWidth: 1, flexDirection: 'row', gap: 8, justifyContent: 'center', marginTop: 20, minHeight: 48, paddingHorizontal: 16 },
+  dangerButton: { alignItems: 'center', backgroundColor: '#A23B2A', borderRadius: 11, flexDirection: 'row', gap: 8, justifyContent: 'center', marginTop: 20, minHeight: 48, paddingHorizontal: 16 },
   secondaryLabel: { color: palette.forest, fontSize: 13, fontWeight: '700' },
   disabledButton: { opacity: 0.55 },
 }));

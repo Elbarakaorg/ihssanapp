@@ -86,6 +86,28 @@ export const supabaseAuthRepository: AuthRepository = {
     if (exchangeError) throw exchangeError;
   },
 
+  async signInWithApple(profileType?: ProfileType) {
+    if (!supabaseClient) throw new Error('Authentication is not configured.');
+    if (Platform.OS !== 'ios') throw new Error('Sign in with Apple is available on iOS.');
+    const AppleAuthentication = await import('expo-apple-authentication');
+    let credential;
+    try {
+      credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [AppleAuthentication.AppleAuthenticationScope.FULL_NAME, AppleAuthentication.AppleAuthenticationScope.EMAIL],
+      });
+    } catch (error) {
+      if ((error as { code?: string }).code === 'ERR_REQUEST_CANCELED') throw new Error('Sign in with Apple was cancelled.');
+      throw error;
+    }
+    if (!credential.identityToken) throw new Error('Apple did not return an identity token.');
+    const { error } = await supabaseClient.auth.signInWithIdToken({ provider: 'apple', token: credential.identityToken });
+    if (error) throw error;
+
+    // Apple only shares the name on the first sign-in, so keep it while we have it.
+    const name = [credential.fullName?.givenName, credential.fullName?.familyName].filter(Boolean).join(' ');
+    await supabaseClient.auth.updateUser({ data: { ...(name ? { full_name: name } : {}), ...(profileType ? { profile_type: profileType } : {}) } }).catch(() => undefined);
+  },
+
   async signIn(email, password) {
     if (!supabaseClient) throw new Error('Authentication is not configured.');
 

@@ -209,6 +209,12 @@ export const listDoctorComments = (id: string) => rpc<DoctorComment[]>('list_doc
 export const saveDoctorComment = (id: string, body: string) => rpc('upsert_doctor_comment', { p_clinician_id: id, p_body: body.trim() }, 'Could not save your comment.');
 export const deleteMyDoctorComment = (id: string) => rpc('delete_my_doctor_comment', { p_clinician_id: id }, 'Could not delete your comment.');
 export const setCommentHidden = (commentId: string, hidden: boolean) => rpc('set_comment_hidden', { p_comment_id: commentId, p_hidden: hidden }, 'Could not update this comment.');
+export const commentReportReasons = [
+  { value: 'spam', label: 'Spam' }, { value: 'abusive', label: 'Abusive' }, { value: 'false', label: 'False' },
+  { value: 'private_info', label: 'Private info' }, { value: 'other', label: 'Other' },
+] as const;
+export const reportDoctorComment = (commentId: string, reason: string) =>
+  rpc('report_doctor_comment', { p_comment_id: commentId, p_reason: reason }, 'Could not send your report.');
 
 /** Accepts "instagram.com/me" and turns it into a full https address; returns null when it cannot be a link. */
 export function normalizeLink(input: string): string | null {

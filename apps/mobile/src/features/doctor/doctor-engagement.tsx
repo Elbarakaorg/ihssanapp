@@ -6,7 +6,7 @@ import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/features/auth/auth-provider';
 import {
   type DoctorComment, type SocialLink,
-  deleteMyDoctorComment, listDoctorComments, saveDoctorComment, setCommentHidden, socialKinds, toggleDoctorLove,
+  commentReportReasons, deleteMyDoctorComment, listDoctorComments, reportDoctorComment, saveDoctorComment, setCommentHidden, socialKinds, toggleDoctorLove,
 } from '@/features/doctor/doctor-api';
 import { Button, Field, Message, doctorStyles as s } from '@/features/doctor/ui';
 import { Loading } from '@/ui/loading';
@@ -73,6 +73,8 @@ export function CommentsSection({ doctorId, enabled, isOwner, onCountChange }: {
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [reporting, setReporting] = useState<string | null>(null);
+  const [reported, setReported] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     try {
@@ -112,6 +114,19 @@ export function CommentsSection({ doctorId, enabled, isOwner, onCountChange }: {
             <Pressable accessibilityRole="button" disabled={busy} onPress={() => void act(() => setCommentHidden(c.id, !c.is_hidden))}>
               <Text style={styles.action}>{c.is_hidden ? 'Show this comment' : 'Hide this comment'}</Text>
             </Pressable>
+          ) : null}
+          {!isOwner && !c.is_mine && session ? (
+            reported.includes(c.id) ? <Text style={s.meta}>Thanks, we’ll review this comment.</Text> : reporting === c.id ? (
+              <View style={s.row}>
+                {commentReportReasons.map((r) => (
+                  <Pressable key={r.value} accessibilityRole="button" disabled={busy} onPress={() => void act(async () => { await reportDoctorComment(c.id, r.value); setReported((x) => [...x, c.id]); setReporting(null); })} style={styles.link}>
+                    <Text style={styles.linkLabel}>{r.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : (
+              <Pressable accessibilityRole="button" onPress={() => setReporting(c.id)}><Text style={styles.action}>Report</Text></Pressable>
+            )
           ) : null}
         </View>
       ))}

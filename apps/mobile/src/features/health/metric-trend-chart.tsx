@@ -3,6 +3,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 
 import type { SavedMeasurement } from '@/features/health/measurement-repository';
+import { buildBands } from '@/features/health/chart-bands';
+import RangeChart from '@/features/health/range-chart';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
 
 export type ChartPeriod = '1W' | '1M' | '3M' | '1Y' | 'ALL';
@@ -46,6 +48,16 @@ export default function MetricTrendChart({ measurements, large = false, period =
         <View style={styles.singleDot} />
         <Text style={styles.singleValue}>{point.value}{secondaryPoint ? ` / ${secondaryPoint.value}` : ''}</Text>
         <Text style={styles.singleDate}>{formatLabel(point.measuredAt)}</Text>
+      </View>
+    );
+  }
+
+  if (large) {
+    const rangePoints = primary.map((point, i) => ({ at: point.measuredAt, value: point.value, second: isDual ? secondary[i]?.value : undefined }));
+    return (
+      <View style={styles.chartWrap}>
+        <RangeChart bands={buildBands(metricKey, referenceRanges, filtered)} dual={isDual} points={rangePoints} unit={isDual ? 'mm Hg' : unit} />
+        <Stats isDual={isDual} primary={primary} secondary={secondary} unit={unit} />
       </View>
     );
   }

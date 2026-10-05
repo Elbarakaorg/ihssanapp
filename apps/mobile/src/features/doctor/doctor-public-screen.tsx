@@ -6,6 +6,7 @@ import { useAuth } from '@/features/auth/auth-provider';
 import { RemoteImage } from '@/features/doctor/doctor-image';
 import { type DoctorProfile, type Slot, bookAppointment, getDoctorProfile, listAvailableSlots, shareDoctorProfile } from '@/features/doctor/doctor-api';
 import { BackLink, Button, Chip, Field, Message, doctorStyles as s, formatDay, formatTime, toDateKey } from '@/features/doctor/ui';
+import { CommentsSection, LoveButton, SocialLinks } from '@/features/doctor/doctor-engagement';
 import { Page } from '@/ui/patient-ui';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
 import { Loading } from '@/ui/loading';
@@ -70,6 +71,8 @@ export default function DoctorPublicScreen() {
     } finally { setBusy(false); }
   };
 
+  const isOwner = !!doctor && session?.identity.id === doctor.clinician_id;
+
   if (doctor === undefined) return <Page><BackLink href="/doctors" label="Find a doctor" /><Loading label="Loading profile" /></Page>;
   if (!doctor) return <Page><BackLink href="/doctors" label="Find a doctor" /><Message kind="info">{error || 'This doctor profile is not available.'}</Message></Page>;
 
@@ -84,10 +87,12 @@ export default function DoctorPublicScreen() {
           {doctor.headline ? <Text style={s.body}>{doctor.headline}</Text> : null}
         </View>
       </View>
-      <View style={s.row}>
+      <View style={[s.row, { alignItems: 'center' }]}>
+        <LoveButton doctorId={doctor.clinician_id} initialCount={doctor.love_count ?? 0} initialLoved={!!doctor.loved_by_me} isOwner={isOwner} />
         <Button tone="secondary" label="Share profile" onPress={() => void shareDoctorProfile(doctor.clinician_id, doctor.name).then((r) => setNotice(r === 'copied' ? 'Link copied.' : '')).catch(() => setNotice(''))} />
       </View>
       {notice ? <Message kind="ok">{notice}</Message> : null}
+      <SocialLinks links={doctor.social_links ?? []} />
       <Text style={s.meta}>{[doctor.specialties.join(', '), doctor.years_experience ? `${doctor.years_experience} years experience` : '', doctor.languages.length ? `Speaks ${doctor.languages.join(', ')}` : ''].filter(Boolean).join(' · ')}</Text>
       <Message kind="ok">Identity and license checked by Ihssan.</Message>
       {doctor.bio ? <Text style={[s.body, { marginTop: 14 }]}>{doctor.bio}</Text> : null}
@@ -131,6 +136,8 @@ export default function DoctorPublicScreen() {
           </View>
         </View>
       ))}
+
+      <CommentsSection doctorId={doctor.clinician_id} enabled={doctor.comments_enabled !== false} isOwner={isOwner} />
 
       <Text style={s.section}>Book an appointment</Text>
       {booked ? (

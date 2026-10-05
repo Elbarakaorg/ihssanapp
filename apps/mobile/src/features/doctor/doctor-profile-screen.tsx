@@ -7,7 +7,7 @@ import { useAuth } from '@/features/auth/auth-provider';
 import { RemoteImage } from '@/features/doctor/doctor-image';
 import {
   type CvExtraction, type Credentials, type ExperienceEntry, type FeaturedSource, type GalleryImage,
-  addGalleryImage, deleteGalleryImage, extractCv, getMyCredentials, getMyExperience, getMyMedia, getMyPublicProfile,
+  deleteGalleryImage, getMyEngagement, normalizeLink, pickAndAddGalleryImages, setMyEngagement, socialKinds, GALLERY_LIMIT, extractCv, getMyCredentials, getMyExperience, getMyMedia, getMyPublicProfile,
   languageOptions, pickAndUploadImage, saveMyExperience, saveMyPublicProfile, setFeaturedImage, shareDoctorProfile, submitMyCredentials,
 } from '@/features/doctor/doctor-api';
 import { BackLink, Button, Chip, Field, Message, doctorStyles as s } from '@/features/doctor/ui';
@@ -58,6 +58,9 @@ export default function DoctorProfileScreen() {
   const [featuredPath, setFeaturedPath] = useState<string | null>(null);
   const [avatarPath, setAvatarPath] = useState<string | null>(null);
   const [gallery, setGallery] = useState<GalleryImage[]>([]);
+  const [links, setLinks] = useState<Record<string, string>>({});
+  const [commentsOn, setCommentsOn] = useState(true);
+  const [loves, setLoves] = useState(0);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
@@ -67,15 +70,19 @@ export default function DoctorProfileScreen() {
 
   const load = useCallback(async () => {
     try {
-      const [st, c, p, exp, media] = await Promise.all([getClinicianVerificationStatus(), getMyCredentials(), getMyPublicProfile(), getMyExperience(), getMyMedia().catch(() => null)]);
+      const [st, c, p, exp, media, eng] = await Promise.all([getClinicianVerificationStatus(), getMyCredentials(), getMyPublicProfile(), getMyExperience(), getMyMedia().catch(() => null), getMyEngagement().catch(() => null)]);
       setStatus(st);
       setCreds(c);
       if (c) { setLicense(c.license_number ?? ''); setBody(c.issuing_body ?? ''); setSpecialty(c.specialty ?? ''); setCity(c.city ?? ''); }
       if (!dirtyRef.current) {
       if (p) { setHeadline(p.headline ?? ''); setBio(p.bio ?? ''); setSpecialties((p.specialties ?? []).join(', ')); setLanguages(p.languages ?? []); setYears(p.years_experience != null ? String(p.years_experience) : ''); setIsPublic(!!p.is_public); }
       setExperience(exp);
-      setSavedSnapshot(JSON.stringify([p?.headline ?? '', p?.bio ?? '', (p?.specialties ?? []).join(', '), p?.languages ?? [], p?.years_experience != null ? String(p.years_experience) : '', !!p?.is_public, exp]));
+      const loadedLinks = Object.fromEntries((eng?.social_links ?? []).map((l) => [l.kind, l.url]));
+      setLinks(loadedLinks);
+      setCommentsOn(eng?.comments_enabled ?? true);
+      setSavedSnapshot(JSON.stringify([p?.headline ?? '', p?.bio ?? '', (p?.specialties ?? []).join(', '), p?.languages ?? [], p?.years_experience != null ? String(p.years_experience) : '', !!p?.is_public, exp, loadedLinks, eng?.comments_enabled ?? true]));
       }
+      if (eng) setLoves(eng.love_count);
       if (media) { setFeatured(media.featured_source); setFeaturedPath(media.featured_image_path); setAvatarPath(media.avatar_path); setGallery(media.gallery); }
     } catch (e) { setError(e instanceof Error ? e.message : 'Could not load your profile.'); } finally { setLoading(false); }
   }, []);
@@ -88,7 +95,7 @@ export default function DoctorProfileScreen() {
     try { await task(); } catch (e) { setError(e instanceof Error ? e.message : 'Something went wrong.'); } finally { setBusy(''); }
   };
 
-  const snapshot = JSON.stringify([headline, bio, specialties, languages, years, isPublic, experience]);
+  const snapshot = JSON.stringify([headline, bio, specialties, languages, years, isPublic, experience, links, commentsOn]);
   const dirty = savedSnapshot !== '' && snapshot !== savedSnapshot;
   dirtyRef.current = dirty;
 
@@ -106,7 +113,17 @@ export default function DoctorProfileScreen() {
     if (list.some((item) => item.length < 2 || item.length > 60)) throw new Error('Each specialty must be 2–60 characters.');
     await saveMyPublicProfile({ headline, bio, specialties: list, languages, years_experience: yearsNumber, is_public: isPublic });
     await saveMyExperience(experience);
-    setSavedSnapshot(snapshot);
+    const cleanLinks = [];
+    for (const { kind, label } of socialKinds) {
+      const raw = (links[kind] ?? '').trim();
+      if (!raw) continue;
+      const url = normalizeLink(raw);
+      if (!url) throw new Error(`${label}: enter a valid web address, like instagram.com/yourname.`);
+      cleanLinks.push({ kind, url });
+    }
+    await setMyEngagement(cleanLinks, commentsOn);
+    setLinks(Object.fromEntries(cleanLinks.map((l) => [l.kind, l.url])));
+    setSavedSnapshot(JSON.stringify([headline, bio, specialties, languages, years, isPublic, experience, Object.fromEntries(cleanLinks.map((l) => [l.kind, l.url])), commentsOn]));
     setNotice(isPublic ? 'Saved. Your profile is visible to patients.' : 'Saved. Your profile is hidden from patients.');
   });
 
@@ -122,12 +139,10 @@ export default function DoctorProfileScreen() {
     setFeatured(source);
   });
 
-  const addPhoto = () => run('gallery', async () => {
-    if (gallery.length >= 12) throw new Error('You can add up to 12 photos.');
-    const path = await pickAndUploadImage([4, 3]);
-    if (!path) return;
-    await addGalleryImage(path);
-    setGallery((await getMyMedia()).gallery);
+  const addPhotos = () => run('gallery', async () => {
+    const { added, skipped } = await pickAndAddGalleryImages(GALLERY_LIMIT - gallery.length);
+    if (added) setGallery((await getMyMedia()).gallery);
+    if (added || skipped) setNotice(`${added} photo${added === 1 ? '' : 's'} added${skipped ? `, ${skipped} skipped (too large, wrong format or over the limit)` : ''}.`);
   });
 
   const removePhoto = (id: string) => run('gallery', async () => {
@@ -219,7 +234,7 @@ export default function DoctorProfileScreen() {
       </View>
       {!verified ? <Text style={s.meta}>Photos can be changed once you are verified.</Text> : null}
 
-      <Text style={s.section}>Gallery ({gallery.length}/12)</Text>
+      <Text style={s.section}>Gallery ({gallery.length}/{GALLERY_LIMIT})</Text>
       <Text style={s.meta}>Show your clinic, team and equipment. Don’t upload patient photos.</Text>
       <View style={styles.grid}>
         {gallery.map((g) => (
@@ -229,7 +244,7 @@ export default function DoctorProfileScreen() {
           </View>
         ))}
       </View>
-      <Button label="Add a photo" tone="secondary" busy={busy === 'gallery'} disabled={gallery.length >= 12} onPress={() => void addPhoto()} />
+      <Button label="Add photos" tone="secondary" busy={busy === 'gallery'} disabled={gallery.length >= GALLERY_LIMIT || !verified} onPress={() => void addPhotos()} />
 
       <Text style={s.section}>About</Text>
       <Field label="Headline" value={headline} onChangeText={setHeadline} maxLength={120} placeholder="Cardiologist · Casablanca" />
@@ -268,6 +283,16 @@ export default function DoctorProfileScreen() {
       <Text style={s.section}>Contact</Text>
       <Text style={s.meta}>Patients contact you through your approved practice locations (clinics and hospitals), shown with directions and phone.</Text>
       <Button label="Manage practice locations" tone="secondary" onPress={() => router.push('/practice-locations' as Href)} />
+
+      <Text style={s.section}>Links</Text>
+      <Text style={s.meta}>Optional. Shown as buttons on your public profile. Only https addresses are accepted.</Text>
+      {socialKinds.map(({ kind, label, placeholder }) => (
+        <Field key={kind} label={label} value={links[kind] ?? ''} onChangeText={(v) => setLinks((cur) => ({ ...cur, [kind]: v }))} autoCapitalize="none" autoCorrect={false} keyboardType="url" maxLength={200} placeholder={placeholder} />
+      ))}
+
+      <Text style={s.section}>Love and comments</Text>
+      <Text style={s.meta}>{loves === 1 ? '1 person loves your profile.' : `${loves} people love your profile.`} Patients can leave one comment each; you can hide any comment but not edit it.</Text>
+      <View style={s.row}><Chip label="Comments on" selected={commentsOn} onPress={() => setCommentsOn(true)} /><Chip label="Comments off" selected={!commentsOn} onPress={() => setCommentsOn(false)} /></View>
 
       <Text style={s.section}>Visibility</Text>
       <Text style={s.meta}>Appears in Find a doctor only when visible, verified, and with an approved location.</Text>

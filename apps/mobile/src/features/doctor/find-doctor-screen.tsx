@@ -6,7 +6,7 @@ import { RemoteImage } from '@/features/doctor/doctor-image';
 import { type DoctorSummary, searchDoctors } from '@/features/doctor/doctor-api';
 import { BackLink, Field, Message, doctorStyles as s } from '@/features/doctor/ui';
 import { Page } from '@/ui/patient-ui';
-import { themedStyles, useScheme } from '@/ui/palette';
+import { palette, themedStyles, useScheme } from '@/ui/palette';
 import { Loading } from '@/ui/loading';
 
 export default function FindDoctorScreen() {
@@ -43,6 +43,7 @@ export default function FindDoctorScreen() {
             <View style={styles.copy}>
               <Text style={s.cardTitle}>{d.name}</Text>
               {d.headline ? <Text style={s.meta}>{d.headline}</Text> : null}
+              {d.love_count > 0 ? <Text style={styles.loves}>♥ {d.love_count}</Text> : null}
               <Text style={s.meta}>{[...d.specialties.slice(0, 3), ...d.cities.slice(0, 2)].join(' · ')}</Text>
             </View>
           </View>
@@ -55,5 +56,6 @@ export default function FindDoctorScreen() {
 const styles = themedStyles(() => StyleSheet.create({
   row: { alignItems: 'center', flexDirection: 'row', gap: 12 },
   copy: { flex: 1, gap: 2 },
+  loves: { color: palette.coral, fontSize: 12, fontWeight: '600' },
   avatar: { borderRadius: 28, height: 56, overflow: 'hidden', width: 56 },
 }));

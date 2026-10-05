@@ -24,7 +24,7 @@ async function rpc<T>(name: string, args: Record<string, unknown> | undefined, f
 
 export type Credentials = { license_number: string; issuing_body: string; specialty: string; city: string; submitted_at: string };
 export type PublicProfile = { headline: string; bio: string; specialties: string[]; languages: string[]; years_experience: number | null; is_public: boolean };
-export type DoctorSummary = { clinician_id: string; name: string; headline: string | null; specialties: string[]; languages: string[]; cities: string[]; image_bucket: string | null; image_path: string | null };
+export type DoctorSummary = { clinician_id: string; name: string; headline: string | null; specialties: string[]; languages: string[]; cities: string[]; image_bucket: string | null; image_path: string | null; love_count: number };
 export type DoctorLocationInfo = {
   id: string; venue_name: string; venue_kind: string; address: string | null; city: string;
   latitude: number | null; longitude: number | null; google_place_id: string | null; specialty: string | null;
@@ -35,7 +35,21 @@ export type DoctorProfile = {
   languages: string[]; years_experience: number | null; locations: DoctorLocationInfo[];
   is_preview: boolean; featured_source: FeaturedSource; featured_image_path: string | null; avatar_path: string | null;
   gallery: GalleryImage[]; experience: ExperienceEntry[];
+  social_links: SocialLink[]; love_count: number; loved_by_me: boolean; comments_enabled: boolean; comment_count: number;
 };
+export type SocialKind = 'website' | 'instagram' | 'facebook' | 'linkedin' | 'x' | 'youtube' | 'tiktok';
+export type SocialLink = { kind: SocialKind; url: string };
+export type MyEngagement = { social_links: SocialLink[]; comments_enabled: boolean; love_count: number };
+export type DoctorComment = { id: string; author_name: string; body: string; created_at: string; had_visit: boolean; is_mine: boolean; is_hidden: boolean };
+export const socialKinds: { kind: SocialKind; label: string; placeholder: string }[] = [
+  { kind: 'website', label: 'Website', placeholder: 'https://your-clinic.ma' },
+  { kind: 'instagram', label: 'Instagram', placeholder: 'https://instagram.com/yourname' },
+  { kind: 'facebook', label: 'Facebook', placeholder: 'https://facebook.com/yourpage' },
+  { kind: 'linkedin', label: 'LinkedIn', placeholder: 'https://linkedin.com/in/yourname' },
+  { kind: 'x', label: 'X', placeholder: 'https://x.com/yourname' },
+  { kind: 'youtube', label: 'YouTube', placeholder: 'https://youtube.com/@yourchannel' },
+  { kind: 'tiktok', label: 'TikTok', placeholder: 'https://tiktok.com/@yourname' },
+];
 export type FeaturedSource = 'account' | 'upload' | 'none';
 export type GalleryImage = { id: string; path: string; caption: string | null };
 export type ExperienceEntry = { kind: 'work' | 'education'; title: string; organization: string; location: string | null; start_year: number; end_year: number | null; description: string | null };
@@ -158,6 +172,50 @@ export async function pickAndUploadImage(aspect: [number, number]): Promise<stri
   const { error } = await client().storage.from('doctor-media').upload(path, bytes, { contentType: asset.mimeType ?? 'image/jpeg', upsert: false });
   if (error) throw new Error('Could not upload this photo. Only verified doctors can add photos.');
   return path;
+}
+
+export const GALLERY_LIMIT = 12;
+
+/** Lets the doctor pick several photos at once, uploads them and adds them to the gallery. */
+export async function pickAndAddGalleryImages(remaining: number): Promise<{ added: number; skipped: number }> {
+  if (remaining <= 0) throw new Error(`You can add up to ${GALLERY_LIMIT} photos.`);
+  const { data: userData } = await client().auth.getUser();
+  if (!userData.user) throw new Error('Sign in first.');
+  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!permission.granted) throw new Error('Photo library permission is needed to choose photos.');
+  const result = await ImagePicker.launchImageLibraryAsync({ allowsMultipleSelection: true, base64: true, mediaTypes: ['images'], orderedSelection: true, quality: 0.7, selectionLimit: remaining });
+  if (result.canceled) return { added: 0, skipped: 0 };
+  let added = 0;
+  let skipped = 0;
+  for (const asset of result.assets.slice(0, remaining)) {
+    const mime = asset.mimeType ?? 'image/jpeg';
+    if (!asset.base64 || !['image/jpeg', 'image/png', 'image/webp'].includes(mime) || asset.base64.length * 0.75 > 3 * 1024 * 1024) { skipped += 1; continue; }
+    const extension = mime === 'image/png' ? 'png' : mime === 'image/webp' ? 'webp' : 'jpg';
+    const path = `${userData.user.id}/${randomId()}.${extension}`;
+    const bytes = Uint8Array.from(atob(asset.base64), (character) => character.charCodeAt(0));
+    const { error: uploadError } = await client().storage.from('doctor-media').upload(path, bytes, { contentType: mime, upsert: false });
+    if (uploadError) { skipped += 1; continue; }
+    try { await addGalleryImage(path); added += 1; } catch { skipped += 1; await client().storage.from('doctor-media').remove([path]); }
+  }
+  if (result.assets.length > remaining) skipped += result.assets.length - remaining;
+  return { added, skipped };
+}
+
+export const getMyEngagement = () => rpc<MyEngagement>('get_my_engagement', undefined, 'Could not load your links.');
+export const setMyEngagement = (links: SocialLink[], commentsEnabled: boolean) =>
+  rpc('set_my_engagement', { p_social_links: links, p_comments_enabled: commentsEnabled }, 'Could not save your links.');
+export const toggleDoctorLove = (id: string) => rpc<{ loved: boolean; love_count: number }>('toggle_doctor_love', { p_clinician_id: id }, 'Could not update your love.');
+export const listDoctorComments = (id: string) => rpc<DoctorComment[]>('list_doctor_comments', { p_clinician_id: id, p_limit: 30 }, 'Could not load comments.').then((rows) => rows ?? []);
+export const saveDoctorComment = (id: string, body: string) => rpc('upsert_doctor_comment', { p_clinician_id: id, p_body: body.trim() }, 'Could not save your comment.');
+export const deleteMyDoctorComment = (id: string) => rpc('delete_my_doctor_comment', { p_clinician_id: id }, 'Could not delete your comment.');
+export const setCommentHidden = (commentId: string, hidden: boolean) => rpc('set_comment_hidden', { p_comment_id: commentId, p_hidden: hidden }, 'Could not update this comment.');
+
+/** Accepts "instagram.com/me" and turns it into a full https address; returns null when it cannot be a link. */
+export function normalizeLink(input: string): string | null {
+  const value = input.trim();
+  if (!value) return null;
+  const url = /^https:\/\//i.test(value) ? value : `https://${value.replace(/^[a-z]+:\/\//i, '')}`;
+  return /^https:\/\/[A-Za-z0-9.-]+\.[A-Za-z]{2,}(\/[^\s<>"']*)?$/.test(url) && url.length <= 200 ? url : null;
 }
 
 const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/+$/, '');

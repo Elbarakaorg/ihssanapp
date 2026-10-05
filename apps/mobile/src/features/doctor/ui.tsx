@@ -20,7 +20,7 @@ export function Button({ label, onPress, busy, disabled, tone = 'primary' }: { l
   const off = busy || disabled;
   return (
     <Pressable accessibilityRole="button" accessibilityState={{ disabled: !!off }} disabled={off} onPress={onPress}
-      style={[styles.button, tone === 'secondary' && styles.buttonSecondary, tone === 'danger' && styles.buttonDanger, off && styles.off]}>
+      style={({ pressed }) => [pressed && styles.pressed, styles.button, tone === 'secondary' && styles.buttonSecondary, tone === 'danger' && styles.buttonDanger, off && styles.off]}>
       {busy ? <ActivityIndicator color={tone === 'primary' ? palette.white : palette.forest} /> : <Text style={[styles.buttonLabel, tone !== 'primary' && (tone === 'danger' ? styles.dangerLabel : styles.secondaryLabel)]}>{label}</Text>}
     </Pressable>
   );
@@ -39,7 +39,7 @@ export function Field({ label, ...props }: TextInputProps & { label: string }) {
 export function Chip({ label, selected, onPress }: { label: string; selected?: boolean; onPress: () => void }) {
   useScheme();
   return (
-    <Pressable accessibilityRole="button" accessibilityState={{ selected: !!selected }} onPress={onPress} style={[styles.chip, selected && styles.chipOn]}>
+    <Pressable accessibilityRole="button" accessibilityState={{ selected: !!selected }} onPress={onPress} style={({ pressed }) => [pressed && styles.pressed, styles.chip, selected && styles.chipOn]}>
       <Text style={[styles.chipLabel, selected && styles.chipLabelOn]}>{label}</Text>
     </Pressable>
   );
@@ -77,6 +77,7 @@ const styles = themedStyles(() => StyleSheet.create({
   secondaryLabel: { color: palette.forest },
   dangerLabel: { color: '#C8503C' },
   off: { opacity: 0.5 },
+  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
   field: { marginTop: 14 },
   fieldLabel: { color: palette.muted, fontSize: 11, fontWeight: '600', marginBottom: 6 },
   input: { backgroundColor: palette.white, borderColor: palette.line, borderRadius: 12, borderWidth: 1, color: palette.ink, fontSize: 15, minHeight: 48, paddingHorizontal: 14 },

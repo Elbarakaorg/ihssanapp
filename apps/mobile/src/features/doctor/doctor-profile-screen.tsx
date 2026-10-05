@@ -1,6 +1,6 @@
 import { type Href, useFocusEffect, useRouter } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/auth-provider';
@@ -15,7 +15,14 @@ import { getClinicianVerificationStatus } from '@/features/profile/profile-repos
 import { Page } from '@/ui/patient-ui';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
 
-const splitList = (value: string) => [...new Set(value.split(',').map((x) => x.trim()).filter(Boolean))];
+const splitList = (value: string) => [...new Set(value.split(/[,;\n]/).map((x) => x.trim()).filter(Boolean))];
+const entryKeys = new WeakMap<object, string>();
+let entryKeyCounter = 0;
+const entryKey = (entry: object) => {
+  let key = entryKeys.get(entry);
+  if (!key) { key = `entry-${++entryKeyCounter}`; entryKeys.set(entry, key); }
+  return key;
+};
 const blankEntry = (): EntryDraft => ({ kind: 'work', title: '', organization: '', location: '', start: '', end: '', description: '' });
 type EntryDraft = { kind: 'work' | 'education'; title: string; organization: string; location: string; start: string; end: string; description: string };
 
@@ -53,6 +60,8 @@ export default function DoctorProfileScreen() {
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [savedSnapshot, setSavedSnapshot] = useState('');
+  const dirtyRef = useRef(false);
 
   const load = useCallback(async () => {
     try {
@@ -60,8 +69,11 @@ export default function DoctorProfileScreen() {
       setStatus(st);
       setCreds(c);
       if (c) { setLicense(c.license_number ?? ''); setBody(c.issuing_body ?? ''); setSpecialty(c.specialty ?? ''); setCity(c.city ?? ''); }
-      if (p) { setHeadline(p.headline ?? ''); setBio(p.bio ?? ''); setSpecialties((p.specialties ?? []).join(', ')); setLanguages(p.languages ?? []); setYears(p.years_experience ? String(p.years_experience) : ''); setIsPublic(!!p.is_public); }
+      if (!dirtyRef.current) {
+      if (p) { setHeadline(p.headline ?? ''); setBio(p.bio ?? ''); setSpecialties((p.specialties ?? []).join(', ')); setLanguages(p.languages ?? []); setYears(p.years_experience != null ? String(p.years_experience) : ''); setIsPublic(!!p.is_public); }
       setExperience(exp);
+      setSavedSnapshot(JSON.stringify([p?.headline ?? '', p?.bio ?? '', (p?.specialties ?? []).join(', '), p?.languages ?? [], p?.years_experience != null ? String(p.years_experience) : '', !!p?.is_public, exp]));
+      }
       if (media) { setFeatured(media.featured_source); setFeaturedPath(media.featured_image_path); setAvatarPath(media.avatar_path); setGallery(media.gallery); }
     } catch (e) { setError(e instanceof Error ? e.message : 'Could not load your profile.'); } finally { setLoading(false); }
   }, []);
@@ -73,6 +85,10 @@ export default function DoctorProfileScreen() {
     setBusy(key); setError(''); setNotice('');
     try { await task(); } catch (e) { setError(e instanceof Error ? e.message : 'Something went wrong.'); } finally { setBusy(''); }
   };
+
+  const snapshot = JSON.stringify([headline, bio, specialties, languages, years, isPublic, experience]);
+  const dirty = savedSnapshot !== '' && snapshot !== savedSnapshot;
+  dirtyRef.current = dirty;
 
   const submitCreds = () => run('creds', async () => {
     await submitMyCredentials({ licenseNumber: license, issuingBody: body, specialty, city });
@@ -88,6 +104,7 @@ export default function DoctorProfileScreen() {
     if (list.some((item) => item.length < 2 || item.length > 60)) throw new Error('Each specialty must be 2–60 characters.');
     await saveMyPublicProfile({ headline, bio, specialties: list, languages, years_experience: yearsNumber, is_public: isPublic });
     await saveMyExperience(experience);
+    setSavedSnapshot(snapshot);
     setNotice(isPublic ? 'Saved. Your profile is visible to patients.' : 'Saved. Your profile is hidden from patients.');
   });
 
@@ -215,17 +232,18 @@ export default function DoctorProfileScreen() {
       <Field label="Headline" value={headline} onChangeText={setHeadline} maxLength={120} placeholder="Cardiologist · Casablanca" />
       <Field label="About you" value={bio} onChangeText={setBio} maxLength={1500} multiline />
       <Field label="Specialties (comma separated, up to 5)" value={specialties} onChangeText={setSpecialties} />
+      <Text style={[s.meta, splitList(specialties).length > 5 && { color: '#9A3E2A' }]}>{splitList(specialties).length}/5 · each 2–60 characters</Text>
       <Text style={[s.meta, { marginTop: 14 }]}>Languages you speak</Text>
       <View style={s.row}>{languageOptions.map(([code, label]) => <Chip key={code} label={label} selected={languages.includes(code)} onPress={() => setLanguages((cur) => (cur.includes(code) ? cur.filter((c) => c !== code) : [...cur, code]))} />)}</View>
       <Field label="Years of experience" value={years} onChangeText={setYears} keyboardType="number-pad" maxLength={2} />
 
       <Text style={s.section}>Experience & education</Text>
       {experience.map((e, index) => (
-        <View key={`${e.title}-${index}`} style={s.card}>
+        <View key={entryKey(e)} style={s.card}>
           <Text style={s.cardTitle}>{e.title}</Text>
           <Text style={s.meta}>{e.organization}{e.location ? ` · ${e.location}` : ''} · {e.kind === 'work' ? 'Work' : 'Education'}</Text>
           <Text style={s.meta}>{e.start_year} – {e.end_year ?? 'Present'}</Text>
-          {e.description ? <Text style={s.meta}>{e.description}</Text> : null}
+          {e.description ? <Text numberOfLines={3} style={s.meta}>{e.description}</Text> : null}
           <Button label="Remove" tone="danger" onPress={() => setExperience((items) => items.filter((_, i) => i !== index))} />
         </View>
       ))}
@@ -238,6 +256,7 @@ export default function DoctorProfileScreen() {
           <Field label="Start year" value={draft.start} onChangeText={(v) => setDraft({ ...draft, start: v })} keyboardType="number-pad" maxLength={4} />
           <Field label="End year (empty = present)" value={draft.end} onChangeText={(v) => setDraft({ ...draft, end: v })} keyboardType="number-pad" maxLength={4} />
           <Field label="Description (optional)" value={draft.description} onChangeText={(v) => setDraft({ ...draft, description: v })} multiline maxLength={600} />
+          {error ? <Message kind="error">{error}</Message> : null}
           <Button label="Add to profile" onPress={addEntry} />
           <Button label="Cancel" tone="secondary" onPress={() => setDraft(null)} />
         </View>
@@ -250,6 +269,9 @@ export default function DoctorProfileScreen() {
       <Text style={s.section}>Visibility</Text>
       <Text style={s.meta}>Appears in Find a doctor only when visible, verified, and with an approved location.</Text>
       <View style={s.row}><Chip label="Visible to patients" selected={isPublic} onPress={() => setIsPublic(true)} /><Chip label="Hidden" selected={!isPublic} onPress={() => setIsPublic(false)} /></View>
+      {error ? <Message kind="error">{error}</Message> : null}
+      {notice ? <Message kind="ok">{notice}</Message> : null}
+      {dirty ? <Message kind="info">You have unsaved changes.</Message> : null}
       <Button label="Save profile" busy={busy === 'save'} onPress={() => void saveAll()} />
     </Page>
   );

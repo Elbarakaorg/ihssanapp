@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { ArrowLeft, Copy, Link2, RefreshCw, Share2, ShieldCheck } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import QRCode from 'react-native-qrcode-svg';
 import { ActivityIndicator, Pressable, Share, StyleSheet, Switch, Text, View } from 'react-native';
 
@@ -19,7 +20,6 @@ export default function ShareProfileScreen() {
   const { session } = useAuth();
   const [shareCode, setShareCode] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
-  const [secondsLeft, setSecondsLeft] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -98,19 +98,19 @@ export default function ShareProfileScreen() {
     void loadCode(false);
   }, [userId]);
 
+  // Re-render every second; the remaining time is derived from expiresAt so there is no stale first frame.
+  const [, setTick] = useState(0);
   useEffect(() => {
     if (!expiresAt) return undefined;
-    const updateCountdown = () => {
-      const left = Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
-      setSecondsLeft(left);
-      if (left === 0) clearInterval(timer);
-    };
-    const timer = setInterval(updateCountdown, 1000);
-    updateCountdown();
+    const timer = setInterval(() => {
+      setTick((tick) => tick + 1);
+      if (new Date(expiresAt).getTime() <= Date.now()) clearInterval(timer);
+    }, 1000);
     return () => clearInterval(timer);
   }, [expiresAt]);
+  const secondsLeft = expiresAt ? Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000)) : 0;
 
-  const qrValue = shareCode && (!expiresAt || secondsLeft > 0) ? `ihssan://share/profile?token=${encodeURIComponent(shareCode)}` : '';
+  const qrValue = shareCode && expiresAt && secondsLeft > 0 ? `ihssan://share/profile?token=${encodeURIComponent(shareCode)}` : '';
   const countdown = `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`;
 
   return (
@@ -123,9 +123,14 @@ export default function ShareProfileScreen() {
       </View>
 
       <View style={styles.qrCard}>
-        {loading && !qrValue ? <View style={styles.qrLoading}><ActivityIndicator color={palette.forest} /><Text style={styles.body}>Creating a secure code</Text></View> : qrValue ? <QRCode value={qrValue} size={220} color={palette.ink} backgroundColor={palette.white} /> : null}
+        {loading && !qrValue ? <View style={styles.qrLoading}><ActivityIndicator color={palette.forest} /><Text style={styles.body}>Creating a secure code</Text></View> : qrValue ? <Animated.View key={shareCode} entering={FadeIn.duration(150)}><QRCode value={qrValue} size={220} color={palette.ink} backgroundColor={palette.white} /></Animated.View> : null}
         {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-        <View style={styles.expiry}><View style={[styles.expiryDot, secondsLeft === 0 && styles.expiredDot]} /><Text style={styles.expiryText}>{secondsLeft > 0 ? `Code expires in ${countdown}` : 'Code expired'}</Text></View>
+        {!loading && !qrValue ? (
+          <Pressable accessibilityRole="button" onPress={() => void loadCode(false)} style={styles.createButton}>
+            <Text style={styles.createLabel}>{error ? 'Try again' : 'Generate new code'}</Text>
+          </Pressable>
+        ) : null}
+        <View style={styles.expiry}><View style={[styles.expiryDot, !!expiresAt && secondsLeft === 0 && styles.expiredDot]} /><Text style={styles.expiryText}>{!expiresAt ? (loading ? 'Creating code' : 'No active code') : secondsLeft > 0 ? `Code expires in ${countdown}` : 'Code expired'}</Text></View>
         <Text style={styles.qrHint}>This code is valid for 30 minutes and can only be used once. Reopening this page reuses it.</Text>
       </View>
 
@@ -134,7 +139,7 @@ export default function ShareProfileScreen() {
         <Text style={styles.body}>Create a code for a verified doctor. They can preview what you share and choose to save you as a patient. Valid for 24 hours, one use.</Text>
         {invite ? (
           <>
-            <Text accessibilityLabel={`Share code ${invite.code}`} selectable style={styles.codeText}>{invite.code}</Text>
+            <Text accessibilityLabel={`Share code ${invite.code}`} selectable adjustsFontSizeToFit minimumFontScale={0.6} numberOfLines={1} style={styles.codeText}>{invite.code}</Text>
             <View style={styles.inviteActions}>
               <Pressable accessibilityRole="button" onPress={() => void copyText(invite.code, 'Code copied.')} style={styles.chipButton}><Copy color={palette.forest} size={14} /><Text style={styles.chipLabel}>Copy code</Text></Pressable>
               <Pressable accessibilityRole="button" onPress={() => void copyText(shareInviteLink(invite.code), 'Link copied.')} style={styles.chipButton}><Link2 color={palette.forest} size={14} /><Text style={styles.chipLabel}>Copy link</Text></Pressable>
@@ -194,7 +199,7 @@ const styles = themedStyles(() => StyleSheet.create({
   revokeLabel: { color: '#9A3E2A', fontSize: 12, fontWeight: '700' },
   toggleRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   toggleLabel: { color: palette.ink, fontSize: 13, fontWeight: '600' },
-  createButton: { alignItems: 'center', backgroundColor: palette.forest, borderRadius: 12, justifyContent: 'center', minHeight: 46 },
+  createButton: { alignItems: 'center', alignSelf: 'stretch', marginTop: 12, backgroundColor: palette.forest, borderRadius: 12, justifyContent: 'center', minHeight: 46 },
   createLabel: { color: palette.white, fontSize: 14, fontWeight: '700' },
   inviteMessage: { color: palette.muted, fontSize: 12, textAlign: 'center' },
   privacyCard: { alignItems: 'flex-start', backgroundColor: palette.leaf, borderRadius: 14, flexDirection: 'row', gap: 11, marginTop: 16, padding: 14 },

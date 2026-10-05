@@ -2,7 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 
 import { useAuth } from '@/features/auth/auth-provider';
-import { listDoseLogs, listMyTreatments, logDose } from '@/features/medicine/repository';
+import { listDoseLogs, listMyTreatments, logAsNeededDose, logDose } from '@/features/medicine/repository';
 import { toLocalDateKey, type DoseLog, type Treatment } from '@/features/medicine/schedule';
 
 /** Loads the signed-in patient's treatments plus the last 7 days of dose logs, and logs doses optimistically. */
@@ -44,5 +44,12 @@ export function useTreatments() {
     catch (e) { setLogs(previous); setError(e instanceof Error ? e.message : 'Could not save this dose.'); }
   }, [logs]);
 
-  return { treatments, logs, loading, error, reload, setDose };
+  /** As-needed intake: the server enforces the daily maximum and minimum gap, so reload afterwards to show the saved amount. */
+  const takeAsNeeded = useCallback(async (medicationId: string, dateKey: string, slot: string, status: 'taken' | null) => {
+    setError('');
+    try { await logAsNeededDose(medicationId, dateKey, slot, status); await reload(); }
+    catch (e) { setError(e instanceof Error ? e.message : 'Could not save this dose.'); }
+  }, [reload]);
+
+  return { treatments, logs, loading, error, reload, setDose, takeAsNeeded };
 }

@@ -23,5 +23,5 @@ Verses live in `features/spirit/verses.ts` (Arabic + English, Amiri font); home 
 Wabi-sabi first: warm washi-paper/earth palette in `ui/palette.ts`, uneven hand-cut corners (`wobble`), restraint. Victorian touch: EB Garamond headings (`display`) and the `Ornament` fleuron divider under page headings. Conceptual-sketch touch: hand-drawn, slightly irregular SVG strokes. Body text stays on the system font. Use palette tokens, never hardcoded colors.
 
 ## Medicine & treatments
-`features/medicine/`: static generic-name directory (no doses), patient treatments with dose logging, doctor prescribing via `prescribe_treatment` (needs an active `medical_profile` grant). Migration `202610080001`. No reminders yet.
+`features/medicine/`: static generic-name directory (no doses); each medicine = how much (amount+unit) / how often (daily, every N days, weekdays, as-needed with max per day + min gap) / for how long (or ongoing); dose logging, doctor prescribing via `prescribe_treatment` (needs an active `medical_profile` grant). Migration `202610080001`. No reminders yet.
 Built-in articles/blogs live in `features/content/library.ts` (not clinician-reviewed; needs medical review) and merge with DB `blog_articles`.

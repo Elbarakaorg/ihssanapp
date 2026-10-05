@@ -5,7 +5,7 @@ import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native
 import { useAuth } from '@/features/auth/auth-provider';
 import { BackLink, Button, Chip, Message } from '@/features/doctor/ui';
 import { deleteMyTreatment, setTreatmentStatus } from '@/features/medicine/repository';
-import { dosesForDay, progressOf, toLocalDateKey, weeklyAdherence, type Dose, type Treatment } from '@/features/medicine/schedule';
+import { asNeededForDay, describeSchedule, dosesForDay, formatAmount, progressOf, toLocalDateKey, weeklyAdherence, type Dose, type Treatment } from '@/features/medicine/schedule';
 import { useTreatments } from '@/features/medicine/use-treatments';
 import { Loading } from '@/ui/loading';
 import { Page, PageHeading, SectionHeading } from '@/ui/patient-ui';
@@ -46,10 +46,11 @@ export default function TreatmentsScreen() {
   useScheme();
   const router = useRouter();
   const { session } = useAuth();
-  const { treatments, logs, loading, error, reload, setDose } = useTreatments();
+  const { treatments, logs, loading, error, reload, setDose, takeAsNeeded } = useTreatments();
   const today = toLocalDateKey(new Date());
   const doses = dosesForDay(treatments, logs, today);
   const progress = progressOf(doses);
+  const asNeeded = asNeededForDay(treatments, logs, today);
   const week = weeklyAdherence(treatments, logs, new Date());
 
   const changeStatus = async (t: Treatment, status: Treatment['status']) => {
@@ -95,6 +96,34 @@ export default function TreatmentsScreen() {
             <Message kind="info">{treatments.some((t) => t.status === 'active') ? 'Nothing is scheduled for today.' : 'No active treatment yet. Add one, or your doctor can prescribe one for you.'}</Message>
           )}
 
+          {asNeeded.length ? (
+            <>
+              <SectionHeading title="As needed" detail="Within your daily maximum" />
+              {asNeeded.map((a) => {
+                const max = a.medication.max_daily_amount ?? a.medication.amount;
+                const nowSlot = () => { const n = new Date(); return `${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`; };
+                return (
+                  <View key={a.medication.id} style={styles.card}>
+                    <Text style={styles.doseName}>{a.medication.name}</Text>
+                    <Text style={styles.meta}>Prescribed dose: {formatAmount(a.medication.amount, a.medication.unit)} · maximum {formatAmount(max, a.medication.unit)} a day{a.medication.min_interval_hours ? ` · ${a.medication.min_interval_hours} h apart` : ''}</Text>
+                    {a.medication.instructions ? <Text style={styles.meta}>{a.medication.instructions}</Text> : null}
+                    <ProgressBar percent={Math.min(100, Math.round((a.takenAmount / max) * 100))} />
+                    <Text style={styles.meta}>Taken today: {formatAmount(a.takenAmount, a.medication.unit)} of {formatAmount(max, a.medication.unit)}</Text>
+                    {a.intakes.map((l) => (
+                      <View key={l.slot} style={styles.medRow}>
+                        <Text style={styles.slot}>{l.slot}</Text>
+                        <Text style={[styles.meta, styles.doseCopy]}>{formatAmount(l.amount ?? a.medication.amount, a.medication.unit)}</Text>
+                        <Pressable accessibilityLabel={`Undo ${a.medication.name} at ${l.slot}`} accessibilityRole="button" onPress={() => void takeAsNeeded(a.medication.id, today, l.slot, null)} style={styles.iconButton}><Undo2 color={palette.muted} size={18} /></Pressable>
+                      </View>
+                    ))}
+                    {a.reason ? <Text style={styles.missed}>{a.reason}</Text> : null}
+                    <Button label={`Take ${formatAmount(a.medication.amount, a.medication.unit)} now`} onPress={() => void takeAsNeeded(a.medication.id, today, nowSlot(), 'taken')} tone={a.canTake ? 'primary' : 'secondary'} disabled={!a.canTake} />
+                  </View>
+                );
+              })}
+            </>
+          ) : null}
+
           <Button label="New treatment" onPress={() => router.push('/treatments/edit' as Href)} />
           <Button label="Browse the medicine directory" onPress={() => router.push('/medicines' as Href)} tone="secondary" />
 
@@ -111,7 +140,7 @@ export default function TreatmentsScreen() {
               {t.medications.map((m) => (
                 <View key={m.id} style={styles.medRow}>
                   <Pill color={palette.forest} size={14} />
-                  <Text style={styles.meta}>{[m.name, m.strength, m.dose, m.times.join(', ')].filter(Boolean).join(' · ')}</Text>
+                  <Text style={styles.meta}>{[m.name, m.strength].filter(Boolean).join(' ')} — {describeSchedule(m)}{m.instructions ? ` · ${m.instructions}` : ''}</Text>
                 </View>
               ))}
               {t.notes ? <Text style={styles.meta}>{t.notes}</Text> : null}

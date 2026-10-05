@@ -5,6 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Button, Message } from '@/features/doctor/ui';
 import { endPrescribedTreatment, getSharedPatientTreatments, type SharedTreatment } from '@/features/medicine/repository';
+import { describeSchedule } from '@/features/medicine/schedule';
 import { SectionHeading } from '@/ui/patient-ui';
 import { display, palette, themedStyles, useScheme, wobble } from '@/ui/palette';
 
@@ -34,7 +35,7 @@ export function SharedTreatmentsSection({ grantId }: { grantId: string }) {
           {t.medications.map((m) => (
             <View key={m.id} style={styles.row}>
               <Pill color={palette.forest} size={14} />
-              <Text style={styles.meta}>{[m.name, m.strength, m.dose, m.times.join(', ')].filter(Boolean).join(' · ')} · {m.taken_7d} taken in 7 days</Text>
+              <Text style={styles.meta}>{[m.name, m.strength].filter(Boolean).join(' ')} — {describeSchedule(m)}{m.instructions ? ` · ${m.instructions}` : ''} · {m.taken_7d} taken in 7 days</Text>
             </View>
           ))}
           {t.notes ? <Text style={styles.meta}>{t.notes}</Text> : null}

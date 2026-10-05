@@ -2,7 +2,7 @@ import { type Href, useRouter } from 'expo-router';
 import { ChevronRight, Pill } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { dosesForDay, progressOf, toLocalDateKey } from '@/features/medicine/schedule';
+import { describeSchedule, dosesForDay, progressOf, toLocalDateKey } from '@/features/medicine/schedule';
 import { useTreatments } from '@/features/medicine/use-treatments';
 import { ProgressBar } from '@/features/medicine/treatments-screen';
 import { SectionHeading } from '@/ui/patient-ui';
@@ -24,7 +24,7 @@ export function TreatmentsSummary() {
           <View key={t.id} style={styles.item}>
             <Text style={styles.title}>{t.name}</Text>
             {t.prescribed ? <Text style={styles.tag}>Prescribed{t.prescriber_name ? ` by ${t.prescriber_name}` : ''}</Text> : null}
-            {t.medications.map((m) => <View key={m.id} style={styles.row}><Pill color={palette.forest} size={13} /><Text style={styles.meta}>{[m.name, m.strength, m.dose].filter(Boolean).join(' · ')}</Text></View>)}
+            {t.medications.map((m) => <View key={m.id} style={styles.row}><Pill color={palette.forest} size={13} /><Text style={styles.meta}>{m.name} — {describeSchedule(m)}</Text></View>)}
           </View>
         )) : <Text style={styles.meta}>{loading ? 'Loading…' : 'No active treatment. Add one, or your doctor can prescribe it.'}</Text>}
         {progress.total ? <View style={styles.progress}><ProgressBar percent={progress.percent} /><Text style={styles.meta}>{progress.taken} of {progress.total} doses taken today</Text></View> : null}

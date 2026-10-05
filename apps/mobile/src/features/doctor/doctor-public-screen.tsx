@@ -144,7 +144,7 @@ export default function DoctorPublicScreen() {
         <>
           {doctor.locations.filter((l) => l.bookable).length > 1 ? <View style={s.row}>{doctor.locations.filter((l) => l.bookable).map((l) => <Chip key={l.id} label={l.venue_name} selected={l.id === locationId} onPress={() => { setLocationId(l.id); setMode(l.consultation_modes[0] ?? 'in_person'); }} />)}</View> : null}
           {location.consultation_modes.length > 1 ? <View style={s.row}>{location.consultation_modes.map((m) => <Chip key={m} label={m === 'video' ? 'Video' : 'In person'} selected={mode === m} onPress={() => setMode(m)} />)}</View> : null}
-          {slots === null ? <Loading label="Loading times" state="searching" /> : null}
+          {slots === null ? <Loading label="Loading times" inline state="searching" /> : null}
           {slots?.length === 0 ? <Message kind="info">No free times in the next 14 days.</Message> : null}
           <View style={s.row}>{dayKeys.map((k) => { const first = slots?.find((x) => toDateKey(new Date(x.starts_at)) === k); return <Chip key={k} label={first ? formatDay(first.starts_at) : k} selected={dayKey === k} onPress={() => { setDayKey(k); setSlot(''); }} />; })}</View>
           <View style={s.row}>{daySlots.map((x) => <Chip key={x.starts_at} label={formatTime(x.starts_at)} selected={slot === x.starts_at} onPress={() => setSlot(x.starts_at)} />)}</View>

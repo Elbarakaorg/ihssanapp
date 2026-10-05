@@ -12,6 +12,7 @@ import {
 } from '@/features/doctor/doctor-api';
 import { BackLink, Button, Chip, Field, Message, doctorStyles as s } from '@/features/doctor/ui';
 import { getClinicianVerificationStatus } from '@/features/profile/profile-repository';
+import { Loading } from '@/ui/loading';
 import { ThinkingOrb } from '@/ui/thinking-orb';
 import { Page } from '@/ui/patient-ui';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
@@ -169,7 +170,7 @@ export default function DoctorProfileScreen() {
   });
 
   if (!session) return <Page><BackLink href="/" label="Home" /><Message kind="info">Sign in as a clinician to edit your doctor profile.</Message></Page>;
-  if (loading) return <Page><BackLink href="/" label="Home" /><View style={{ alignItems: 'center', marginTop: 48 }}><ThinkingOrb state="breathing" size={64} label="Loading your profile" /></View></Page>;
+  if (loading) return <Page><BackLink href="/" label="Home" /><Loading label="Loading your profile" state="breathing" /></Page>;
 
   const verified = status === 'verified';
   const locked = verified || status === 'suspended';

@@ -123,7 +123,7 @@ export default function HealthScreen() {
       ) : null}
 
       {session && loading ? (
-        <Loading label="Loading your saved measurements" />
+        <Loading label="Loading your saved measurements" inline />
       ) : null}
 
       {!session || hasLoaded ? <>

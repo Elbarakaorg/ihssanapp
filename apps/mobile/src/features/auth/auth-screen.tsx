@@ -197,7 +197,7 @@ export default function AuthScreen() {
           ) : null}
 
           {!isReady ? (
-            <Loading label="Restoring session" state="connecting" />
+            <Loading label="Restoring session" inline state="connecting" />
           ) : null}
 
           {!pendingSignupEmail ? (

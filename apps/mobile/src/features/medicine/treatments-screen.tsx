@@ -9,6 +9,8 @@ import { RemindersToggle } from '@/features/medicine/reminders-toggle';
 import { StockEditor } from '@/features/medicine/stock-editor';
 import { deleteMyTreatment, getMyAdherence, setTreatmentStatus } from '@/features/medicine/repository';
 import { asNeededForDay, describeSchedule, dosesForDay, formatAmount, progressOf, toLocalDateKey, weeklyAdherence, type Dose, type Treatment } from '@/features/medicine/schedule';
+import { DevDataToggle } from '@/features/medicine/dev-data-toggle';
+import { useDevDataMode } from '@/features/medicine/dev-data';
 import { useTreatments } from '@/features/medicine/use-treatments';
 import { Loading } from '@/ui/loading';
 import { Page, PageHeading, SectionHeading } from '@/ui/patient-ui';
@@ -49,6 +51,7 @@ export default function TreatmentsScreen() {
   useScheme();
   const router = useRouter();
   const { session } = useAuth();
+  const devMode = useDevDataMode();
   const { treatments, logs, loading, error, reload, setDose, takeAsNeeded } = useTreatments();
   const today = toLocalDateKey(new Date());
   const doses = dosesForDay(treatments, logs, today);
@@ -70,7 +73,9 @@ export default function TreatmentsScreen() {
       <BackLink href="/" label="Home" />
       <PageHeading eyebrow="Daily care" title="Treatments">Track each dose and see how the week is going.</PageHeading>
 
-      {!session ? (
+      {__DEV__ ? <DevDataToggle /> : null}
+
+      {!session && devMode === 'live' ? (
         <>
           <Message kind="info">Sign in to build a treatment, log doses and see treatments prescribed by your doctor.</Message>
           <Button label="Sign in" onPress={() => router.push('/auth' as Href)} />
@@ -181,7 +186,7 @@ const styles = themedStyles(() => StyleSheet.create({
   cardHead: { alignItems: 'flex-start', flexDirection: 'row', gap: 10, justifyContent: 'space-between' },
   cardTitle: { ...display, color: palette.ink, fontSize: 19 },
   prescribed: { color: palette.gold, fontSize: 12, fontWeight: '600' },
-  status: { color: palette.forest, fontSize: 11, fontWeight: '700' },
+  status: { flexShrink: 0, color: palette.forest, fontSize: 11, fontWeight: '700' },
   statusOff: { color: palette.muted },
   meta: { color: palette.muted, fontSize: 12, lineHeight: 18 },
   medBlock: { gap: 6 },

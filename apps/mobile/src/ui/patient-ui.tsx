@@ -1,5 +1,5 @@
 import type { PropsWithChildren, ReactNode } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Svg, { Path, Text as SvgText } from 'react-native-svg';
@@ -9,7 +9,7 @@ import { display, palette, radii, spacing, themedStyles, useScheme, wobble } fro
 export function Page({ children }: PropsWithChildren) {
   useScheme();
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.safeArea, paperGrain]} edges={['top', 'left', 'right']}>
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
@@ -96,6 +96,11 @@ export const uiStyles = themedStyles(() => StyleSheet.create({
     width: 42,
   },
 }));
+
+/** Faint paper fibre on web; native keeps the flat paper colour. */
+const paperGrain = Platform.OS === 'web'
+  ? ({ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .28 0 0 0 0 .18 0 0 0 .08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")` } as object)
+  : null;
 
 const styles = themedStyles(() => StyleSheet.create({
   safeArea: {

@@ -30,3 +30,7 @@ Built-in articles/blogs live in `features/content/library.ts` (not clinician-rev
 - Migration `202610090001`: `delete_my_account()` (profile cascade, then auth user; anonymised and banned if audit FKs block), comment reports (`report_doctor_comment`, auto "under_review" at 3 open reports) and admin RPCs `admin_list_comment_reports` / `admin_resolve_comment_report` (permission `support.requests.manage`, admin portal page `/moderation`).
 - Sign in with Apple (iOS only): `expo-apple-authentication` + `signInWithIdToken`. Needs Apple Developer setup and the Apple provider enabled in Supabase; needs a dev client, not Expo Go.
 - API deploy: `services/api/Dockerfile` (`npm start`, port from `PORT`). Set SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, CORS_ORIGINS and optional OPENAI/RESEND/HIRASSA/GOOGLE_PLACES keys as host env vars, then point `EXPO_PUBLIC_API_BASE_URL` at it.
+
+## Design polish
+- Paper grain: web-only SVG noise on `Page` (`ui/patient-ui.tsx`); native stays flat paper. Admin portal re-themed to the app palette in `admin.css`.
+- Dev-only data switch on the treatments screen (`features/medicine/dev-data*.ts`): Live / Worst case / Empty / One / 150. Gated by `__DEV__`; keep the worst-case fixture as a regression check.

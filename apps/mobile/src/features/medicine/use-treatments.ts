@@ -4,11 +4,14 @@ import { useCallback, useRef, useState } from 'react';
 import { useAuth } from '@/features/auth/auth-provider';
 import { listDoseLogs, listMyTreatments, logAsNeededDose, logDose } from '@/features/medicine/repository';
 import { syncReminders } from '@/features/medicine/reminders';
+import { devTreatments, useDevDataMode } from '@/features/medicine/dev-data';
 import { toLocalDateKey, type DoseLog, type Treatment } from '@/features/medicine/schedule';
 
 /** Loads the signed-in patient's treatments plus the last 7 days of dose logs, and logs doses optimistically. */
 export function useTreatments() {
   const { session } = useAuth();
+  const devMode = useDevDataMode();
+  const fixture = devTreatments(devMode);
   const [treatments, setTreatments] = useState<Treatment[]>([]);
   const [logs, setLogs] = useState<DoseLog[]>([]);
   const [loading, setLoading] = useState(!!session);
@@ -53,5 +56,6 @@ export function useTreatments() {
     catch (e) { setError(e instanceof Error ? e.message : 'Could not save this dose.'); }
   }, [reload]);
 
+  if (fixture) return { treatments: fixture, logs: [] as DoseLog[], loading: false, error: '', reload: async () => undefined, setDose: async () => undefined, takeAsNeeded: async () => undefined };
   return { treatments, logs, loading, error, reload, setDose, takeAsNeeded };
 }

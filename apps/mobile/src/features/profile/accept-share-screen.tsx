@@ -178,7 +178,7 @@ const styles = themedStyles(() => StyleSheet.create({
   secondary: { alignItems: 'center', justifyContent: 'center', marginTop: 6, minHeight: 44 },
   secondaryLabel: { color: palette.muted, fontSize: 13, fontWeight: '600' },
   disabled: { opacity: 0.5 },
-  error: { backgroundColor: '#FCE9E5', borderRadius: 10, color: '#9A3E2A', fontSize: 12, lineHeight: 18, marginTop: 14, padding: 12 },
+  error: { backgroundColor: '#F3E1D6', borderRadius: 10, color: '#8A4A2C', fontSize: 12, lineHeight: 18, marginTop: 14, padding: 12 },
   previewCard: { gap: 10, marginTop: 20, padding: 16 },
   previewHead: { alignItems: 'center', flexDirection: 'row', gap: 12 },
   badge: { alignItems: 'center', backgroundColor: palette.leaf, borderRadius: 20, height: 40, justifyContent: 'center', width: 40 },

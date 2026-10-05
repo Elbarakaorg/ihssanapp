@@ -6,17 +6,18 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { display } from '@/ui/palette';
 import { PreferenceIcons } from '@/ui/preference-icons';
 
 export const ink = {
-  bg: '#0B0E0D',
+  bg: '#14110E',
   panel: 'rgba(255,255,255,0.05)',
   edge: 'rgba(255,255,255,0.14)',
-  text: '#F2F5F3',
-  muted: '#9AA5A0',
-  faint: '#66716C',
-  accent: '#3FD6A2',
-  error: '#FF8F7A',
+  text: '#EDE5D6',
+  muted: '#A39A8B',
+  faint: '#7A7166',
+  accent: '#A5BD8F',
+  error: '#EFA98E',
 };
 
 export function DarkAuthShell({ children, showBack = true }: PropsWithChildren<{ showBack?: boolean }>) {
@@ -24,7 +25,7 @@ export function DarkAuthShell({ children, showBack = true }: PropsWithChildren<{
 
   return (
     <View style={styles.canvas}>
-      <LinearGradient colors={['rgba(8,118,87,0.55)', 'rgba(8,118,87,0)']} pointerEvents="none" style={styles.glow} />
+      <LinearGradient colors={['rgba(169,130,47,0.35)', 'rgba(169,130,47,0)']} pointerEvents="none" style={styles.glow} />
       <SafeAreaView edges={['top', 'left', 'right']} style={styles.safe}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.topBar}>
@@ -55,7 +56,7 @@ const styles = StyleSheet.create({
   topBar: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   backButton: { alignItems: 'center', height: 44, justifyContent: 'center', width: 44 },
   brandRow: { alignItems: 'center', flexDirection: 'row', gap: 10, marginTop: 28 },
-  brandDot: { backgroundColor: ink.accent, borderRadius: 4, boxShadow: '0 0 14px rgba(63,214,162,0.9)', height: 8, width: 8 },
-  brandText: { color: ink.text, fontSize: 13, fontWeight: '600', letterSpacing: 4 },
+  brandDot: { backgroundColor: ink.accent, borderRadius: 4, boxShadow: '0 0 12px rgba(165,189,143,0.7)', height: 8, width: 8 },
+  brandText: { ...display, color: ink.text, fontSize: 15, letterSpacing: 4 },
   preview: { color: ink.faint, fontSize: 11, marginBottom: 36, marginTop: 8 },
 });

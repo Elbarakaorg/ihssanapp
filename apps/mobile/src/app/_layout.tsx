@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
+import { Amiri_400Regular } from '@expo-google-fonts/amiri';
 import { EBGaramond_500Medium, EBGaramond_600SemiBold, useFonts } from '@expo-google-fonts/eb-garamond';
 
 import { AuthProvider } from '@/features/auth/auth-provider';
@@ -14,7 +15,7 @@ function AppShell() {
   useScheme();
   const { scheme } = useThemeMode();
   // Headings fall back to the system serif if the font fails to load, so never block the app on it.
-  useFonts({ EBGaramond_500Medium, EBGaramond_600SemiBold });
+  useFonts({ Amiri_400Regular, EBGaramond_500Medium, EBGaramond_600SemiBold });
 
   return (
     <>

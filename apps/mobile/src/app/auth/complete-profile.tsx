@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 
 import type { ProfileType } from '@/features/auth/auth-contract';
 import { completeAccountSetup } from '@/features/profile/profile-repository';
+import { display } from '@/ui/palette';
 import { DarkAuthShell, ink } from '@/features/auth/dark-auth-shell';
 
 export default function CompleteProfileScreen() {
@@ -77,7 +78,7 @@ export default function CompleteProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  title: { color: ink.text, fontSize: 38, fontWeight: '300', letterSpacing: -1, lineHeight: 44 },
+  title: { ...display, color: ink.text, fontSize: 40, lineHeight: 46 },
   description: { color: ink.muted, fontSize: 15, lineHeight: 22, marginTop: 10 },
   fieldLabel: { color: ink.muted, fontSize: 12, fontWeight: '500', marginBottom: 8, marginTop: 22 },
   profileTypes: {

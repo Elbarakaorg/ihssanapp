@@ -259,17 +259,17 @@ export default function MedicalProfileScreen() {
         {editing ? (
           <View style={styles.form}>
             <Text style={styles.fieldLabel}>Date of birth</Text>
-            <TextInput accessibilityLabel="Date of birth" onChangeText={(value) => setMedical((current) => ({ ...current, date_of_birth: value }))} placeholder="YYYY-MM-DD" placeholderTextColor="#8A958E" style={styles.input} value={medical.date_of_birth} />
+            <TextInput accessibilityLabel="Date of birth" onChangeText={(value) => setMedical((current) => ({ ...current, date_of_birth: value }))} placeholder="YYYY-MM-DD" placeholderTextColor="#8C8272" style={styles.input} value={medical.date_of_birth} />
             <Text style={styles.fieldLabel}>Blood type</Text>
             <View style={styles.bloodTypes}>{bloodTypes.map((type) => <Pressable accessibilityRole="button" accessibilityState={{ selected: medical.blood_type === type }} key={type} onPress={() => setMedical((current) => ({ ...current, blood_type: current.blood_type === type ? '' : type }))} style={[styles.bloodType, medical.blood_type === type && styles.bloodTypeSelected]}><Text style={[styles.bloodTypeText, medical.blood_type === type && styles.bloodTypeTextSelected]}>{type}</Text></Pressable>)}</View>
             <Text style={styles.fieldLabel}>Allergies <Text style={styles.fieldHint}>one per line</Text></Text>
-            <TextInput accessibilityLabel="Allergies" multiline onChangeText={(value) => setMedical((current) => ({ ...current, allergies: parseList(value) }))} placeholder="No known allergies" placeholderTextColor="#8A958E" style={[styles.input, styles.multiline]} textAlignVertical="top" value={medical.allergies.join('\n')} />
+            <TextInput accessibilityLabel="Allergies" multiline onChangeText={(value) => setMedical((current) => ({ ...current, allergies: parseList(value) }))} placeholder="No known allergies" placeholderTextColor="#8C8272" style={[styles.input, styles.multiline]} textAlignVertical="top" value={medical.allergies.join('\n')} />
             <Text style={styles.fieldLabel}>Ongoing conditions <Text style={styles.fieldHint}>one per line</Text></Text>
-            <TextInput accessibilityLabel="Ongoing conditions" multiline onChangeText={(value) => setMedical((current) => ({ ...current, conditions: parseList(value) }))} placeholder="Add a condition" placeholderTextColor="#8A958E" style={[styles.input, styles.multiline]} textAlignVertical="top" value={medical.conditions.join('\n')} />
+            <TextInput accessibilityLabel="Ongoing conditions" multiline onChangeText={(value) => setMedical((current) => ({ ...current, conditions: parseList(value) }))} placeholder="Add a condition" placeholderTextColor="#8C8272" style={[styles.input, styles.multiline]} textAlignVertical="top" value={medical.conditions.join('\n')} />
             <Text style={styles.fieldLabel}>Current medications <Text style={styles.fieldHint}>include dose if useful</Text></Text>
-            <TextInput accessibilityLabel="Current medications" multiline onChangeText={(value) => setMedical((current) => ({ ...current, medications: parseList(value) }))} placeholder="Medicine and dose" placeholderTextColor="#8A958E" style={[styles.input, styles.multiline]} textAlignVertical="top" value={medical.medications.join('\n')} />
+            <TextInput accessibilityLabel="Current medications" multiline onChangeText={(value) => setMedical((current) => ({ ...current, medications: parseList(value) }))} placeholder="Medicine and dose" placeholderTextColor="#8C8272" style={[styles.input, styles.multiline]} textAlignVertical="top" value={medical.medications.join('\n')} />
             <Text style={styles.fieldLabel}>Surgeries and procedures</Text>
-            <TextInput accessibilityLabel="Surgeries and procedures" multiline onChangeText={(value) => setMedical((current) => ({ ...current, surgeries: parseList(value) }))} placeholder="Optional" placeholderTextColor="#8A958E" style={[styles.input, styles.multiline]} textAlignVertical="top" value={medical.surgeries.join('\n')} />
+            <TextInput accessibilityLabel="Surgeries and procedures" multiline onChangeText={(value) => setMedical((current) => ({ ...current, surgeries: parseList(value) }))} placeholder="Optional" placeholderTextColor="#8C8272" style={[styles.input, styles.multiline]} textAlignVertical="top" value={medical.surgeries.join('\n')} />
           </View>
         ) : (
           <View style={styles.facts}>
@@ -287,11 +287,11 @@ export default function MedicalProfileScreen() {
       <View style={[uiStyles.card, styles.sectionCard]}>
         {editing ? <View style={styles.form}>
           <Text style={styles.fieldLabel}>Contact name</Text>
-          <TextInput accessibilityLabel="Emergency contact name" onChangeText={(value) => setMedical((current) => ({ ...current, emergency_contact_name: value }))} placeholder="Full name" placeholderTextColor="#8A958E" style={styles.input} value={medical.emergency_contact_name} />
+          <TextInput accessibilityLabel="Emergency contact name" onChangeText={(value) => setMedical((current) => ({ ...current, emergency_contact_name: value }))} placeholder="Full name" placeholderTextColor="#8C8272" style={styles.input} value={medical.emergency_contact_name} />
           <Text style={styles.fieldLabel}>Relationship</Text>
-          <TextInput accessibilityLabel="Emergency contact relationship" onChangeText={(value) => setMedical((current) => ({ ...current, emergency_contact_relation: value }))} placeholder="For example, spouse or sibling" placeholderTextColor="#8A958E" style={styles.input} value={medical.emergency_contact_relation} />
+          <TextInput accessibilityLabel="Emergency contact relationship" onChangeText={(value) => setMedical((current) => ({ ...current, emergency_contact_relation: value }))} placeholder="For example, spouse or sibling" placeholderTextColor="#8C8272" style={styles.input} value={medical.emergency_contact_relation} />
           <Text style={styles.fieldLabel}>Phone number</Text>
-          <TextInput accessibilityLabel="Emergency contact phone number" keyboardType="phone-pad" onChangeText={(value) => setMedical((current) => ({ ...current, emergency_contact_phone: value }))} placeholder="+212 …" placeholderTextColor="#8A958E" style={styles.input} value={medical.emergency_contact_phone} />
+          <TextInput accessibilityLabel="Emergency contact phone number" keyboardType="phone-pad" onChangeText={(value) => setMedical((current) => ({ ...current, emergency_contact_phone: value }))} placeholder="+212 …" placeholderTextColor="#8C8272" style={styles.input} value={medical.emergency_contact_phone} />
         </View> : medical.emergency_contact_name || medical.emergency_contact_phone ? <View style={styles.contactRow}><View style={styles.rowIcon}><UserRound color={palette.forest} size={18} /></View><View style={styles.requestCopy}><Text style={styles.rowTitle}>{medical.emergency_contact_name || 'Contact'}</Text><Text style={styles.rowDetail}>{[medical.emergency_contact_relation, medical.emergency_contact_phone].filter(Boolean).join(' · ')}</Text></View></View> : <Text style={styles.emptyCopy}>Add someone your care team can contact in an emergency.</Text>}
       </View>
       {editing ? <Pressable accessibilityRole="button" disabled={saving} onPress={() => void save()} style={[styles.primaryButton, saving && styles.disabled]}>
@@ -380,7 +380,7 @@ const styles = themedStyles(() => StyleSheet.create({
   avatarImage: { height: 64, width: 64 },
   heroCopy: { flex: 1 },
   eyebrow: { color: palette.forest, fontSize: 12, fontWeight: '600', marginBottom: 5 },
-  error: { backgroundColor: '#FCE9E5', borderRadius: 10, color: '#9A3E2A', fontSize: 12, lineHeight: 18, marginBottom: 12, padding: 12 },
+  error: { backgroundColor: '#F3E1D6', borderRadius: 10, color: '#8A4A2C', fontSize: 12, lineHeight: 18, marginBottom: 12, padding: 12 },
   notice: { backgroundColor: palette.leaf, borderRadius: 10, color: palette.forest, fontSize: 12, lineHeight: 18, marginBottom: 12, padding: 12 },
   shareBanner: { alignItems: 'center', backgroundColor: palette.ink, borderRadius: 15, flexDirection: 'row', gap: 12, padding: 15 },
   shareBannerIcon: { alignItems: 'center', backgroundColor: '#31594A', borderRadius: 21, height: 42, justifyContent: 'center', width: 42 },
@@ -401,8 +401,8 @@ const styles = themedStyles(() => StyleSheet.create({
   requestActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
   approveButton: { alignItems: 'center', backgroundColor: palette.forest, borderRadius: 9, justifyContent: 'center', minHeight: 38, paddingHorizontal: 12 },
   approveLabel: { color: palette.white, fontSize: 11, fontWeight: '700' },
-  declineButton: { alignItems: 'center', backgroundColor: '#FCE9E5', borderRadius: 9, justifyContent: 'center', minHeight: 38, paddingHorizontal: 12 },
-  declineLabel: { color: '#9A3E2A', fontSize: 11, fontWeight: '700' },
+  declineButton: { alignItems: 'center', backgroundColor: '#F3E1D6', borderRadius: 9, justifyContent: 'center', minHeight: 38, paddingHorizontal: 12 },
+  declineLabel: { color: '#8A4A2C', fontSize: 11, fontWeight: '700' },
   sectionCard: { padding: 16 },
   sectionTop: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
   sectionTitleGroup: { alignItems: 'center', flexDirection: 'row', gap: 9 },
@@ -434,7 +434,7 @@ const styles = themedStyles(() => StyleSheet.create({
   emptyCopy: { color: palette.muted, flex: 1, fontSize: 12, lineHeight: 18 },
   doctorRow: { alignItems: 'center', flexDirection: 'row', gap: 10, padding: 13 },
   starButton: { alignItems: 'center', height: 38, justifyContent: 'center', width: 34 },
-  revokeButton: { alignItems: 'center', backgroundColor: '#FCE9E5', borderRadius: 17, height: 34, justifyContent: 'center', width: 34 },
+  revokeButton: { alignItems: 'center', backgroundColor: '#F3E1D6', borderRadius: 17, height: 34, justifyContent: 'center', width: 34 },
   removeButton: { alignItems: 'center', height: 36, justifyContent: 'center', width: 36 },
   historyBlock: { backgroundColor: palette.paper, borderRadius: 12, gap: 8, marginTop: 13, padding: 13 },
   historyTitle: { color: palette.ink, fontSize: 12, fontWeight: '700' },

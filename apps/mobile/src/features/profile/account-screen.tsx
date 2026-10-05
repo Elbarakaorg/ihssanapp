@@ -199,7 +199,7 @@ export default function AccountScreen() {
         <Text style={styles.fieldLabel}>Display name</Text>
         <TextInput autoCapitalize="words" maxLength={80} onChangeText={setDisplayName} style={styles.input} value={displayName} />
         <Text style={styles.fieldLabel}>Bio</Text>
-        <TextInput accessibilityLabel="Bio" maxLength={500} multiline onChangeText={setBio} placeholder="A short introduction" placeholderTextColor="#8A958E" style={[styles.input, styles.bioInput]} textAlignVertical="top" value={bio} />
+        <TextInput accessibilityLabel="Bio" maxLength={500} multiline onChangeText={setBio} placeholder="A short introduction" placeholderTextColor="#8C8272" style={[styles.input, styles.bioInput]} textAlignVertical="top" value={bio} />
         <Text style={styles.characterCount}>{bio.length}/500</Text>
         <Pressable accessibilityRole="button" disabled={savingProfile} onPress={() => void saveProfile()} style={[styles.primaryButton, savingProfile && styles.disabledButton]}>
           {savingProfile ? <ActivityIndicator color={palette.white} /> : <><Save color={palette.white} size={17} /><Text style={styles.primaryLabel}>Save profile</Text></>}
@@ -210,9 +210,9 @@ export default function AccountScreen() {
       <View style={[uiStyles.card, styles.formCard]}>
         <View style={styles.securityHeading}><LockKeyhole color={palette.forest} size={19} /><View><Text style={styles.securityTitle}>Password</Text><Text style={styles.securityDetail}>Set a password for Google sign-in, or replace your existing password.</Text></View></View>
         <Text style={styles.fieldLabel}>New password</Text>
-        <TextInput autoComplete="new-password" onChangeText={setPassword} placeholder="At least 8 characters" placeholderTextColor="#8A958E" secureTextEntry style={styles.input} textContentType="newPassword" value={password} />
+        <TextInput autoComplete="new-password" onChangeText={setPassword} placeholder="At least 8 characters" placeholderTextColor="#8C8272" secureTextEntry style={styles.input} textContentType="newPassword" value={password} />
         <Text style={styles.fieldLabel}>Confirm new password</Text>
-        <TextInput autoComplete="new-password" onChangeText={setPasswordConfirmation} placeholder="Repeat your password" placeholderTextColor="#8A958E" secureTextEntry style={styles.input} textContentType="newPassword" value={passwordConfirmation} />
+        <TextInput autoComplete="new-password" onChangeText={setPasswordConfirmation} placeholder="Repeat your password" placeholderTextColor="#8C8272" secureTextEntry style={styles.input} textContentType="newPassword" value={passwordConfirmation} />
         <Pressable accessibilityRole="button" disabled={savingPassword} onPress={() => void savePassword()} style={[styles.secondaryButton, savingPassword && styles.disabledButton]}>
           {savingPassword ? <ActivityIndicator color={palette.forest} /> : <><ShieldCheck color={palette.forest} size={17} /><Text style={styles.secondaryLabel}>Set or change password</Text></>}
         </Pressable>
@@ -226,7 +226,7 @@ const styles = themedStyles(() => StyleSheet.create({
   backLabel: { color: palette.ink, fontSize: 14, fontWeight: '600' },
   loading: { alignItems: 'center', gap: 10, marginTop: 72 },
   muted: { color: palette.muted, fontSize: 13 },
-  error: { backgroundColor: '#FCE9E5', borderRadius: 12, color: '#9A3E2A', fontSize: 13, lineHeight: 19, marginBottom: 12, padding: 13 },
+  error: { backgroundColor: '#F3E1D6', borderRadius: 12, color: '#8A4A2C', fontSize: 13, lineHeight: 19, marginBottom: 12, padding: 13 },
   notice: { backgroundColor: palette.leaf, borderRadius: 12, color: palette.forest, fontSize: 13, lineHeight: 19, marginBottom: 12, padding: 13 },
   identityCard: { alignItems: 'center', flexDirection: 'row', gap: 16, padding: 18 },
   avatarButton: { alignItems: 'center', backgroundColor: palette.leaf, borderColor: palette.line, borderRadius: 38, borderWidth: 1, height: 76, justifyContent: 'center', overflow: 'visible', width: 76 },

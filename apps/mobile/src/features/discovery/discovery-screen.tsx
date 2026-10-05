@@ -255,7 +255,7 @@ const styles = themedStyles(() => StyleSheet.create({
   chipActive: { backgroundColor: palette.forest, borderColor: palette.forest },
   chipText: { color: palette.muted, fontSize: 12, fontWeight: '600' },
   chipTextActive: { color: palette.white },
-  error: { backgroundColor: '#FCE9E5', borderRadius: 8, color: '#9A3E2A', fontSize: 12, marginTop: 10, padding: 10 },
+  error: { backgroundColor: '#F3E1D6', borderRadius: 8, color: '#8A4A2C', fontSize: 12, marginTop: 10, padding: 10 },
   notice: { alignSelf: 'flex-start', backgroundColor: palette.white, borderRadius: 8, color: palette.muted, fontSize: 12, lineHeight: 17, marginTop: 10, overflow: 'hidden', padding: 10 },
   locate: { alignItems: 'center', backgroundColor: palette.white, borderRadius: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.25)', height: 48, justifyContent: 'center', position: 'absolute', right: 14, bottom: 84, width: 48 },
   searchHere: { alignItems: 'center', alignSelf: 'center', backgroundColor: palette.white, borderRadius: 18, boxShadow: '0 2px 8px rgba(0,0,0,0.18)', flexDirection: 'row', gap: 6, marginTop: 10, minHeight: 36, paddingHorizontal: 14 },

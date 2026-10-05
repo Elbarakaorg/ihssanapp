@@ -8,7 +8,7 @@ import { useAuth } from '@/features/auth/auth-provider';
 import { isMetricId, localDateString, metricDefinitions, validateBloodPressureInput, validateMeasurementInput } from '@/features/health/metric-input';
 import { getMetricSupportedUnits, saveCompositeMeasurement, saveMeasurement } from '@/features/health/measurement-repository';
 import { Page, PreviewNotice } from '@/ui/patient-ui';
-import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme } from '@/ui/palette';
 
 export default function MeasurementEntryScreen() {
   useScheme();
@@ -168,13 +168,13 @@ export default function MeasurementEntryScreen() {
           {unitLoadError ? <Text accessibilityRole="alert" style={styles.unitLoadNotice}>{unitLoadError}</Text> : null}
           {metricId === 'blood_pressure' ? <>
             <Text style={styles.fieldLabel}>Systolic (upper number)</Text>
-            <View style={styles.valueRow}><TextInput accessibilityLabel="Systolic blood pressure" keyboardType="number-pad" onChangeText={(nextValue) => { setSystolic(nextValue); setError(''); }} placeholder="120" placeholderTextColor="#8A958E" style={styles.valueInput} value={systolic} /><View style={styles.fixedUnit}><Text style={styles.fixedUnitText}>mm Hg</Text></View></View>
+            <View style={styles.valueRow}><TextInput accessibilityLabel="Systolic blood pressure" keyboardType="number-pad" onChangeText={(nextValue) => { setSystolic(nextValue); setError(''); }} placeholder="120" placeholderTextColor="#8C8272" style={styles.valueInput} value={systolic} /><View style={styles.fixedUnit}><Text style={styles.fixedUnitText}>mm Hg</Text></View></View>
             <Text style={styles.fieldLabel}>Diastolic (lower number)</Text>
-            <View style={styles.valueRow}><TextInput accessibilityLabel="Diastolic blood pressure" keyboardType="number-pad" onChangeText={(nextValue) => { setDiastolic(nextValue); setError(''); }} placeholder="80" placeholderTextColor="#8A958E" style={styles.valueInput} value={diastolic} /><View style={styles.fixedUnit}><Text style={styles.fixedUnitText}>mm Hg</Text></View></View>
+            <View style={styles.valueRow}><TextInput accessibilityLabel="Diastolic blood pressure" keyboardType="number-pad" onChangeText={(nextValue) => { setDiastolic(nextValue); setError(''); }} placeholder="80" placeholderTextColor="#8C8272" style={styles.valueInput} value={diastolic} /><View style={styles.fixedUnit}><Text style={styles.fixedUnitText}>mm Hg</Text></View></View>
           </> : <>
             <Text style={styles.fieldLabel}>{definition.fieldLabel}</Text>
             <View style={styles.valueRow}>
-              <TextInput accessibilityLabel={definition.fieldLabel} keyboardType="decimal-pad" onChangeText={(nextValue) => { setValue(nextValue); setError(''); }} placeholder="Enter result" placeholderTextColor="#8A958E" style={styles.valueInput} value={value} />
+              <TextInput accessibilityLabel={definition.fieldLabel} keyboardType="decimal-pad" onChangeText={(nextValue) => { setValue(nextValue); setError(''); }} placeholder="Enter result" placeholderTextColor="#8C8272" style={styles.valueInput} value={value} />
               {supportedUnits.length === 1 ? <View style={styles.fixedUnit}><Text style={styles.fixedUnitText}>{supportedUnits[0]}</Text></View> : null}
             </View>
           </>}
@@ -232,7 +232,7 @@ export default function MeasurementEntryScreen() {
                 setError('');
               }}
               placeholder="YYYY-MM-DD"
-              placeholderTextColor="#8A958E"
+              placeholderTextColor="#8C8272"
               keyboardType="numbers-and-punctuation"
               maxLength={10}
               style={styles.dateInput}
@@ -262,11 +262,10 @@ const styles = themedStyles(() => StyleSheet.create({
     marginTop: 4,
   },
   title: {
+    ...display,
     color: palette.ink,
-    fontSize: 31,
-    fontWeight: '600',
-    letterSpacing: -0.5,
-    lineHeight: 37,
+    fontSize: 32,
+    lineHeight: 38,
   },
   description: {
     color: palette.muted,

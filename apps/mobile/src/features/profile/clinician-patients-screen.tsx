@@ -113,7 +113,7 @@ const styles = themedStyles(() => StyleSheet.create({
   scanDetail: { color: palette.muted, fontSize: 11, lineHeight: 16, marginTop: 3 },
   verificationNotice: { backgroundColor: palette.sky, borderRadius: 12, marginTop: 12, padding: 14 },
   verificationTitle: { color: palette.ink, fontSize: 13, fontWeight: '700' },
-  error: { backgroundColor: '#FCE9E5', borderRadius: 10, color: '#9A3E2A', fontSize: 12, lineHeight: 18, marginTop: 12, padding: 12 },
+  error: { backgroundColor: '#F3E1D6', borderRadius: 10, color: '#8A4A2C', fontSize: 12, lineHeight: 18, marginTop: 12, padding: 12 },
   loading: { alignItems: 'center', gap: 10, paddingVertical: 30 },
   list: { gap: 9 },
   patientRow: { alignItems: 'center', flexDirection: 'row', gap: 11, padding: 14 },

@@ -235,7 +235,7 @@ export default function DoctorProfileScreen() {
       <Field label="Headline" value={headline} onChangeText={setHeadline} maxLength={120} placeholder="Cardiologist · Casablanca" />
       <Field label="About you" value={bio} onChangeText={setBio} maxLength={1500} multiline />
       <Field label="Specialties (comma separated, up to 5)" value={specialties} onChangeText={setSpecialties} />
-      <Text style={[s.meta, splitList(specialties).length > 5 && { color: '#9A3E2A' }]}>{splitList(specialties).length}/5 · each 2–60 characters</Text>
+      <Text style={[s.meta, splitList(specialties).length > 5 && { color: '#8A4A2C' }]}>{splitList(specialties).length}/5 · each 2–60 characters</Text>
       <Text style={[s.meta, { marginTop: 14 }]}>Languages you speak</Text>
       <View style={s.row}>{languageOptions.map(([code, label]) => <Chip key={code} label={label} selected={languages.includes(code)} onPress={() => setLanguages((cur) => (cur.includes(code) ? cur.filter((c) => c !== code) : [...cur, code]))} />)}</View>
       <Field label="Years of experience" value={years} onChangeText={setYears} keyboardType="number-pad" maxLength={2} />

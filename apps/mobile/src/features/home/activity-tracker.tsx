@@ -7,7 +7,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { Pedometer } from 'expo-sensors';
 
 import { estimateActivity } from '@/features/home/activity-estimates';
-import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme } from '@/ui/palette';
 import { Loading } from '@/ui/loading';
 
 type DayCount = { label: string; steps: number };
@@ -239,7 +239,7 @@ const styles = themedStyles(() => StyleSheet.create({
   panelHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   headerActions: { alignItems: 'center', flexDirection: 'row', gap: 10 },
   eyebrow: { color: palette.coral, fontSize: 12, fontWeight: '600' },
-  title: { color: palette.ink, fontSize: 22, fontWeight: '700', marginTop: 3 },
+  title: { ...display, color: palette.ink, fontSize: 24, marginTop: 3 },
   detailedTitle: { fontSize: 26 },
   headerIcon: { alignItems: 'center', backgroundColor: palette.leaf, borderRadius: 18, height: 36, justifyContent: 'center', width: 36 },
   stateRow: { alignItems: 'center', flexDirection: 'row', gap: 9, minHeight: 76 },

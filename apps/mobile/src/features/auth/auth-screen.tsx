@@ -8,7 +8,7 @@ import type { ProfileType } from './auth-contract';
 import { normalizeEmailConfirmationToken, validateAuthForm, type AuthMode } from './auth-validation';
 import { getCurrentUserProfile } from '@/features/profile/profile-repository';
 import { DarkAuthShell, ink } from './dark-auth-shell';
-import { themedStyles, useScheme } from '@/ui/palette';
+import { display, themedStyles, useScheme } from '@/ui/palette';
 import { Loading } from '@/ui/loading';
 
 export default function AuthScreen() {
@@ -347,7 +347,7 @@ export default function AuthScreen() {
 }
 
 const styles = themedStyles(() => StyleSheet.create({
-  title: { color: ink.text, fontSize: 38, fontWeight: '300', letterSpacing: -1, lineHeight: 44 },
+  title: { ...display, color: ink.text, fontSize: 40, lineHeight: 46 },
   description: { color: ink.muted, fontSize: 15, lineHeight: 22, marginTop: 10 },
   fieldLabel: { color: ink.muted, fontSize: 12, fontWeight: '500', marginBottom: 8, marginTop: 22 },
   profileTypeRow: {

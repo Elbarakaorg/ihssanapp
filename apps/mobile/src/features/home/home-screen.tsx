@@ -9,6 +9,8 @@ import { listMeasurementsForCurrentUser } from '@/features/health/measurement-re
 import { summarizeMeasurements } from '@/features/health/measurement-summary';
 import { getCurrentUserProfile } from '@/features/profile/profile-repository';
 import { BrandMark, Page, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
+import { VerseCard } from '@/features/spirit/verse-card';
+import { reflectionOfTheDay } from '@/features/spirit/verses';
 import { PreferenceIcons } from '@/ui/preference-icons';
 import { display, palette, themedStyles, useScheme } from '@/ui/palette';
 
@@ -72,7 +74,12 @@ export default function HomeScreen() {
         </Text>
       </View>
 
-      <View style={styles.recordCard}>
+      <Pressable accessibilityHint="Opens verses of healing and Ihsan" accessibilityRole="button" onPress={() => router.push('/verses')}>
+        <VerseCard emphasis item={reflectionOfTheDay()} />
+        <Text style={styles.moreVerses}>More verses of healing  ›</Text>
+      </Pressable>
+
+      <View style={[styles.recordCard, { marginTop: 24 }]}>
         <View style={styles.recordTop}>
           <View>
             <Text style={styles.cardEyebrow}>Your health record</Text>
@@ -158,6 +165,7 @@ export default function HomeScreen() {
 }
 
 const styles = themedStyles(() => StyleSheet.create({
+  moreVerses: { color: palette.forest, fontSize: 13, fontWeight: '600', marginTop: 10, textAlign: 'center' },
   topNav: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   topActions: { alignItems: 'center', flexDirection: 'row', gap: 4 },
   scanButton: { alignItems: 'center', backgroundColor: palette.white, borderColor: palette.line, borderCurve: 'continuous', borderRadius: 21, borderWidth: 1, height: 44, justifyContent: 'center', width: 44 },

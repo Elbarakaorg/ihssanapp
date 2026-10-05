@@ -112,7 +112,7 @@ const styles = themedStyles(() => StyleSheet.create({
   emptyTitle: { color: palette.ink, fontSize: 15, fontWeight: '700' },
   refreshButton: { alignItems: 'center', flexDirection: 'row', gap: 6, marginTop: 3, minHeight: 34 },
   refreshText: { color: palette.forest, fontSize: 11, fontWeight: '700' },
-  error: { backgroundColor: '#FCE9E5', borderRadius: 5, color: '#9A3E2A', fontSize: 12, padding: 10 },
+  error: { backgroundColor: '#F3E1D6', borderRadius: 5, color: '#8A4A2C', fontSize: 12, padding: 10 },
   modalBackdrop: { backgroundColor: 'rgba(12, 32, 23, .5)', flex: 1, justifyContent: 'flex-end' },
   articleModal: { backgroundColor: palette.paper, borderTopLeftRadius: 12, borderTopRightRadius: 12, maxHeight: '88%', padding: 20 },
   modalHeader: { alignItems: 'flex-start', flexDirection: 'row', gap: 10, justifyContent: 'space-between', marginBottom: 12 },

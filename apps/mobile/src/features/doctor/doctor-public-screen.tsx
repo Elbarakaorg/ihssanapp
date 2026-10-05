@@ -7,8 +7,8 @@ import { RemoteImage } from '@/features/doctor/doctor-image';
 import { type DoctorProfile, type Slot, bookAppointment, getDoctorProfile, listAvailableSlots, shareDoctorProfile } from '@/features/doctor/doctor-api';
 import { BackLink, Button, Chip, Field, Message, doctorStyles as s, formatDay, formatTime, toDateKey } from '@/features/doctor/ui';
 import { CommentsSection, LoveButton, SocialLinks } from '@/features/doctor/doctor-engagement';
-import { Page } from '@/ui/patient-ui';
-import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { Ornament, Page } from '@/ui/patient-ui';
+import { display, palette, themedStyles, useScheme, wobble } from '@/ui/palette';
 import { Loading } from '@/ui/loading';
 
 export default function DoctorPublicScreen() {
@@ -81,21 +81,28 @@ export default function DoctorPublicScreen() {
       <BackLink href="/doctors" label="Find a doctor" />
       {doctor.is_preview ? <Message kind="info">Preview: your profile is hidden, so only you can see this page. Set it to Visible to publish.</Message> : null}
       <View style={styles.hero}>
-        <RemoteImage bucket={doctor.featured_source === 'upload' ? 'doctor-media' : doctor.featured_source === 'account' ? 'profile-photos' : null} path={doctor.featured_source === 'upload' ? doctor.featured_image_path : doctor.avatar_path} style={styles.avatar} placeholderSize={40} />
-        <View style={styles.heroCopy}>
-          <Text style={s.title}>{doctor.name}</Text>
-          {doctor.headline ? <Text style={s.body}>{doctor.headline}</Text> : null}
+        <View style={styles.frame}>
+          <RemoteImage bucket={doctor.featured_source === 'upload' ? 'doctor-media' : doctor.featured_source === 'account' ? 'profile-photos' : null} path={doctor.featured_source === 'upload' ? doctor.featured_image_path : doctor.avatar_path} style={styles.avatar} placeholderSize={44} />
         </View>
+        <Text style={[s.title, styles.center]}>{doctor.name}</Text>
+        {doctor.headline ? <Text style={[s.body, styles.center, styles.headline]}>{doctor.headline}</Text> : null}
+        <View style={styles.seal}><Text style={styles.sealText}>✓ Identity and license checked by Ihssan</Text></View>
+        <Ornament width={140} />
+        {doctor.specialties.length ? <View style={styles.tags}>{doctor.specialties.map((x) => <View key={x} style={styles.tag}><Text style={styles.tagText}>{x}</Text></View>)}</View> : null}
+        <View style={styles.facts}>
+          {doctor.years_experience ? <View style={styles.fact}><Text style={styles.factValue}>{doctor.years_experience}</Text><Text style={styles.factLabel}>years of practice</Text></View> : null}
+          {doctor.languages.length ? <View style={styles.fact}><Text style={styles.factValue}>{doctor.languages.length}</Text><Text style={styles.factLabel}>{doctor.languages.length === 1 ? 'language' : 'languages'}</Text></View> : null}
+          <View style={styles.fact}><Text style={styles.factValue}>{doctor.love_count ?? 0}</Text><Text style={styles.factLabel}>{doctor.love_count === 1 ? 'love' : 'loves'}</Text></View>
+        </View>
+        {doctor.languages.length ? <Text style={[s.meta, styles.center]}>Speaks {doctor.languages.join(', ')}</Text> : null}
       </View>
-      <View style={[s.row, { alignItems: 'center' }]}>
+      <View style={[s.row, styles.actions]}>
         <LoveButton doctorId={doctor.clinician_id} initialCount={doctor.love_count ?? 0} initialLoved={!!doctor.loved_by_me} isOwner={isOwner} />
         <Button tone="secondary" label="Share profile" onPress={() => void shareDoctorProfile(doctor.clinician_id, doctor.name).then((r) => setNotice(r === 'copied' ? 'Link copied.' : '')).catch(() => setNotice(''))} />
       </View>
       {notice ? <Message kind="ok">{notice}</Message> : null}
       <SocialLinks links={doctor.social_links ?? []} />
-      <Text style={s.meta}>{[doctor.specialties.join(', '), doctor.years_experience ? `${doctor.years_experience} years experience` : '', doctor.languages.length ? `Speaks ${doctor.languages.join(', ')}` : ''].filter(Boolean).join(' · ')}</Text>
-      <Message kind="ok">Identity and license checked by Ihssan.</Message>
-      {doctor.bio ? <Text style={[s.body, { marginTop: 14 }]}>{doctor.bio}</Text> : null}
+      {doctor.bio ? <><Text style={s.section}>About</Text><Text style={[s.body, styles.bio]}>{doctor.bio}</Text></> : null}
 
       {doctor.gallery.length > 0 ? (
         <>
@@ -113,7 +120,7 @@ export default function DoctorPublicScreen() {
           <View key={kind}>
             <Text style={s.section}>{kind === 'work' ? 'Experience' : 'Education'}</Text>
             {items.map((e, i) => (
-              <View key={`${e.title}-${i}`} style={s.card}>
+              <View key={`${e.title}-${i}`} style={[s.card, styles.entry]}>
                 <Text style={s.cardTitle}>{e.title}</Text>
                 <Text style={s.meta}>{e.organization}{e.location ? ` · ${e.location}` : ''}</Text>
                 <Text style={s.meta}>{e.start_year} – {e.end_year ?? 'Present'}</Text>
@@ -165,9 +172,23 @@ export default function DoctorPublicScreen() {
 }
 
 const styles = themedStyles(() => StyleSheet.create({
-  hero: { alignItems: 'center', flexDirection: 'row', gap: 16, marginTop: 4 },
-  heroCopy: { flex: 1 },
-  avatar: { borderRadius: 48, height: 96, overflow: 'hidden', width: 96 },
+  hero: { alignItems: 'center', backgroundColor: palette.white, borderColor: palette.line, borderWidth: 1, gap: 8, marginTop: 6, paddingBottom: 18, paddingHorizontal: 16, paddingTop: 22, ...wobble },
+  frame: { backgroundColor: palette.leaf, borderColor: palette.leafDeep, borderRadius: 64, borderWidth: 1, padding: 5 },
+  avatar: { borderRadius: 56, height: 112, overflow: 'hidden', width: 112 },
+  center: { textAlign: 'center' },
+  headline: { color: palette.muted, fontStyle: 'italic' },
+  seal: { backgroundColor: palette.leaf, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 5 },
+  sealText: { color: palette.forest, fontSize: 11, fontWeight: '600' },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' },
+  tag: { borderColor: palette.line, borderRadius: 12, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 4 },
+  tagText: { color: palette.ink, fontSize: 12 },
+  facts: { borderColor: palette.line, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', justifyContent: 'center', marginTop: 4, paddingTop: 12, width: '100%' },
+  fact: { alignItems: 'center', flex: 1 },
+  factValue: { ...display, color: palette.ink, fontSize: 26, fontVariant: ['tabular-nums'] },
+  factLabel: { color: palette.muted, fontSize: 11 },
+  actions: { alignItems: 'center', justifyContent: 'center', marginTop: 14 },
+  entry: { borderLeftColor: palette.forest, borderLeftWidth: 3 },
+  bio: { lineHeight: 24 },
   gallery: { gap: 10, paddingVertical: 10 },
-  galleryImage: { borderRadius: 12, height: 150, overflow: 'hidden', width: 200 },
+  galleryImage: { ...wobble, height: 160, overflow: 'hidden', width: 210 },
 }));

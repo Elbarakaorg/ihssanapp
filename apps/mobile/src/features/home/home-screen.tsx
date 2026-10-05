@@ -10,7 +10,7 @@ import { summarizeMeasurements } from '@/features/health/measurement-summary';
 import { getCurrentUserProfile } from '@/features/profile/profile-repository';
 import { BrandMark, Page, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { localLibrary } from '@/features/content/library';
-import { dosesForDay, progressOf, toLocalDateKey } from '@/features/medicine/schedule';
+import { dosesForDay, progressOf, stockState, toLocalDateKey } from '@/features/medicine/schedule';
 import { useTreatments } from '@/features/medicine/use-treatments';
 import { ProgressBar } from '@/features/medicine/treatments-screen';
 import { VerseCard } from '@/features/spirit/verse-card';
@@ -28,6 +28,7 @@ export default function HomeScreen() {
   const [summaryError, setSummaryError] = useState('');
   const [summaryRetry, setSummaryRetry] = useState(0);
   const { treatments, logs } = useTreatments();
+  const refills = treatments.filter((t) => t.status === 'active').flatMap((t) => t.medications).filter((m) => { const st = stockState(m); return st && st.level !== 'ok'; });
   const today = progressOf(dosesForDay(treatments, logs, toLocalDateKey(new Date())));
 
   useEffect(() => {
@@ -150,6 +151,13 @@ export default function HomeScreen() {
             <ProgressBar percent={today.percent} />
           </View>
           <ArrowRight color={palette.forest} size={18} />
+        </Pressable>
+      ) : null}
+
+      {session && refills.length ? (
+        <Pressable accessibilityRole="button" onPress={() => router.push('/treatments' as Href)} style={[uiStyles.card, styles.refillCard]}>
+          <Pill color={palette.coral} size={18} />
+          <Text style={styles.refillText}>Refill soon: {refills.map((m) => m.name).join(', ')}</Text>
         </Pressable>
       ) : null}
 
@@ -342,6 +350,8 @@ const styles = themedStyles(() => StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  refillCard: { alignItems: 'center', flexDirection: 'row', gap: 10, marginBottom: 18 },
+  refillText: { color: palette.coral, flex: 1, fontSize: 13, fontWeight: '600' },
   todayCard: { alignItems: 'center', flexDirection: 'row', gap: 14, marginBottom: 18 },
   todayCopy: { flex: 1, gap: 6 },
   readList: { gap: 10, marginBottom: 18 },

@@ -1,5 +1,5 @@
 import { supabaseClient } from '@/platform/supabase/client';
-import type { DoseLog, DurationUnit, Frequency, Treatment, TreatmentMedication } from '@/features/medicine/schedule';
+import type { AdherenceRow, DoseLog, DurationUnit, Frequency, Treatment, TreatmentMedication } from '@/features/medicine/schedule';
 
 export type MedicationInput = {
   id?: string; name: string; strength?: string; form?: string; amount: number; unit: string;
@@ -57,3 +57,7 @@ export const prescribeTreatment = (grantId: string, input: Omit<TreatmentInput, 
 }, 'Could not save this prescription.');
 export const endPrescribedTreatment = (id: string) => rpc<void>('end_prescribed_treatment', { p_treatment_id: id }, 'Could not end this treatment.');
 export const getSharedPatientTreatments = (grantId: string) => rpc<SharedTreatment[]>('get_shared_patient_treatments', { p_grant_id: grantId }, 'Could not load this patient’s treatments.');
+
+export const setMedicationStock = (medicationId: string, amount: number | null) => rpc<void>('set_my_medication_stock', { p_medication_id: medicationId, p_amount: amount }, 'Could not save the stock.');
+export const getMyAdherence = (days: number) => rpc<AdherenceRow[]>('get_my_adherence', { p_days: days }, 'Could not load your adherence.');
+export const getSharedPatientAdherence = (grantId: string, days: number) => rpc<AdherenceRow[]>('get_shared_patient_adherence', { p_grant_id: grantId, p_days: days }, 'Could not load adherence.');

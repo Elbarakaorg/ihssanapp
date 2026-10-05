@@ -5,6 +5,8 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Button, Message } from '@/features/doctor/ui';
 import { endPrescribedTreatment, getSharedPatientTreatments, type SharedTreatment } from '@/features/medicine/repository';
+import { AdherenceView } from '@/features/medicine/adherence-view';
+import { getSharedPatientAdherence } from '@/features/medicine/repository';
 import { describeSchedule } from '@/features/medicine/schedule';
 import { SectionHeading } from '@/ui/patient-ui';
 import { display, palette, themedStyles, useScheme, wobble } from '@/ui/palette';
@@ -19,6 +21,7 @@ export function SharedTreatmentsSection({ grantId }: { grantId: string }) {
     try { setError(''); setItems(await getSharedPatientTreatments(grantId)); }
     catch (e) { setError(e instanceof Error ? e.message : 'Could not load treatments.'); setItems([]); }
   }, [grantId]);
+  const loadAdherence = useCallback((days: number) => getSharedPatientAdherence(grantId, days), [grantId]);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
   return (
@@ -44,6 +47,7 @@ export function SharedTreatmentsSection({ grantId }: { grantId: string }) {
           ) : null}
         </View>
       ))}
+      {items?.length ? <><SectionHeading title="Adherence" detail="Self-reported doses" /><AdherenceView load={loadAdherence} /></> : null}
       {items && !items.length && !error ? <Text style={styles.meta}>No treatments recorded yet.</Text> : null}
       <Button label="Prescribe a treatment" onPress={() => router.push(`/my-patients/prescribe?grantId=${grantId}` as Href)} />
     </View>

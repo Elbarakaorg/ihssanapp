@@ -4,7 +4,10 @@ import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native
 
 import { useAuth } from '@/features/auth/auth-provider';
 import { BackLink, Button, Chip, Message } from '@/features/doctor/ui';
-import { deleteMyTreatment, setTreatmentStatus } from '@/features/medicine/repository';
+import { AdherenceView } from '@/features/medicine/adherence-view';
+import { RemindersToggle } from '@/features/medicine/reminders-toggle';
+import { StockEditor } from '@/features/medicine/stock-editor';
+import { deleteMyTreatment, getMyAdherence, setTreatmentStatus } from '@/features/medicine/repository';
 import { asNeededForDay, describeSchedule, dosesForDay, formatAmount, progressOf, toLocalDateKey, weeklyAdherence, type Dose, type Treatment } from '@/features/medicine/schedule';
 import { useTreatments } from '@/features/medicine/use-treatments';
 import { Loading } from '@/ui/loading';
@@ -127,6 +130,15 @@ export default function TreatmentsScreen() {
           <Button label="New treatment" onPress={() => router.push('/treatments/edit' as Href)} />
           <Button label="Browse the medicine directory" onPress={() => router.push('/medicines' as Href)} tone="secondary" />
 
+          <RemindersToggle treatments={treatments} />
+
+          {treatments.length ? (
+            <>
+              <SectionHeading title="Adherence" detail="How consistent you have been" />
+              <AdherenceView label="My report" load={getMyAdherence} shareable />
+            </>
+          ) : null}
+
           <SectionHeading title="Your treatments" detail={`${treatments.length}`} />
           {treatments.map((t) => (
             <View key={t.id} style={styles.card}>
@@ -138,9 +150,12 @@ export default function TreatmentsScreen() {
                 <Text style={[styles.status, t.status !== 'active' && styles.statusOff]}>{statusLabel[t.status]}</Text>
               </View>
               {t.medications.map((m) => (
-                <View key={m.id} style={styles.medRow}>
+                <View key={m.id} style={styles.medBlock}>
+                  <View style={styles.medRow}>
                   <Pill color={palette.forest} size={14} />
-                  <Text style={styles.meta}>{[m.name, m.strength].filter(Boolean).join(' ')} — {describeSchedule(m)}{m.instructions ? ` · ${m.instructions}` : ''}</Text>
+                  <Text style={[styles.meta, styles.doseCopy]}>{[m.name, m.strength].filter(Boolean).join(' ')} — {describeSchedule(m)}{m.instructions ? ` · ${m.instructions}` : ''}</Text>
+                  </View>
+                  <StockEditor medication={m} onSaved={() => void reload()} />
                 </View>
               ))}
               {t.notes ? <Text style={styles.meta}>{t.notes}</Text> : null}
@@ -169,6 +184,7 @@ const styles = themedStyles(() => StyleSheet.create({
   status: { color: palette.forest, fontSize: 11, fontWeight: '700' },
   statusOff: { color: palette.muted },
   meta: { color: palette.muted, fontSize: 12, lineHeight: 18 },
+  medBlock: { gap: 6 },
   medRow: { alignItems: 'center', flexDirection: 'row', gap: 8 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 },
   track: { backgroundColor: palette.leaf, borderRadius: 6, height: 10, overflow: 'hidden' },

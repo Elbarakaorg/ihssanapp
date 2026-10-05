@@ -12,6 +12,7 @@ export type TreatmentMedication = {
   frequency: Frequency; interval_days: number | null; weekdays: number[] | null; times: string[];
   duration_value: number | null; duration_unit: DurationUnit | null; ends_on: string | null;
   max_daily_amount: number | null; min_interval_hours: number | null; instructions: string | null;
+  stock_amount?: number | null; stock_remaining?: number | null;
 };
 export type Treatment = {
   id: string; name: string; notes: string | null; status: 'active' | 'paused' | 'completed' | 'stopped';
@@ -140,4 +141,51 @@ export function asNeededForDay(treatments: Treatment[], logs: DoseLog[], dateKey
     }
   }
   return result;
+}
+
+/** Average units used per day, or null for as-needed medicines (unpredictable). */
+export function dailyUsage(m: TreatmentMedication): number | null {
+  const perDay = m.amount * m.times.length;
+  switch (m.frequency) {
+    case 'daily': return perDay;
+    case 'interval': return m.interval_days ? perDay / m.interval_days : null;
+    case 'weekly': return m.weekdays?.length ? (perDay * m.weekdays.length) / 7 : null;
+    default: return null;
+  }
+}
+
+export type StockState = { remaining: number; daysLeft: number | null; level: 'ok' | 'low' | 'out' };
+
+/** Remaining stock with an estimate of days left. "Low" means a week or less (or a single dose left). */
+export function stockState(m: TreatmentMedication): StockState | null {
+  if (m.stock_remaining == null) return null;
+  const usage = dailyUsage(m);
+  const daysLeft = usage ? Math.floor(m.stock_remaining / usage) : null;
+  const level = m.stock_remaining < m.amount ? 'out' : daysLeft !== null && daysLeft <= 7 ? 'low' : m.stock_remaining < m.amount * 2 ? 'low' : 'ok';
+  return { remaining: m.stock_remaining, daysLeft, level };
+}
+
+export type AdherenceRow = { medication_id: string; name: string; treatment: string; frequency: Frequency; unit: string; expected: number | null; taken: number; skipped: number; taken_amount: number };
+
+export const adherencePercent = (r: AdherenceRow) => (r.expected ? Math.min(100, Math.round((r.taken / r.expected) * 100)) : null);
+
+export function overallAdherence(rows: AdherenceRow[]) {
+  const scheduled = rows.filter((r) => r.expected);
+  const expected = scheduled.reduce((s, r) => s + (r.expected ?? 0), 0);
+  const taken = scheduled.reduce((s, r) => s + Math.min(r.taken, r.expected ?? 0), 0);
+  return { expected, taken, percent: expected ? Math.round((taken / expected) * 100) : null };
+}
+
+/** Plain-text report a patient can share with anyone. */
+export function adherenceReport(rows: AdherenceRow[], days: number, patientLabel = 'Patient') {
+  const o = overallAdherence(rows);
+  const lines = [`Medication adherence · last ${days} days · ${patientLabel}`, o.percent === null ? 'No scheduled doses in this period.' : `Overall: ${o.taken} of ${o.expected} scheduled doses taken (${o.percent}%)`, ''];
+  for (const r of rows) {
+    const pct = adherencePercent(r);
+    lines.push(r.expected === null
+      ? `• ${r.name} (as needed): ${trimNumber(r.taken_amount)} ${r.unit} taken over ${r.taken} intakes`
+      : `• ${r.name}: ${r.taken}/${r.expected} taken${pct === null ? '' : ` (${pct}%)`}${r.skipped ? `, ${r.skipped} skipped` : ''}`);
+  }
+  lines.push('', 'Self-reported in the Ihssan app. A memory aid, not a medical record.');
+  return lines.join('\n');
 }

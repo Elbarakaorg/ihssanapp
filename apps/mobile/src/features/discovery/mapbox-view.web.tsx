@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { buildMapHtml, parseMapEvent, type MapCommand } from './map-runtime';
+import { mapFrameUrl, parseMapEvent, type MapCommand } from './map-runtime';
 import type { MapboxViewProps } from './mapbox-types';
 
 export default function MapboxView({ token, styleUrl, theme, pins, user, mode, fly, selectedId, onEvent }: MapboxViewProps) {
   const frame = useRef<HTMLIFrameElement>(null);
   const [ready, setReady] = useState(false);
-  const html = useMemo(() => buildMapHtml({ token, styleUrl, theme }), [token, styleUrl, theme]);
+  const src = useMemo(() => mapFrameUrl({ token, styleUrl, theme }), [token, styleUrl, theme]);
   const handler = useRef(onEvent);
   handler.current = onEvent;
 
-  useEffect(() => { setReady(false); }, [html]);
+  useEffect(() => { setReady(false); }, [src]);
 
   useEffect(() => {
     const listen = (event: MessageEvent) => {
@@ -36,7 +36,7 @@ export default function MapboxView({ token, styleUrl, theme, pins, user, mode, f
     <iframe
       ref={frame}
       sandbox="allow-scripts allow-same-origin"
-      srcDoc={html}
+      src={src}
       style={{ border: 0, height: '100%', position: 'absolute', width: '100%' }}
       title="Care map"
     />

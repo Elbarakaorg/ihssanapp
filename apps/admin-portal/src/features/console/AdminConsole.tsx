@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { Activity, BookOpenText, ClipboardList, FileText, HeartHandshake, LayoutDashboard, LogOut, Shield, UsersRound } from 'lucide-react';
+import { Activity, BookOpenText, ClipboardList, FileText, HeartHandshake, LayoutDashboard, LogOut, MapPinned, Shield, UsersRound } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 
 import { adminApi } from '../../lib/admin-api';
@@ -9,6 +9,7 @@ import { hasPermission, type AdminMembership } from '../../lib/permission';
 import { supabase } from '../../lib/supabase';
 import TeamPage from '../team/TeamPage';
 import MetricCatalogPage from '../metrics/MetricCatalogPage';
+import LocationsPage from '../locations/LocationsPage';
 import ModerationPage from '../moderation/ModerationPage';
 import ProvidersPage from '../providers/ProvidersPage';
 import RestrictedPage from '../workspace/RestrictedPage';
@@ -31,6 +32,7 @@ const navigation: NavigationItem[] = [
   { path: '/metrics', label: 'Metric Catalog', anyPermissions: ['metrics.edit', 'metrics.review', 'metrics.publish'], icon: Activity },
   { path: '/articles', label: 'Articles', permission: 'articles.edit', icon: BookOpenText },
   { path: '/moderation', label: 'Comment reports', permission: 'support.requests.manage', icon: ClipboardList },
+  { path: '/locations', label: 'Map locations', permission: 'providers.verify', icon: MapPinned },
   { path: '/providers', label: 'Provider verification', permission: 'providers.verify', icon: Shield },
   { path: '/donations', label: 'Donation cases', permission: 'donations.review', icon: HeartHandshake },
   { path: '/audit', label: 'Audit log', permission: 'admin.audit.read', icon: FileText },
@@ -176,6 +178,7 @@ function AdminShell({ membership, session }: { membership: AdminMembership; sess
             <Route path="/metrics" element={<MetricCatalogPage membership={membership} session={session} />} />
             <Route path="/articles" element={<RestrictedPage title="Articles" eyebrow="EDITORIAL" description="Home-feed articles are managed separately from structured metric explanations and ranges." detail="Localized article schema, permissions, review, and publication flow are defined. The article editor and feed API are the next feature slice." />} />
             <Route path="/moderation" element={<ModerationPage />} />
+            <Route path="/locations" element={<LocationsPage />} />
             <Route path="/providers" element={<ProvidersPage />} />
             <Route path="/donations" element={<RestrictedPage title="Donation review" eyebrow="FOUNDATION" description="Review cases and distribution evidence before publication." detail="Case moderation and fund-distribution workflows will connect to the foundation operations module." />} />
             <Route path="/audit" element={<RestrictedPage title="Audit log" eyebrow="SECURITY" description="Review administrative changes for which you have audit permission." detail="Audit access is read-only and purpose-limited. Audit export and filters will be added with the operations API." />} />

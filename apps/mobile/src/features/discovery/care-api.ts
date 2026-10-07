@@ -1,7 +1,7 @@
 import { supabaseClient } from '@/platform/supabase/client';
+import { fromRaw, type MapLocation, type RawLocation } from './map-logic';
 
 export type PlaceKind = 'pharmacy' | 'hospital' | 'clinic';
-export type GuardType = 'day' | 'night' | '24h';
 
 export type CarePlace = {
   placeId: string;
@@ -14,8 +14,6 @@ export type CarePlace = {
   longitude: number;
 };
 
-export type NearbyPlace = CarePlace & { guard: GuardType | null };
-export type GuardStatus = 'live' | 'unavailable' | 'not_applicable';
 
 const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/+$/, '');
 
@@ -32,25 +30,18 @@ async function apiGet<T>(path: string, params: Record<string, string | number | 
   return (await response.json()) as T;
 }
 
-export function fetchNearbyCare(input: { latitude: number; longitude: number; radius?: number; kind?: PlaceKind | 'all' }) {
-  return apiGet<{ places: NearbyPlace[]; guardStatus: GuardStatus }>('/v1/care/nearby', {
-    lat: input.latitude,
-    lng: input.longitude,
-    radius: input.radius,
-    kind: input.kind,
-  });
-}
-
 export async function searchCarePlaces(input: { query: string; latitude?: number; longitude?: number }) {
   const result = await apiGet<{ places: CarePlace[] }>('/v1/care/search', { q: input.query, lat: input.latitude, lng: input.longitude });
   return result.places;
 }
 
-export function directionsUrl(place: { latitude: number; longitude: number; placeId?: string }, origin?: { latitude: number; longitude: number } | null) {
-  const params = new URLSearchParams({ api: '1', destination: `${place.latitude},${place.longitude}` });
-  if (origin) params.set('origin', `${origin.latitude},${origin.longitude}`);
-  if (place.placeId) params.set('destination_place_id', place.placeId);
-  return `https://www.google.com/maps/dir/?${params}`;
+export async function listMapLocations(input: { latitude: number; longitude: number; radiusKm: number }): Promise<MapLocation[]> {
+  if (!supabaseClient) throw new Error('The map is not configured yet.');
+  const { data, error } = await supabaseClient.rpc('list_map_locations', {
+    p_lat: input.latitude, p_lng: input.longitude, p_radius_km: input.radiusKm, p_limit: 800,
+  });
+  if (error) throw new Error('Could not load places right now.');
+  return ((data ?? []) as RawLocation[]).map(fromRaw).filter((item): item is MapLocation => item !== null);
 }
 
 export type DoctorLocation = {

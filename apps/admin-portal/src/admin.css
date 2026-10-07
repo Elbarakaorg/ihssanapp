@@ -213,3 +213,14 @@ td small { color: #89958d; display: block; font-size: 9px; margin-top: 4px; }
 }
 .button-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
 .panel textarea { width: 100%; min-height: 64px; margin: 8px 0; }
+
+/* Map locations */
+select, textarea { background: #F1EBDD; border: 1px solid transparent; border-radius: 9px; color: var(--ink); font: inherit; min-height: 42px; min-width: 0; padding: 0 12px; }
+textarea { padding: 10px 12px; width: 100%; }
+.form-row select { flex: 0 0 auto; }
+.form-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin: 12px 0; }
+.form-grid label { color: #364a3f; display: grid; font-size: 11px; font-weight: 700; gap: 6px; }
+.form-grid label.check { align-items: center; display: flex; gap: 8px; }
+.form-grid label.check input { height: 16px; min-height: 16px; width: 16px; }
+.picker { display: grid; gap: 8px; margin-top: 12px; }
+.picker-map { border: 1px solid var(--line); border-radius: 14px 10px 13px 9px; height: 340px; overflow: hidden; }

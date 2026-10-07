@@ -1,238 +1,183 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as Location from 'expo-location';
+import { router, type Href } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Building2, Clock, Hospital, List, Map as MapIcon, MapPin, LocateFixed, Navigation, Phone, Pill, RefreshCw, Stethoscope, X } from 'lucide-react-native';
+import { Box, LocateFixed, List, Map as MapIcon, Square, X } from 'lucide-react-native';
 
-import { supabaseClient } from '@/platform/supabase/client';
-import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme, wobble } from '@/ui/palette';
+import { listMapLocations } from './care-api';
 import {
-  directionsUrl,
-  fetchNearbyCare,
-  listVerifiedDoctorLocations,
-  type DoctorLocation,
-  type GuardStatus,
-  type GuardType,
-  type NearbyPlace,
-} from './care-api';
-import ProviderMap from './provider-map';
-import { DEFAULT_CENTER, pinColors, type MapPin as Pin } from './provider-types';
+  circleCovers, countByKind, DEFAULT_CENTER, directionsUrl, dutyLabels, fetchRadiusKm, filterLocations, formatDistance, hasActiveFilters,
+  haversineKm, isUuid, kindLabels, kindOrder, kindPlurals, mergeLocations, noFilters, safeExternalUrl, telUrl, toRuntimePin,
+  type Circle, type LatLng, type MapFilters, type MapLocation,
+} from './map-logic';
+import { kindColors, type MapEvent, type MapTheme } from './map-runtime';
+import MapboxView from './mapbox-view';
 
-type Filter = 'all' | 'duty' | 'pharmacy' | 'hospital' | 'clinic' | 'doctor';
+const token = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
+const styleUrl = process.env.EXPO_PUBLIC_MAPBOX_STYLE_URL ?? 'mapbox://styles/mapbox/standard';
+const MIN_FETCH_ZOOM = 9;
+const LIST_LIMIT = 100;
 
-type Item = {
-  id: string;
-  kind: Pin['kind'];
-  title: string;
-  subtitle: string;
-  address: string;
-  phone: string | null;
-  latitude: number;
-  longitude: number;
-  placeId?: string;
-  guard: GuardType | null;
-  detail?: string;
-};
-
-const filters: { id: Filter; label: string }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'duty', label: 'On duty' },
-  { id: 'pharmacy', label: 'Pharmacies' },
-  { id: 'hospital', label: 'Hospitals' },
-  { id: 'clinic', label: 'Clinics' },
-  { id: 'doctor', label: 'Doctors' },
-];
-
-const guardLabels: Record<GuardType, string> = { day: 'On duty today (day)', night: 'On duty tonight', '24h': 'Open 24/7' };
-const kindLabels: Record<Pin['kind'], string> = { pharmacy: 'Pharmacy', hospital: 'Hospital', clinic: 'Clinic', doctor: 'Doctor' };
-
-function fromPlace(place: NearbyPlace): Item {
-  return {
-    id: `g:${place.placeId}`,
-    kind: place.kind,
-    title: place.name,
-    subtitle: kindLabels[place.kind],
-    address: [place.address].filter(Boolean).join(', '),
-    phone: place.phone,
-    latitude: place.latitude,
-    longitude: place.longitude,
-    placeId: place.placeId,
-    guard: place.guard,
-  };
-}
-
-function fromDoctor(location: DoctorLocation): Item {
-  return {
-    id: `d:${location.id}`,
-    kind: 'doctor',
-    title: location.doctor_name ?? 'Doctor',
-    subtitle: [location.specialty, location.venue_name].filter(Boolean).join(' · '),
-    address: [location.address, location.city].filter(Boolean).join(', '),
-    phone: location.phone,
-    latitude: location.latitude,
-    longitude: location.longitude,
-    placeId: location.google_place_id,
-    guard: null,
-    detail: [location.schedule, location.consultation_modes.includes('video') ? 'Video consultations available' : null].filter(Boolean).join(' · '),
-  };
-}
-
-function KindIcon({ kind, color }: { kind: Pin['kind']; color: string }) {
-  const Icon = kind === 'pharmacy' ? Pill : kind === 'hospital' ? Hospital : kind === 'clinic' ? Building2 : Stethoscope;
-  return <Icon color={color} size={18} strokeWidth={1.8} />;
-}
-
-function PlaceCard({ item, onClose, origin }: { item: Item; onClose?: () => void; origin: { latitude: number; longitude: number } | null }) {
-  return (
-    <View style={styles.card}>
-      <View style={styles.cardHead}>
-        <View style={[styles.icon, { backgroundColor: `${pinColors[item.kind]}22` }]}><KindIcon color={pinColors[item.kind]} kind={item.kind} /></View>
-        <View style={styles.cardCopy}>
-          <Text style={styles.name}>{item.title}</Text>
-          <Text style={styles.body}>{item.subtitle}</Text>
-        </View>
-        {onClose ? <Pressable accessibilityLabel="Close" onPress={onClose} style={styles.close}><X color={palette.ink} size={18} /></Pressable> : null}
-      </View>
-      {item.guard ? <View style={styles.guardBadge}><Clock color="#7A5200" size={13} /><Text style={styles.guardText}>{guardLabels[item.guard]}. Please call to confirm.</Text></View> : null}
-      {item.address ? <View style={styles.row}><MapPin color={palette.muted} size={14} /><Text style={styles.body}>{item.address}</Text></View> : null}
-      {item.detail ? <View style={styles.row}><Clock color={palette.muted} size={14} /><Text style={styles.body}>{item.detail}</Text></View> : null}
-      <View style={styles.actions}>
-        <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(directionsUrl(item, origin))} style={styles.action}>
-          <Navigation color={palette.white} size={14} /><Text style={styles.actionText}>Directions</Text>
-        </Pressable>
-        {item.phone ? (
-          <Pressable accessibilityLabel={`Call ${item.title}`} accessibilityRole="link" onPress={() => void Linking.openURL(`tel:${item.phone!.replace(/[^+\d]/g, '')}`)} style={[styles.action, styles.actionSecondary]}>
-            <Phone color={palette.forest} size={14} /><Text style={styles.actionSecondaryText}>Call</Text>
-          </Pressable>
-        ) : null}
-      </View>
-    </View>
-  );
+function useMapTheme(): MapTheme {
+  const scheme = useScheme();
+  return useMemo(() => ({
+    paper: palette.paper, white: palette.white, ink: palette.ink, muted: palette.muted, line: palette.line,
+    forest: palette.forest, coral: palette.coral, gold: palette.gold, kinds: kindColors,
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [scheme]);
 }
 
 export default function DiscoveryScreen() {
   useScheme();
-  const [places, setPlaces] = useState<NearbyPlace[]>([]);
-  const [doctors, setDoctors] = useState<DoctorLocation[]>([]);
-  const [guardStatus, setGuardStatus] = useState<GuardStatus>('not_applicable');
-  const [filter, setFilter] = useState<Filter>('all');
+  const theme = useMapTheme();
+  const [locations, setLocations] = useState<MapLocation[]>([]);
+  const [filters, setFilters] = useState<MapFilters>(noFilters);
+  const [mode, setMode] = useState<'2d' | '3d'>('2d');
   const [showList, setShowList] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [user, setUser] = useState<LatLng | null>(null);
+  const [fly, setFly] = useState<{ lat: number; lng: number; zoom: number; key: number } | null>(null);
+  const [view, setView] = useState<{ center: LatLng; zoom: number } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [searched, setSearched] = useState(false);
-  const center = useRef(DEFAULT_CENTER);
-  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [focus, setFocus] = useState<{ latitude: number; longitude: number; key: number } | null>(null);
-  const [locating, setLocating] = useState(false);
-  const [locationError, setLocationError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [mapError, setMapError] = useState('');
+  const [fetchedOnce, setFetchedOnce] = useState(false);
+  const covered = useRef<Circle | null>(null);
+  const requestId = useRef(0);
 
-  const locateMe = useCallback(async () => {
-    setLocating(true);
-    setLocationError('');
+  const load = useCallback(async (center: LatLng, radiusKm: number) => {
+    const wanted = { ...center, radiusKm };
+    if (circleCovers(covered.current, wanted)) return;
+    const id = ++requestId.current;
+    setLoading(true);
+    try {
+      const rows = await listMapLocations({ ...center, radiusKm });
+      if (id !== requestId.current) return;
+      covered.current = wanted;
+      setLocations((previous) => mergeLocations(previous, rows, center));
+      setFetchedOnce(true);
+      setNotice('');
+    } catch (error) {
+      if (id === requestId.current) setNotice(error instanceof Error ? error.message : 'Could not load places right now.');
+    } finally {
+      if (id === requestId.current) setLoading(false);
+    }
+  }, []);
+
+  const locateMe = useCallback(async (initial = false) => {
     try {
       const permission = await Location.requestForegroundPermissionsAsync();
-      if (permission.status !== 'granted') {
-        setLocationError('Location permission is off. Allow it in your browser or phone settings to find care near you.');
-        return;
-      }
+      if (permission.status !== 'granted') throw new Error('denied');
       const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const next = { latitude: position.coords.latitude, longitude: position.coords.longitude };
-      setUserLocation(next);
-      center.current = next;
-      setFocus({ ...next, key: Date.now() });
-      setLoading(true);
-      setError('');
-      const result = await fetchNearbyCare({ ...next, radius: 5000, kind: 'all' });
-      setPlaces(result.places);
-      setGuardStatus(result.guardStatus);
-      setSearched(true);
+      const here = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+      setUser(here);
+      setNotice('');
+      setFly({ lat: here.latitude, lng: here.longitude, zoom: 14, key: Date.now() });
+      void load(here, 15);
     } catch {
-      setLocationError('Could not detect your location. Check that location services are on and try again.');
-    } finally {
-      setLocating(false);
-      setLoading(false);
+      setNotice('We could not find where you are, so the map is showing Casablanca. Allow location access to see care near you.');
+      if (initial) {
+        setFly({ lat: DEFAULT_CENTER.latitude, lng: DEFAULT_CENTER.longitude, zoom: 12, key: Date.now() });
+        void load(DEFAULT_CENTER, 15);
+      }
     }
-  }, []);
+  }, [load]);
 
-  const searchHere = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const result = await fetchNearbyCare({ ...center.current, radius: 5000, kind: 'all' });
-      setPlaces(result.places);
-      setGuardStatus(result.guardStatus);
-      setSearched(true);
-    } catch (searchError) {
-      setError(searchError instanceof Error ? searchError.message : 'Could not load places right now.');
-    } finally {
-      setLoading(false);
+  useEffect(() => { void locateMe(true); }, [locateMe]);
+
+  const origin = user ?? view?.center ?? DEFAULT_CENTER;
+  const visible = useMemo(() => filterLocations(locations, filters), [locations, filters]);
+  const counts = useMemo(() => countByKind(locations), [locations]);
+  const pins = useMemo(() => visible.map((item) => toRuntimePin(item, user)), [visible, user]);
+  const sorted = useMemo(() => [...visible].sort((a, b) => haversineKm(origin, a) - haversineKm(origin, b)).slice(0, LIST_LIMIT), [visible, origin]);
+  const byId = useMemo(() => new Map(locations.map((item) => [item.id, item])), [locations]);
+
+  const onEvent = useCallback((event: MapEvent) => {
+    if (event.type === 'select') { setSelectedId(event.id); return; }
+    if (event.type === 'error') { setMapError(event.message); return; }
+    if (event.type === 'moved') {
+      const center = { latitude: event.lat, longitude: event.lng };
+      setView({ center, zoom: event.zoom });
+      if (event.zoom >= MIN_FETCH_ZOOM) void load(center, fetchRadiusKm(event.radiusKm));
+      return;
     }
-  }, []);
+    if (event.type === 'ready') { setMapError(''); return; }
+    const place = byId.get(event.id);
+    if (!place) return;
+    if (event.type === 'directions') { const url = safeExternalUrl(directionsUrl(place, user)); if (url) void Linking.openURL(url); }
+    else if (event.type === 'call') { const url = telUrl(place.phone); if (url && safeExternalUrl(url)) void Linking.openURL(url); }
+    else if (place.clinicianId && isUuid(place.clinicianId)) router.push(`/doctors/${place.clinicianId}` as Href);
+  }, [byId, load, user]);
 
-  useEffect(() => {
-    void searchHere();
-    if (supabaseClient) void listVerifiedDoctorLocations().then(setDoctors).catch(() => undefined);
-  }, [searchHere]);
+  const setKind = (kind: MapFilters['kind']) => setFilters((value) => ({ ...value, kind }));
+  const zoomedOut = (view?.zoom ?? 0) < MIN_FETCH_ZOOM;
+  const empty = fetchedOnce && !loading && !zoomedOut && visible.length === 0;
 
-  const items = useMemo(() => {
-    const all = [...places.map(fromPlace), ...doctors.map(fromDoctor)];
-    return all.filter((item) => {
-      if (filter === 'all') return true;
-      if (filter === 'duty') return item.guard !== null;
-      return item.kind === filter;
-    }).sort((a, b) => Number(b.guard !== null) - Number(a.guard !== null));
-  }, [places, doctors, filter]);
-
-  const pins: Pin[] = useMemo(() => items.map((item) => ({
-    id: item.id, kind: item.kind, latitude: item.latitude, longitude: item.longitude, title: item.title, onDuty: item.guard !== null,
-  })), [items]);
-
-  const onCenterChange = useCallback((next: { latitude: number; longitude: number }) => { center.current = next; }, []);
-  const selected = items.find((item) => item.id === selectedId) ?? null;
+  if (!token) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <Text style={styles.setup}>The map needs a Mapbox token. Set EXPO_PUBLIC_MAPBOX_TOKEN and restart the app.</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <View style={styles.screen}>
-      <ProviderMap focus={focus} onCenterChange={onCenterChange} onSelect={setSelectedId} pins={pins} selectedId={selected?.id ?? null} userLocation={userLocation} />
+      <MapboxView fly={fly} mode={mode} onEvent={onEvent} pins={pins} selectedId={selectedId} styleUrl={styleUrl} theme={theme} token={token} user={user ? { lat: user.latitude, lng: user.longitude } : null} />
 
       <SafeAreaView edges={['top', 'left', 'right']} pointerEvents="box-none" style={styles.overlay}>
-        <ScrollView contentContainerStyle={styles.filterRow} horizontal showsHorizontalScrollIndicator={false}>
-          {filters.map((item) => (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ selected: filter === item.id }}
-              key={item.id}
-              onPress={() => setFilter(item.id)}
-              style={[styles.chip, filter === item.id && styles.chipActive]}>
-              <Text style={[styles.chipText, filter === item.id && styles.chipTextActive]}>{item.label}</Text>
+        <ScrollView contentContainerStyle={styles.chipRow} horizontal showsHorizontalScrollIndicator={false}>
+          {(['all', ...kindOrder] as const).map((kind) => (
+            <Pressable accessibilityRole="button" accessibilityState={{ selected: filters.kind === kind }} key={kind} onPress={() => setKind(kind)} style={[styles.chip, filters.kind === kind && styles.chipActive]}>
+              <Text style={[styles.chipText, filters.kind === kind && styles.chipTextActive]}>
+                {kind === 'all' ? 'All' : kindPlurals[kind]}{counts[kind] ? ` · ${counts[kind]}` : ''}
+              </Text>
             </Pressable>
           ))}
         </ScrollView>
-        {error || locationError ? <Text accessibilityRole="alert" style={styles.error}>{error || locationError}</Text> : null}
-        {guardStatus === 'unavailable' ? <Text style={styles.notice}>On-duty pharmacy information is temporarily unavailable. Call a pharmacy to confirm it is open.</Text> : null}
-        {searched && !loading && !error && !items.length ? <Text style={styles.notice}>Nothing found here. Move the map and search this area.</Text> : null}
-        <Pressable accessibilityRole="button" disabled={loading} onPress={() => void searchHere()} style={styles.searchHere}>
-          <RefreshCw color={palette.forest} size={14} /><Text style={styles.searchHereText}>{loading ? 'Searching…' : 'Search this area'}</Text>
-        </Pressable>
+        <View style={styles.chipRow}>
+          <Pressable accessibilityRole="switch" accessibilityState={{ checked: filters.onDuty }} onPress={() => setFilters((value) => ({ ...value, onDuty: !value.onDuty }))} style={[styles.chip, filters.onDuty && styles.chipGold]}>
+            <Text style={styles.chipText}>On duty now</Text>
+          </Pressable>
+          <Pressable accessibilityRole="switch" accessibilityState={{ checked: filters.emergency }} onPress={() => setFilters((value) => ({ ...value, emergency: !value.emergency }))} style={[styles.chip, filters.emergency && styles.chipGold]}>
+            <Text style={styles.chipText}>Emergency</Text>
+          </Pressable>
+          {hasActiveFilters(filters) ? (
+            <Pressable accessibilityLabel="Clear filters" accessibilityRole="button" onPress={() => setFilters(noFilters)} style={[styles.chip, styles.clear]}>
+              <X color={palette.coral} size={13} /><Text style={[styles.chipText, { color: palette.coral }]}>Clear filters</Text>
+            </Pressable>
+          ) : null}
+        </View>
+        {notice || mapError ? <Text accessibilityRole="alert" style={styles.notice}>{mapError || notice}</Text> : null}
+        {zoomedOut && !showList ? <Text style={styles.hint}>Zoom in to see places near you.</Text> : null}
+        {empty ? <Text style={styles.hint}>{hasActiveFilters(filters) ? 'Nothing matches these filters here.' : 'No places are listed in this area yet.'}</Text> : null}
+        {loading ? <Text style={styles.hint}>Looking nearby…</Text> : null}
       </SafeAreaView>
 
-      <Pressable accessibilityLabel="Use my location" accessibilityRole="button" disabled={locating} onPress={() => void locateMe()} style={styles.locate}>
-        <LocateFixed color={userLocation ? '#1A73E8' : palette.ink} size={20} />
-      </Pressable>
-
-      {selected && !showList ? (
-        <View pointerEvents="box-none" style={styles.bottomCard}>
-          <PlaceCard item={selected} onClose={() => setSelectedId(null)} origin={userLocation} />
-        </View>
-      ) : null}
+      <View style={styles.controls}>
+        <Pressable accessibilityLabel={mode === '2d' ? 'Switch to 3D view' : 'Switch to 2D view'} accessibilityRole="button" onPress={() => setMode((value) => (value === '2d' ? '3d' : '2d'))} style={styles.control}>
+          {mode === '2d' ? <Box color={palette.ink} size={19} strokeWidth={1.8} /> : <Square color={palette.ink} size={19} strokeWidth={1.8} />}
+          <Text style={styles.controlText}>{mode === '2d' ? '3D' : '2D'}</Text>
+        </Pressable>
+        <Pressable accessibilityLabel="Use my location" accessibilityRole="button" onPress={() => void locateMe()} style={styles.control}>
+          <LocateFixed color={user ? palette.forest : palette.ink} size={20} strokeWidth={1.8} />
+        </Pressable>
+      </View>
 
       {showList ? (
         <SafeAreaView edges={['top', 'left', 'right']} style={styles.listPanel}>
           <ScrollView contentContainerStyle={styles.listContent}>
-            <Text style={styles.listTitle}>{items.length} places</Text>
-            {items.map((item) => (
-              <Pressable key={item.id} onPress={() => { setSelectedId(item.id); setShowList(false); }}>
-                <PlaceCard item={item} origin={userLocation} />
+            <Text style={styles.listTitle}>{visible.length} {visible.length === 1 ? 'place' : 'places'}{visible.length > LIST_LIMIT ? `, nearest ${LIST_LIMIT} shown` : ''}</Text>
+            {sorted.map((item) => (
+              <Pressable accessibilityRole="button" key={item.id} onPress={() => { setSelectedId(item.id); setShowList(false); }} style={styles.row}>
+                <View style={[styles.dot, { backgroundColor: kindColors[item.kind] }]} />
+                <View style={styles.rowCopy}>
+                  <Text numberOfLines={2} style={styles.rowTitle}>{item.name}</Text>
+                  <Text numberOfLines={1} style={styles.rowMeta}>{[kindLabels[item.kind], item.duty !== 'none' ? dutyLabels[item.duty] : '', item.city].filter(Boolean).join(' · ')}</Text>
+                </View>
+                <Text style={styles.rowDistance}>{formatDistance(haversineKm(origin, item))}</Text>
               </Pressable>
             ))}
           </ScrollView>
@@ -247,38 +192,33 @@ export default function DiscoveryScreen() {
   );
 }
 
+const shadow = Platform.OS === 'web' ? { boxShadow: '0 2px 10px rgba(40,30,15,0.2)' } : { elevation: 3 };
+
 const styles = themedStyles(() => StyleSheet.create({
   screen: { backgroundColor: palette.paper, flex: 1 },
+  setup: { color: palette.muted, fontSize: 14, lineHeight: 21, padding: 24 },
   overlay: { left: 0, paddingHorizontal: 14, paddingTop: 8, position: 'absolute', right: 0, top: 0 },
-  filterRow: { gap: 7, paddingVertical: 2 },
-  chip: { backgroundColor: palette.white, borderColor: palette.line, borderRadius: 16, borderWidth: 1, boxShadow: '0 1px 6px rgba(0,0,0,0.12)', justifyContent: 'center', minHeight: 34, paddingHorizontal: 13 },
+  chipRow: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 7, paddingVertical: 3 },
+  chip: { ...wobble, ...shadow, alignItems: 'center', backgroundColor: palette.white, borderColor: palette.line, borderWidth: 1, flexDirection: 'row', gap: 5, justifyContent: 'center', minHeight: 34, paddingHorizontal: 13 },
   chipActive: { backgroundColor: palette.forest, borderColor: palette.forest },
-  chipText: { color: palette.muted, fontSize: 12, fontWeight: '600' },
+  chipGold: { backgroundColor: palette.leaf, borderColor: palette.gold },
+  clear: { borderColor: palette.coral },
+  chipText: { color: palette.ink, fontSize: 12, fontWeight: '600' },
   chipTextActive: { color: palette.white },
-  error: { backgroundColor: '#F3E1D6', borderRadius: 8, color: '#8A4A2C', fontSize: 12, marginTop: 10, padding: 10 },
-  notice: { alignSelf: 'flex-start', backgroundColor: palette.white, borderRadius: 8, color: palette.muted, fontSize: 12, lineHeight: 17, marginTop: 10, overflow: 'hidden', padding: 10 },
-  locate: { alignItems: 'center', backgroundColor: palette.white, borderRadius: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.25)', height: 48, justifyContent: 'center', position: 'absolute', right: 14, bottom: 84, width: 48 },
-  searchHere: { alignItems: 'center', alignSelf: 'center', backgroundColor: palette.white, borderRadius: 18, boxShadow: '0 2px 8px rgba(0,0,0,0.18)', flexDirection: 'row', gap: 6, marginTop: 10, minHeight: 36, paddingHorizontal: 14 },
-  searchHereText: { color: palette.forest, fontSize: 12, fontWeight: '700' },
-  bottomCard: { bottom: 76, left: 14, position: 'absolute', right: 14 },
-  listPanel: { backgroundColor: palette.paper, bottom: 0, left: 0, paddingTop: 70, position: 'absolute', right: 0, top: 0 },
-  listContent: { gap: 9, padding: 14, paddingBottom: 100 },
-  listTitle: { color: palette.muted, fontSize: 12, fontWeight: '600' },
-  toggle: { alignItems: 'center', alignSelf: 'center', backgroundColor: palette.forest, borderRadius: 22, bottom: 20, boxShadow: '0 2px 10px rgba(0,0,0,0.25)', flexDirection: 'row', gap: 7, minHeight: 44, paddingHorizontal: 20, position: 'absolute' },
+  notice: { ...wobble, alignSelf: 'flex-start', backgroundColor: palette.dangerBg, color: palette.dangerText, fontSize: 12, lineHeight: 17, marginTop: 8, overflow: 'hidden', padding: 10 },
+  hint: { ...wobble, alignSelf: 'flex-start', backgroundColor: palette.white, color: palette.muted, fontSize: 12, marginTop: 8, overflow: 'hidden', paddingHorizontal: 12, paddingVertical: 7 },
+  controls: { bottom: 84, gap: 10, position: 'absolute', right: 14 },
+  control: { ...wobble, ...shadow, alignItems: 'center', backgroundColor: palette.white, borderColor: palette.line, borderWidth: 1, justifyContent: 'center', minHeight: 48, minWidth: 48, paddingHorizontal: 4 },
+  controlText: { color: palette.ink, fontSize: 10, fontWeight: '700' },
+  listPanel: { backgroundColor: palette.paper, bottom: 0, left: 0, paddingTop: 100, position: 'absolute', right: 0, top: 0 },
+  listContent: { gap: 8, padding: 14, paddingBottom: 100 },
+  listTitle: { ...display, color: palette.ink, fontSize: 20 },
+  row: { ...wobble, alignItems: 'center', backgroundColor: palette.white, borderColor: palette.line, borderWidth: 1, flexDirection: 'row', gap: 10, minHeight: 56, padding: 12 },
+  dot: { borderRadius: 6, flexShrink: 0, height: 12, width: 12 },
+  rowCopy: { flex: 1, gap: 2, minWidth: 0 },
+  rowTitle: { color: palette.ink, fontSize: 15, fontWeight: '600' },
+  rowMeta: { color: palette.muted, fontSize: 12 },
+  rowDistance: { color: palette.muted, flexShrink: 0, fontSize: 12, fontVariant: ['tabular-nums'] },
+  toggle: { ...wobble, ...shadow, alignItems: 'center', alignSelf: 'center', backgroundColor: palette.forest, bottom: 20, flexDirection: 'row', gap: 7, minHeight: 44, paddingHorizontal: 22, position: 'absolute' },
   toggleText: { color: palette.white, fontSize: 14, fontWeight: '700' },
-  card: { backgroundColor: palette.white, borderColor: palette.line, borderRadius: 14, borderWidth: 1, gap: 8, padding: 14 },
-  cardHead: { alignItems: 'center', flexDirection: 'row', gap: 10 },
-  icon: { alignItems: 'center', borderRadius: 10, height: 38, justifyContent: 'center', width: 38 },
-  cardCopy: { flex: 1, gap: 2 },
-  close: { alignItems: 'center', height: 34, justifyContent: 'center', width: 34 },
-  name: { color: palette.ink, fontSize: 16, fontWeight: '600' },
-  row: { alignItems: 'center', flexDirection: 'row', gap: 7 },
-  body: { color: palette.muted, flexShrink: 1, fontSize: 12, lineHeight: 18 },
-  guardBadge: { alignItems: 'center', backgroundColor: '#FFF3D1', borderRadius: 8, flexDirection: 'row', gap: 6, padding: 8 },
-  guardText: { color: '#7A5200', flexShrink: 1, fontSize: 12, fontWeight: '600' },
-  actions: { flexDirection: 'row', gap: 8, marginTop: 2 },
-  action: { alignItems: 'center', backgroundColor: palette.forest, borderRadius: 18, flexDirection: 'row', gap: 6, minHeight: 36, paddingHorizontal: 14 },
-  actionText: { color: palette.white, fontSize: 12, fontWeight: '700' },
-  actionSecondary: { backgroundColor: palette.white, borderColor: palette.forest, borderWidth: 1 },
-  actionSecondaryText: { color: palette.forest, fontSize: 12, fontWeight: '700' },
 }));

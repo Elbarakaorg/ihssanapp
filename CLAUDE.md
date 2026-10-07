@@ -31,6 +31,9 @@ Built-in articles/blogs live in `features/content/library.ts` (not clinician-rev
 - Sign in with Apple (iOS only): `expo-apple-authentication` + `signInWithIdToken`. Needs Apple Developer setup and the Apple provider enabled in Supabase; needs a dev client, not Expo Go.
 - API deploy: `services/api/Dockerfile` (`npm start`, port from `PORT`). Set SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, CORS_ORIGINS and optional OPENAI/RESEND/HIRASSA/GOOGLE_PLACES keys as host env vars, then point `EXPO_PUBLIC_API_BASE_URL` at it.
 
+## Map (Mapbox)
+`features/discovery/`: Mapbox GL JS v3.14 runs in one HTML page (`map-runtime.ts`), shown in an iframe on web (`mapbox-view.web.tsx`) and `react-native-webview` on native (`mapbox-view.tsx`), because `@rnmapbox/maps` needs a downloads token we don't have. The bridge carries plain data and ids only (no URLs/markup); the parent builds Call/Directions (Google Maps) links and routes to `/doctors/<id>`. Pure logic and tests in `map-logic.ts`. Env: `EXPO_PUBLIC_MAPBOX_TOKEN`, `EXPO_PUBLIC_MAPBOX_STYLE_URL` (mobile), `VITE_MAPBOX_TOKEN`, `VITE_MAPBOX_STYLE_URL` (admin), in git-ignored `.env.local`. Data: migration `202610100001` (extends `care_providers`, RPC `list_map_locations`, admin RPCs); the admin page `/locations` (permission `providers.verify`) manages them (picker, CSV import as drafts, duty). Verified doctor practice locations appear automatically. The API's `/v1/care/nearby` is no longer used by the map.
+
 ## Design polish
 - Paper grain: web-only SVG noise on `Page` (`ui/patient-ui.tsx`); native stays flat paper. Admin portal re-themed to the app palette in `admin.css`.
 - Dev-only data switch on the treatments screen (`features/medicine/dev-data*.ts`): Live / Worst case / Empty / One / 150. Gated by `__DEV__`; keep the worst-case fixture as a regression check.

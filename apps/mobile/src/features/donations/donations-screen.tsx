@@ -1,176 +1,186 @@
-import { useEffect, useState } from 'react';
-import { BadgeCheck, HeartHandshake, Landmark } from 'lucide-react-native';
-import { StyleSheet, Text, View } from 'react-native';
+import { type Href, useFocusEffect, useRouter } from 'expo-router';
+import { HandHeart, ShieldCheck } from 'lucide-react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
-import { supabaseClient } from '@/platform/supabase/client';
-import { Page, PageHeading, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
-import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { Chip, Field, Message } from '@/features/doctor/ui';
+import { useAuth } from '@/features/auth/auth-provider';
+import { Loading } from '@/ui/loading';
+import { Page, PageHeading, SectionHeading, uiStyles } from '@/ui/patient-ui';
+import { display, palette, themedStyles, useScheme } from '@/ui/palette';
+import {
+  type CaseFilters, type CaseSort, type CaseSummary, type Category, defaultFilters, listCases, listCategories, listCities, listCollectorCases, listStoredPledges,
+} from './donations-api';
+import { formatMad } from './donations-logic';
+import { CaseCard } from './donations-ui';
 
-type DonationCase = {
-  id: string;
-  title: string;
-  summary: string;
-  city: string | null;
-  goal_mad: number;
-  raised_mad: number;
-  status: 'published' | 'funded';
-};
+const PAGE = 12;
+const SORTS: [CaseSort, string][] = [['newest', 'Newest'], ['urgent', 'Most urgent'], ['nearly_funded', 'Nearly funded'], ['least_funded', 'Needs most help'], ['most_funded', 'Most raised']];
+const STEPS = ['Choose a verified case and start a donation order.', 'Send your transfer to the family’s bank account within 48 hours.', 'Come back and upload your receipt.', 'A fund collector confirms it, and the progress bar moves.'];
 
 export default function DonationsScreen() {
   useScheme();
-  const [cases, setCases] = useState<DonationCase[]>([]);
+  const router = useRouter();
+  const { session } = useAuth();
+  const [filters, setFilters] = useState<CaseFilters>(defaultFilters);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [cities, setCities] = useState<{ city: string; total: number }[]>([]);
+  const [cases, setCases] = useState<CaseSummary[] | null>(null);
+  const [more, setMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
+  const [orders, setOrders] = useState<{ id: string; reference: string; caseTitle: string; amount: number }[]>([]);
+  const [collects, setCollects] = useState(0);
+  const request = useRef(0);
 
   useEffect(() => {
-    if (!supabaseClient) return;
-    void supabaseClient
-      .from('donation_cases')
-      .select('id,title,summary,city,goal_mad,raised_mad,status')
-      .in('status', ['published', 'funded'])
-      .order('published_at', { ascending: false })
-      .limit(30)
-      .then(({ data, error: queryError }) => {
-        if (queryError) setError('Could not load cases. Please try again later.');
-        else setCases((data ?? []) as DonationCase[]);
-      });
+    void listCategories().then(setCategories).catch(() => undefined);
+    void listCities().then(setCities).catch(() => undefined);
   }, []);
+
+  useFocusEffect(useCallback(() => {
+    void listStoredPledges().then((items) => setOrders(items.slice(0, 5)));
+    if (session) void listCollectorCases().then((rows) => setCollects(rows.length)).catch(() => setCollects(0));
+    else setCollects(0);
+  }, [session]));
+
+  useEffect(() => {
+    const id = ++request.current;
+    setError('');
+    const timer = setTimeout(() => {
+      listCases(filters, 0, PAGE + 1)
+        .then((rows) => { if (id === request.current) { setCases(rows.slice(0, PAGE)); setMore(rows.length > PAGE); } })
+        .catch((e) => { if (id === request.current) { setError(e instanceof Error ? e.message : 'Could not load cases.'); setCases([]); } });
+    }, filters.search ? 350 : 0);
+    return () => clearTimeout(timer);
+  }, [filters]);
+
+  const loadMore = async () => {
+    if (!cases) return;
+    setLoadingMore(true);
+    try {
+      const rows = await listCases(filters, cases.length, PAGE + 1);
+      setCases([...cases, ...rows.slice(0, PAGE)]);
+      setMore(rows.length > PAGE);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load more cases.');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const set = (patch: Partial<CaseFilters>) => { setCases(null); setFilters((current) => ({ ...current, ...patch })); };
+  const filtered = filters.category !== '' || filters.city !== '' || filters.urgent || filters.search !== '' || filters.status !== 'active';
 
   return (
     <Page>
-      <PreviewNotice />
-      <PageHeading eyebrow="Ihssan Foundation" title="Give with purpose">
-        Support verified cases across Morocco. Donations and fund distribution will be handled by Ihssan's foundation.
+      <PageHeading eyebrow="Ihssan Giving" title="Give with purpose">
+        Every case is reviewed. Your gift goes straight to the family&apos;s own bank account, and a fund collector confirms it so the progress you see is real.
       </PageHeading>
 
-      {error ? <Text accessibilityRole="alert" style={styles.emptyBody}>{error}</Text> : null}
-      {cases.length ? (
-        <View style={styles.steps}>
-          {cases.map((item) => {
-            const percent = Math.min(100, Math.round((item.raised_mad / item.goal_mad) * 100));
-            return (
-              <View key={item.id} style={[uiStyles.card, styles.caseCard]}>
-                <Text style={styles.stepTitle}>{item.title}{item.city ? ` · ${item.city}` : ''}</Text>
-                <Text style={styles.stepBody}>{item.summary}</Text>
-                <View accessibilityLabel={`${percent}% funded`} accessibilityRole="progressbar" style={styles.track}>
-                  <View style={[styles.fill, { width: `${percent}%` }]} />
-                </View>
-                <Text style={styles.stepBody}>
-                  {item.raised_mad.toLocaleString()} of {item.goal_mad.toLocaleString()} MAD{item.status === 'funded' ? ' · Fully funded' : ''}
-                </Text>
+      {collects > 0 ? (
+        <Pressable accessibilityRole="button" onPress={() => router.push('/collect' as Href)} style={({ pressed }) => [uiStyles.card, styles.collect, pressed && styles.pressed]}>
+          <ShieldCheck color={palette.forest} size={20} />
+          <View style={styles.flex}><Text style={styles.collectTitle}>Fund collector dashboard</Text><Text style={styles.muted}>Review receipts and confirm donations.</Text></View>
+        </Pressable>
+      ) : null}
+
+      {orders.length ? (
+        <>
+          <SectionHeading title="Your donation orders" />
+          {orders.map((order) => (
+            <Pressable key={order.id} accessibilityRole="button" onPress={() => router.push(`/pledge/${order.id}` as Href)} style={({ pressed }) => [uiStyles.card, styles.order, pressed && styles.pressed]}>
+              <View style={styles.flex}>
+                <Text numberOfLines={1} style={styles.orderTitle}>{order.caseTitle}</Text>
+                <Text style={styles.muted}>{order.reference} · {formatMad(order.amount)}</Text>
               </View>
-            );
-          })}
+              <Text style={styles.open}>Open</Text>
+            </Pressable>
+          ))}
+        </>
+      ) : null}
+
+      <Field label="Search by name, city or story" value={filters.search} onChangeText={(search) => set({ search })} autoCorrect={false} maxLength={80} />
+
+      <Text style={styles.filterLabel}>Category</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+        <Chip label="All" selected={filters.category === ''} onPress={() => set({ category: '' })} />
+        {categories.map((c) => <Chip key={c.slug} label={c.label_en} selected={filters.category === c.slug} onPress={() => set({ category: filters.category === c.slug ? '' : c.slug })} />)}
+      </ScrollView>
+
+      {cities.length ? (
+        <>
+          <Text style={styles.filterLabel}>City</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+            <Chip label="Everywhere" selected={filters.city === ''} onPress={() => set({ city: '' })} />
+            {cities.map((c) => <Chip key={c.city} label={`${c.city} (${c.total})`} selected={filters.city === c.city} onPress={() => set({ city: filters.city === c.city ? '' : c.city })} />)}
+          </ScrollView>
+        </>
+      ) : null}
+
+      <Text style={styles.filterLabel}>Show</Text>
+      <View style={styles.chipsWrap}>
+        <Chip label="Open for donations" selected={filters.status === 'active'} onPress={() => set({ status: 'active' })} />
+        <Chip label="Fully funded" selected={filters.status === 'funded'} onPress={() => set({ status: 'funded' })} />
+        <Chip label="All" selected={filters.status === 'all'} onPress={() => set({ status: 'all' })} />
+      </View>
+      <View style={styles.urgentRow}>
+        <Text style={styles.urgentLabel}>Urgent cases only</Text>
+        <Switch accessibilityLabel="Urgent cases only" onValueChange={(urgent) => set({ urgent })} trackColor={{ true: palette.forest }} value={filters.urgent} />
+      </View>
+
+      <Text style={styles.filterLabel}>Sort by</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+        {SORTS.map(([value, label]) => <Chip key={value} label={label} selected={filters.sort === value} onPress={() => set({ sort: value })} />)}
+      </ScrollView>
+      {filtered ? <Pressable accessibilityRole="button" onPress={() => { setCases(null); setFilters(defaultFilters); }}><Text style={styles.reset}>Clear filters</Text></Pressable> : null}
+
+      {error ? <Message kind="error">{error}</Message> : null}
+      {cases === null ? <Loading inline label="Finding cases" state="searching" /> : null}
+      {cases?.length === 0 && !error ? (
+        <View style={styles.empty}>
+          <HandHeart color={palette.forest} size={28} strokeWidth={1.6} />
+          <Text style={styles.emptyTitle}>{filtered ? 'No cases match these filters' : 'Verified cases will appear here'}</Text>
+          <Text style={styles.muted}>{filtered ? 'Try another category or city.' : 'There are no published cases yet. Please check back soon.'}</Text>
         </View>
-      ) : (
-        <View style={styles.emptyCase}>
-          <View style={styles.heartTile}>
-            <HeartHandshake color={palette.forest} size={25} strokeWidth={1.7} />
-          </View>
-          <Text style={styles.emptyTitle}>Verified cases will appear here</Text>
-          <Text style={styles.emptyBody}>There are no published cases yet. Each case shows its verification status and how funds are allocated.</Text>
-        </View>
-      )}
+      ) : null}
+      {cases?.map((item) => <CaseCard key={item.id} item={item} onPress={() => router.push(`/cases/${item.id}` as Href)} />)}
+      {more ? (
+        <Pressable accessibilityRole="button" disabled={loadingMore} onPress={() => void loadMore()} style={styles.moreButton}>
+          <Text style={styles.moreLabel}>{loadingMore ? 'Loading…' : 'Show more cases'}</Text>
+        </Pressable>
+      ) : null}
 
       <SectionHeading title="How giving works" />
-      <View style={styles.steps}>
-        <View style={[uiStyles.card, styles.stepCard]}>
-          <View style={styles.stepIcon}><BadgeCheck color={palette.forest} size={18} /></View>
-          <View style={styles.stepCopy}>
-            <Text style={styles.stepTitle}>Cases are reviewed</Text>
-            <Text style={styles.stepBody}>The foundation verifies cases before publication.</Text>
-          </View>
-        </View>
-        <View style={[uiStyles.card, styles.stepCard]}>
-          <View style={[styles.stepIcon, { backgroundColor: palette.sky }]}><Landmark color={palette.forest} size={18} /></View>
-          <View style={styles.stepCopy}>
-            <Text style={styles.stepTitle}>Funds go through the foundation</Text>
-            <Text style={styles.stepBody}>Payment and distribution records are kept separate and traceable.</Text>
-          </View>
-        </View>
+      <View style={[uiStyles.card, styles.how]}>
+        {STEPS.map((step, index) => (
+          <View key={step} style={styles.step}><Text style={styles.stepNo}>{index + 1}</Text><Text style={[styles.muted, styles.flex]}>{step}</Text></View>
+        ))}
       </View>
     </Page>
   );
 }
 
 const styles = themedStyles(() => StyleSheet.create({
-  emptyCase: {
-    alignItems: 'center',
-    backgroundColor: palette.white,
-    borderColor: palette.line,
-    borderCurve: 'continuous',
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 24,
-    paddingVertical: 31,
-  },
-  heartTile: {
-    alignItems: 'center',
-    backgroundColor: palette.leaf,
-    borderCurve: 'continuous',
-    borderRadius: 10,
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
-  emptyTitle: {
-    color: palette.ink,
-    fontSize: 20,
-    fontWeight: '600',
-    marginTop: 16,
-    textAlign: 'center',
-  },
-  emptyBody: {
-    color: palette.muted,
-    fontSize: 13,
-    lineHeight: 20,
-    marginTop: 8,
-    maxWidth: 400,
-    textAlign: 'center',
-  },
-  steps: {
-    gap: 9,
-  },
-  caseCard: {
-    gap: 8,
-    padding: 14,
-  },
-  track: {
-    backgroundColor: palette.line,
-    borderRadius: 4,
-    height: 8,
-    overflow: 'hidden',
-  },
-  fill: {
-    backgroundColor: palette.forest,
-    height: 8,
-  },
-  stepCard: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    gap: 12,
-    padding: 14,
-  },
-  stepIcon: {
-    alignItems: 'center',
-    backgroundColor: palette.leaf,
-    borderCurve: 'continuous',
-    borderRadius: 8,
-    height: 38,
-    justifyContent: 'center',
-    width: 38,
-  },
-  stepCopy: {
-    flex: 1,
-  },
-  stepTitle: {
-    color: palette.ink,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  stepBody: {
-    color: palette.muted,
-    fontSize: 12,
-    lineHeight: 17,
-    marginTop: 4,
-  },
+  flex: { flex: 1 },
+  muted: { color: palette.muted, fontSize: 13, lineHeight: 19 },
+  pressed: { opacity: 0.88 },
+  collect: { alignItems: 'center', flexDirection: 'row', gap: 12, marginTop: 14, padding: 14 },
+  collectTitle: { ...display, color: palette.ink, fontSize: 16 },
+  order: { alignItems: 'center', flexDirection: 'row', gap: 10, marginTop: 8, padding: 14 },
+  orderTitle: { ...display, color: palette.ink, fontSize: 15 },
+  open: { color: palette.forest, fontSize: 13, fontWeight: '700' },
+  filterLabel: { color: palette.muted, fontSize: 12, fontWeight: '600', letterSpacing: 0.4, marginBottom: 6, marginTop: 14 },
+  chips: { gap: 8, paddingRight: 16 },
+  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  urgentRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
+  urgentLabel: { color: palette.ink, fontSize: 14, fontWeight: '600' },
+  reset: { color: palette.forest, fontSize: 13, fontWeight: '700', marginTop: 12, minHeight: 32 },
+  empty: { alignItems: 'center', gap: 8, paddingVertical: 36 },
+  emptyTitle: { ...display, color: palette.ink, fontSize: 18, textAlign: 'center' },
+  moreButton: { alignItems: 'center', borderColor: palette.line, borderRadius: 14, borderWidth: 1, justifyContent: 'center', marginTop: 16, minHeight: 46 },
+  moreLabel: { color: palette.forest, fontSize: 14, fontWeight: '700' },
+  how: { gap: 12, padding: 16 },
+  step: { alignItems: 'flex-start', flexDirection: 'row', gap: 12 },
+  stepNo: { ...display, backgroundColor: palette.leaf, borderRadius: 12, color: palette.forest, fontSize: 14, height: 24, lineHeight: 24, overflow: 'hidden', textAlign: 'center', width: 24 },
 }));

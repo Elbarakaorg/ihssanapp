@@ -10,6 +10,7 @@ import { supabase } from '../../lib/supabase';
 import TeamPage from '../team/TeamPage';
 import MetricCatalogPage from '../metrics/MetricCatalogPage';
 import LocationsPage from '../locations/LocationsPage';
+import DonationsPage from '../donations/DonationsPage';
 import ModerationPage from '../moderation/ModerationPage';
 import ProvidersPage from '../providers/ProvidersPage';
 import RestrictedPage from '../workspace/RestrictedPage';
@@ -180,7 +181,7 @@ function AdminShell({ membership, session }: { membership: AdminMembership; sess
             <Route path="/moderation" element={<ModerationPage />} />
             <Route path="/locations" element={<LocationsPage />} />
             <Route path="/providers" element={<ProvidersPage />} />
-            <Route path="/donations" element={<RestrictedPage title="Donation review" eyebrow="FOUNDATION" description="Review cases and distribution evidence before publication." detail="Case moderation and fund-distribution workflows will connect to the foundation operations module." />} />
+            <Route path="/donations" element={<DonationsPage />} />
             <Route path="/audit" element={<RestrictedPage title="Audit log" eyebrow="SECURITY" description="Review administrative changes for which you have audit permission." detail="Audit access is read-only and purpose-limited. Audit export and filters will be added with the operations API." />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

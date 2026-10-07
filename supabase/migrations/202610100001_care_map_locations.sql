@@ -1,20 +1,61 @@
 -- Admin-managed care locations (pharmacies, clinics, hospitals, laboratories) and the public map feed.
--- Extends the existing care_providers directory; doctors come from verified clinician_practice_locations.
+-- Recreates care_providers (dropped by 202610030003) with the map fields; doctors come from verified clinician_practice_locations.
 
-alter table public.care_providers drop constraint care_providers_kind_check;
-alter table public.care_providers
-  add constraint care_providers_kind_check check (kind in ('doctor', 'pharmacy', 'clinic', 'hospital', 'laboratory'));
-
-alter table public.care_providers
-  add column duty text not null default 'none' check (duty in ('none', 'day', 'night', '24h')),
-  add column duty_until timestamptz,
-  add column is_emergency boolean not null default false,
-  add column website text check (website is null or (website ~* '^https://' and char_length(website) <= 300)),
-  add column notes text check (notes is null or char_length(notes) <= 300),
-  add constraint care_providers_duty_expiry check (duty in ('none', '24h') or duty_until is not null);
+create table public.care_providers (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null check (kind in ('doctor', 'pharmacy', 'clinic', 'hospital', 'laboratory')),
+  name text not null check (char_length(trim(name)) between 2 and 160),
+  specialty text check (specialty is null or char_length(trim(specialty)) between 2 and 120),
+  city text not null check (char_length(trim(city)) between 2 and 80),
+  address text check (address is null or char_length(address) <= 300),
+  phone text check (phone is null or phone ~ '^\+?[0-9 ()-]{6,20}$'),
+  latitude numeric(9, 6) check (latitude between -90 and 90),
+  longitude numeric(9, 6) check (longitude between -180 and 180),
+  opening_hours text check (opening_hours is null or char_length(opening_hours) <= 300),
+  website text check (website is null or (website ~* '^https://' and char_length(website) <= 300)),
+  notes text check (notes is null or char_length(notes) <= 300),
+  is_emergency boolean not null default false,
+  duty text not null default 'none' check (duty in ('none', 'day', 'night', '24h')),
+  duty_until timestamptz,
+  status text not null default 'draft' check (status in ('draft', 'verified', 'retired')),
+  verified_by uuid references auth.users (id),
+  verified_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (status <> 'verified' or (verified_by is not null and verified_at is not null)),
+  check (status <> 'verified' or (latitude is not null and longitude is not null)),
+  check (duty in ('none', '24h') or duty_until is not null)
+);
 
 create index care_providers_geo_idx on public.care_providers (latitude, longitude) where status = 'verified';
 create index care_providers_admin_idx on public.care_providers (kind, status, lower(name));
+
+alter table public.care_providers enable row level security;
+
+create policy "verified_providers_readable"
+  on public.care_providers for select to anon, authenticated
+  using (status = 'verified');
+
+create policy "provider_reviewers_read_all"
+  on public.care_providers for select to authenticated
+  using ((select public.has_ihssan_permission('providers.verify')));
+
+create policy "provider_reviewers_insert"
+  on public.care_providers for insert to authenticated
+  with check ((select public.has_ihssan_permission('providers.verify')));
+
+create policy "provider_reviewers_update"
+  on public.care_providers for update to authenticated
+  using ((select public.has_ihssan_permission('providers.verify')))
+  with check ((select public.has_ihssan_permission('providers.verify')));
+
+create policy "provider_reviewers_delete_unpublished"
+  on public.care_providers for delete to authenticated
+  using ((select public.has_ihssan_permission('providers.verify')) and status <> 'verified');
+
+revoke all on public.care_providers from anon, authenticated;
+grant select on public.care_providers to anon, authenticated;
+grant insert, update, delete on public.care_providers to authenticated;
 
 create trigger care_providers_set_updated_at
   before update on public.care_providers
@@ -23,11 +64,6 @@ create trigger care_providers_set_updated_at
 create trigger care_providers_audit
   after insert or update or delete on public.care_providers
   for each row execute function public.audit_admin_change();
-
-create policy "provider_reviewers_delete_unpublished"
-  on public.care_providers for delete to authenticated
-  using ((select public.has_ihssan_permission('providers.verify')) and status <> 'verified');
-grant delete on public.care_providers to authenticated;
 
 -- Public feed -------------------------------------------------------------------------------------------------------
 create function public.list_map_locations(

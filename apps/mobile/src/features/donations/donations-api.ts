@@ -84,6 +84,7 @@ export const getCase = (key: string) =>
 export const listWishes = (id: string) => rpc<Wish[]>('list_case_wishes', { p_case_id: id, p_limit: 30 }, 'Could not load messages.').then((rows) => rows ?? []);
 export const postWish = (id: string, body: string, name: string, anonymous: boolean) =>
   rpc('post_case_wish', { p_case_id: id, p_body: body.trim(), p_display_name: anonymous ? null : name.trim() || null, p_is_anonymous: anonymous || !name.trim() }, 'Could not send your message. Please try again in a little while.');
+export const deleteWish = (id: string) => rpc('delete_case_wish', { p_id: id }, 'Could not delete this message.');
 export const listWall = (id: string) => rpc<WallEntry[]>('list_case_donations', { p_case_id: id, p_limit: 30 }, 'Could not load donations.').then((rows) => rows ?? []);
 
 // Donation orders -----------------------------------------------------------------------------------------------------

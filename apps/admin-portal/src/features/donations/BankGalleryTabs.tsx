@@ -121,7 +121,7 @@ function ReelsPanel({ caseId }: { caseId: string }) {
   const [busy, setBusy] = useState(false);
   const q = useQuery({
     queryKey: ['case-videos', caseId],
-    queryFn: async () => { const { data, error } = await db().from('donation_case_videos').select('id,kind,url,path,caption').eq('case_id', caseId).order('sort_order').order('created_at'); check(error); return (data ?? []) as Video[]; },
+    queryFn: async () => { const { data, error } = await db().rpc('list_case_videos', { p_case_id: caseId }); check(error); return (data ?? []) as Video[]; },
   });
   const refresh = () => qc.invalidateQueries({ queryKey: ['case-videos', caseId] });
   const add = async (kind: 'instagram' | 'upload', value: string) => {
@@ -141,7 +141,7 @@ function ReelsPanel({ caseId }: { caseId: string }) {
       {notice.view}
       <section className="panel">
         <h2 className="dn-h">Instagram reels and videos</h2>
-        <p className="dn-sub">Paste a public Instagram reel or post link and it plays on the case page. Embeds only work for public accounts that allow embedding; otherwise upload the video instead (MP4, MOV or WebM, up to 50 MB).</p>
+        <p className="dn-sub">Videos show side by side in a swipeable row on the case page. An Instagram link plays inside the page using Instagram’s own player (public accounts that allow embedding only). For a clean player with no Instagram branding, upload the video instead (MP4, MOV or WebM, up to 50 MB).</p>
         {q.data?.length === 0 ? <p className="dn-empty">No videos yet.</p> : null}
         <div className="dn-list">
           {q.data?.map((v) => (
@@ -184,7 +184,7 @@ function AudioPanel({ caseId }: { caseId: string }) {
   const [title, setTitle] = useState('');
   const q = useQuery({
     queryKey: ['case-audio', caseId],
-    queryFn: async () => { const { data, error } = await db().from('donation_case_audio').select('id,path,title,duration_seconds').eq('case_id', caseId).order('created_at'); check(error); return (data ?? []) as Audio[]; },
+    queryFn: async () => { const { data, error } = await db().rpc('list_case_audio', { p_case_id: caseId }); check(error); return (data ?? []) as Audio[]; },
   });
   const refresh = () => qc.invalidateQueries({ queryKey: ['case-audio', caseId] });
   return (

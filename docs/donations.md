@@ -1,6 +1,6 @@
 # Donations: how it works
 
-Last updated 2026-10-08. Migrations: `202610110001_donation_cases_workflow.sql`, then `202610120001_donation_comments_beneficiaries_analytics.sql`, then `202610130001_donation_media_wishes_external.sql`, then `202610140001_invite_role_upgrade.sql` (a collector invite upgrades an existing patient). Needs Moroccan legal review before launch.
+Last updated 2026-10-08. Migrations: `202610110001_donation_cases_workflow.sql`, then `202610120001_donation_comments_beneficiaries_analytics.sql`, then `202610130001_donation_media_wishes_external.sql`, then `202610140001_invite_role_upgrade.sql` (a collector invite upgrades an existing patient), then `202610150001_wishes_auto_approved.sql` (kind words publish instantly and managers can delete them; `list_case_videos`/`list_case_audio` RPCs because those tables are not directly readable). Needs Moroccan legal review before launch.
 
 ## Model
 

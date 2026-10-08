@@ -2,7 +2,7 @@ import { AudioModule, RecordingPresets, setAudioModeAsync, useAudioPlayer, useAu
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Pause, Play } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 
 import { imageUrl } from '@/features/doctor/doctor-api';
@@ -26,7 +26,7 @@ function InstagramReel({ url }: { url: string }) {
   if (!embed) return null;
   if (Platform.OS === 'web') {
     return (
-      <iframe allowFullScreen loading="lazy" referrerPolicy="no-referrer" src={embed} style={{ border: 0, borderRadius: 14, height: 560, maxWidth: 400, width: '100%' }} title="Instagram reel" />
+      <iframe allowFullScreen loading="lazy" referrerPolicy="no-referrer" src={embed} style={{ border: 0, borderRadius: 14, height: '100%', width: '100%' }} title="Instagram reel" />
     );
   }
   return (
@@ -45,15 +45,19 @@ function UploadedVideo({ path }: { path: string }) {
 
 export function Reels({ videos }: { videos: Reel[] }) {
   useScheme();
+  const { width } = useWindowDimensions();
+  const cardWidth = Math.min(Math.round(width * 0.72), 280);
   return (
-    <View style={styles.stack}>
+    <ScrollView horizontal decelerationRate="fast" snapToInterval={cardWidth + 12} snapToAlignment="start" showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carousel}>
       {videos.map((video) => (
-        <View key={video.id} style={styles.item}>
-          {video.kind === 'instagram' && video.url ? <InstagramReel url={video.url} /> : video.path ? <UploadedVideo path={video.path} /> : null}
-          {video.caption ? <Text style={styles.caption}>{video.caption}</Text> : null}
+        <View key={video.id} style={{ width: cardWidth }}>
+          <View style={styles.reelCard}>
+            {video.kind === 'instagram' && video.url ? <InstagramReel url={video.url} /> : video.path ? <UploadedVideo path={video.path} /> : null}
+          </View>
+          {video.caption ? <Text numberOfLines={2} style={styles.caption}>{video.caption}</Text> : null}
         </View>
       ))}
-    </View>
+    </ScrollView>
   );
 }
 
@@ -147,9 +151,11 @@ export function AudioRecorder({ caseId, onAdded }: { caseId: string; onAdded: ()
 const styles = themedStyles(() => StyleSheet.create({
   flex: { flex: 1 },
   stack: { gap: 12 },
+  carousel: { gap: 12, paddingRight: 16 },
+  reelCard: { aspectRatio: 9 / 16, backgroundColor: palette.ink, borderColor: palette.line, borderRadius: 16, borderWidth: 1, overflow: 'hidden', width: '100%' },
   item: { gap: 6 },
-  reel: { borderRadius: 14, height: 560, maxWidth: 400, overflow: 'hidden', width: '100%' },
-  video: { backgroundColor: palette.ink, borderRadius: 14, height: 240, width: '100%' },
+  reel: { height: '100%', width: '100%' },
+  video: { backgroundColor: palette.ink, height: '100%', width: '100%' },
   caption: { color: palette.muted, fontSize: 12, lineHeight: 17 },
   hint: { color: palette.muted, fontSize: 13, lineHeight: 19 },
   audio: { alignItems: 'center', backgroundColor: palette.leaf, borderRadius: 14, flexDirection: 'row', gap: 12, padding: 12 },

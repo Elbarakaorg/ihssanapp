@@ -33,11 +33,11 @@ export default function CaseWorkspace() {
   });
   const videos = useQuery({
     queryKey: ['case-videos', id],
-    queryFn: async () => { const { data, error } = await db().from('donation_case_videos').select('id,kind,url,path,caption').eq('case_id', id).order('sort_order').order('created_at'); check(error); return (data ?? []) as Video[]; },
+    queryFn: async () => { const { data, error } = await db().rpc('list_case_videos', { p_case_id: id }); check(error); return (data ?? []) as Video[]; },
   });
   const audio = useQuery({
     queryKey: ['case-audio', id],
-    queryFn: async () => { const { data, error } = await db().from('donation_case_audio').select('id,path,title,duration_seconds').eq('case_id', id).order('created_at'); check(error); return (data ?? []) as Audio[]; },
+    queryFn: async () => { const { data, error } = await db().rpc('list_case_audio', { p_case_id: id }); check(error); return (data ?? []) as Audio[]; },
   });
   const refresh = () => { void qc.invalidateQueries({ queryKey: ['case', id] }); void qc.invalidateQueries({ queryKey: ['donation-analytics'] }); void qc.invalidateQueries({ queryKey: ['donation-cases'] }); };
 

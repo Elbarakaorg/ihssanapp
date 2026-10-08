@@ -1,7 +1,7 @@
 import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
-import { Mail, MapPin, Phone, Share2 } from 'lucide-react-native';
+import { Mail, MapPin, Phone, Share2, Trash2 } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
-import { Image, Linking, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Image, Linking, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import { SocialLinks } from '@/features/doctor/doctor-engagement';
 import { RemoteImage } from '@/features/doctor/doctor-image';
@@ -11,7 +11,7 @@ import { Loading } from '@/ui/loading';
 import { Ornament, Page, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { display, palette, themedStyles, useScheme } from '@/ui/palette';
 import { AudioPlayer, Reels } from './case-media';
-import { CASE_BUCKET, type CaseDetail, type Wish, type WallEntry, createPledge, getCase, listWall, listWishes, postWish, shareCase } from './donations-api';
+import { CASE_BUCKET, type CaseDetail, type Wish, type WallEntry, createPledge, deleteWish, getCase, listWall, listWishes, postWish, shareCase } from './donations-api';
 import { ACCOUNT_RECEIPT_NOTICE, formatMad, parseAmount, suggestedAmounts, validateAmount } from './donations-logic';
 import { Progress, UrgentBadge } from './donations-ui';
 
@@ -55,6 +55,9 @@ export default function CaseScreen() {
 
   const open = item.status === 'published';
   const remaining = Math.max(item.goal_mad - item.raised_mad, 0);
+  const removeWish = async (wishId: string) => {
+    try { await deleteWish(wishId); setWishes((current) => current.filter((w) => w.id !== wishId)); } catch (e) { setNote(e instanceof Error ? e.message : 'Could not delete this message.'); }
+  };
   const share = async () => {
     try { setNote((await shareCase(item.slug || item.id, item.title)) === 'copied' ? 'Link copied. Share it with family and friends.' : ''); } catch { setNote(''); }
   };
@@ -134,44 +137,47 @@ export default function CaseScreen() {
       <SectionHeading title="Kind words" detail={wishes.length ? undefined : 'Be the first to leave a warm message'} />
       {wishes.map((wish) => (
         <View key={wish.id} style={[uiStyles.card, styles.wallRow]}>
-          <Text style={styles.wallName}>{wish.display_name}</Text>
+          <View style={styles.wallHead}>
+            <Text style={styles.wallName}>{wish.display_name}</Text>
+            {item.can_manage ? (
+              <Pressable accessibilityLabel="Delete this message" accessibilityRole="button" hitSlop={8} onPress={() => void removeWish(wish.id)}>
+                <Trash2 color={palette.muted} size={15} />
+              </Pressable>
+            ) : null}
+          </View>
           <Text style={styles.wallComment}>{wish.body}</Text>
         </View>
       ))}
-      <WishForm caseId={item.id} />
+      <WishForm caseId={item.id} onSent={() => void listWishes(item.id).then(setWishes).catch(() => undefined)} />
       <Text style={styles.fine}>Donations go directly to the family&apos;s bank account. Ihssan never holds the money; a fund collector confirms each transfer before it counts.</Text>
     </Page>
   );
 }
 
-function WishForm({ caseId }: { caseId: string }) {
+function WishForm({ caseId, onSent }: { caseId: string; onSent: () => void }) {
   useScheme();
   const [body, setBody] = useState('');
   const [name, setName] = useState('');
-  const [anonymous, setAnonymous] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<{ kind: 'error' | 'ok'; text: string } | null>(null);
+  const [error, setError] = useState('');
   const send = async () => {
-    if (body.trim().length < 2) { setMsg({ kind: 'error', text: 'Write a short message first.' }); return; }
-    if (!anonymous && name.trim().length < 2) { setMsg({ kind: 'error', text: 'Enter a name, or send it anonymously.' }); return; }
-    setBusy(true); setMsg(null);
+    if (body.trim().length < 2) { setError('Write a short message first.'); return; }
+    setBusy(true); setError('');
     try {
-      await postWish(caseId, body, name, anonymous);
-      setBody('');
-      setMsg({ kind: 'ok', text: 'Thank you. Your message will appear once it has been approved.' });
-    } catch (e) { setMsg({ kind: 'error', text: e instanceof Error ? e.message : 'Could not send your message.' }); } finally { setBusy(false); }
+      await postWish(caseId, body, name, name.trim().length < 2);
+      setBody(''); onSent();
+    } catch (e) { setError(e instanceof Error ? e.message : 'Could not send your message.'); } finally { setBusy(false); }
   };
   return (
-    <View style={[uiStyles.card, styles.form]}>
-      <Text style={styles.formTitle}>Leave a kind word</Text>
-      <Field label="Your message" value={body} onChangeText={setBody} maxLength={500} multiline />
-      <View style={styles.switchRow}>
-        <View style={styles.flex}><Text style={styles.switchTitle}>Send anonymously</Text></View>
-        <Switch accessibilityLabel="Send anonymously" onValueChange={setAnonymous} trackColor={{ true: palette.forest }} value={anonymous} />
+    <View style={styles.wishForm}>
+      <TextInput accessibilityLabel="Your kind word" maxLength={500} onChangeText={setBody} placeholder="Leave a kind word…" placeholderTextColor={palette.muted} style={styles.wishInput} value={body} />
+      <View style={styles.wishRow}>
+        <TextInput accessibilityLabel="Your name (optional)" maxLength={60} onChangeText={setName} placeholder="Your name (blank = anonymous)" placeholderTextColor={palette.muted} style={[styles.wishInput, styles.flex]} value={name} />
+        <Pressable accessibilityRole="button" disabled={busy} onPress={() => void send()} style={({ pressed }) => [styles.wishSend, pressed && { opacity: 0.85 }]}>
+          <Text style={styles.wishSendLabel}>{busy ? '…' : 'Send'}</Text>
+        </Pressable>
       </View>
-      {!anonymous ? <Field label="Name to display" value={name} onChangeText={setName} maxLength={60} /> : null}
-      {msg ? <Message kind={msg.kind}>{msg.text}</Message> : null}
-      <Button label="Send message" busy={busy} onPress={() => void send()} />
+      {error ? <Text style={styles.wishError}>{error}</Text> : null}
     </View>
   );
 }
@@ -249,6 +255,12 @@ const styles = themedStyles(() => StyleSheet.create({
   wallAmount: { color: palette.forest, fontSize: 14, fontWeight: '700' },
   wallComment: { color: palette.muted, fontSize: 13, lineHeight: 19 },
   fine: { color: palette.muted, fontSize: 12, lineHeight: 18, marginTop: 20 },
+  wishForm: { gap: 8, marginTop: 10 },
+  wishRow: { alignItems: 'center', flexDirection: 'row', gap: 8 },
+  wishInput: { backgroundColor: palette.glass, borderColor: palette.line, borderRadius: 12, borderWidth: 1, color: palette.ink, fontSize: 14, minHeight: 42, paddingHorizontal: 12 },
+  wishSend: { alignItems: 'center', backgroundColor: palette.forest, borderRadius: 12, justifyContent: 'center', minHeight: 42, paddingHorizontal: 18 },
+  wishSendLabel: { color: palette.white, fontSize: 14, fontWeight: '700' },
+  wishError: { color: palette.dangerText, fontSize: 12 },
   form: { gap: 4, marginTop: 14, padding: 16 },
   formTitle: { ...display, color: palette.ink, fontSize: 20 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },

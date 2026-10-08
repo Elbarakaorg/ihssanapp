@@ -11,7 +11,7 @@ export function Page({ children }: PropsWithChildren) {
   useScheme();
   return (
     <SafeAreaView style={[styles.safeArea, paperBackground()]} edges={['top', 'left', 'right']}>
-      {Platform.OS === 'web' ? null : <LinearGradient colors={[palette.washSage, 'transparent', palette.washClay]} pointerEvents="none" style={StyleSheet.absoluteFill} />}
+      {Platform.OS === 'web' ? null : <LinearGradient colors={[palette.washSage, 'transparent', palette.washClay]} locations={[0, 0.45, 1]} pointerEvents="none" style={StyleSheet.absoluteFill} />}
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
@@ -124,7 +124,7 @@ export const uiStyles = themedStyles(() => StyleSheet.create({
 /** Faint paper fibre plus two soft colour washes on web; native keeps the flat paper colour with a gradient wash. */
 const GRAIN = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .28 0 0 0 0 .18 0 0 0 .08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`;
 const paperBackground = () => Platform.OS === 'web'
-  ? ({ backgroundImage: `${GRAIN}, radial-gradient(60% 40% at 8% 0%, ${palette.washSage}, transparent), radial-gradient(50% 35% at 100% 18%, ${palette.washClay}, transparent)` } as object)
+  ? ({ backgroundImage: `${GRAIN}, radial-gradient(80% 340px at 50% 0%, ${palette.washSage}, transparent), radial-gradient(50% 35% at 100% 22%, ${palette.washClay}, transparent)` } as object)
   : null;
 
 const styles = themedStyles(() => StyleSheet.create({

@@ -22,24 +22,24 @@ export type PaletteColors = {
 };
 
 export const lightPalette: PaletteColors = {
-  paper: '#F1EBDD',
-  white: '#FAF6EC',
+  paper: '#F7F7F2',
+  white: '#FDFDFA',
   ink: '#2A2622',
   forest: '#4A6741',
-  leaf: '#E5E1CC',
-  leafDeep: '#D2CCB0',
+  leaf: '#E9EFE1',
+  leafDeep: '#D4DEC7',
   coral: '#A4502F',
-  sky: '#E8E1D2',
+  sky: '#EDF1E8',
   muted: '#6B6358',
-  line: '#D9CFBD',
+  line: '#DEE0D3',
   gold: '#A9822F',
   dangerBg: '#F3E1D6',
   dangerText: '#7A3F29',
-  successBg: '#E3E7D3',
-  glass: 'rgba(250,246,236,0.66)',
+  successBg: '#E1ECD6',
+  glass: 'rgba(253,253,250,0.70)',
   glassEdge: 'rgba(255,255,255,0.7)',
-  washSage: 'rgba(122,150,104,0.20)',
-  washClay: 'rgba(196,128,90,0.16)',
+  washSage: 'rgba(104,152,98,0.26)',
+  washClay: 'rgba(120,170,120,0.12)',
 };
 
 // In dark mode "white" is the raised surface and "ink" the primary text, so contrast pairings invert together.

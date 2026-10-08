@@ -1,4 +1,5 @@
 import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
 import { Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -11,11 +12,22 @@ import { type CaseComment, addExternalDonation, type CollectorCase, type ReviewP
 import { formatMad, parseAmount } from './donations-logic';
 import { Progress, StatusPill } from './donations-ui';
 
+const PENDING_INVITE = 'ihssan.pendingInvite.v1';
+
 export function CollectHome() {
   useScheme();
   const router = useRouter();
   const [cases, setCases] = useState<CollectorCase[] | null>(null);
   const [error, setError] = useState('');
+  const { session } = useAuth();
+  useEffect(() => {
+    if (!session) return;
+    void AsyncStorage.getItem(PENDING_INVITE).then(async (token) => {
+      if (!token) return;
+      await AsyncStorage.removeItem(PENDING_INVITE);
+      try { const r = await acceptCollectorInvite(token); router.replace(`/collect/${r.case_id}` as Href); } catch (e) { setError(e instanceof Error ? e.message : 'This invitation is invalid or has expired.'); }
+    });
+  }, [session, router]);
   useEffect(() => { listCollectorCases().then(setCases).catch((e) => { setError(e instanceof Error ? e.message : 'Could not load.'); setCases([]); }); }, []);
   return (
     <Page>
@@ -231,7 +243,7 @@ export function CollectAccept() {
       <PageHeading eyebrow="Giving" title="Invitation">You have been invited to a case. Collectors confirm donations; family members approve donor comments.</PageHeading>
       {!token ? <Message kind="error">This invitation link is incomplete.</Message> : null}
       {error ? <Message kind="error">{error}</Message> : null}
-      {session ? <Button label="Accept invitation" busy={state === 'busy'} disabled={!token} onPress={() => void accept()} /> : <Button label="Sign in to accept" onPress={() => router.push('/account' as Href)} />}
+      {session ? <Button label="Accept invitation" busy={state === 'busy'} disabled={!token} onPress={() => void accept()} /> : <><Message kind="info">Sign in or create an account. Your invitation is kept, and once you are signed in, open “My giving cases” to join the case.</Message><Button label="Sign in to accept" onPress={() => { if (token) void AsyncStorage.setItem(PENDING_INVITE, token); router.push('/account' as Href); }} /></>}
     </Page>
   );
 }

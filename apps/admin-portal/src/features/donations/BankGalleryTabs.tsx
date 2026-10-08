@@ -93,7 +93,7 @@ function PhotosPanel({ caseId }: { caseId: string }) {
             <figure key={m.id}>
               <img alt={m.caption ?? ''} src={publicUrl(m.path)} />
               <figcaption>{m.caption}</figcaption>
-              <button className="button button-secondary" onClick={() => void (async () => { try { check((await db().from('donation_case_media').delete().eq('id', m.id)).error); await refresh(); } catch (e) { notice.fail(e); } })()} type="button"><Trash2 size={14} /> Remove</button>
+              <button className="button button-secondary" onClick={() => void (async () => { try { const { data, error } = await db().rpc('delete_case_media', { p_id: m.id }); check(error); if (typeof data === 'string' && data) await db().storage.from('case-media').remove([data]); await refresh(); } catch (e) { notice.fail(e); } })()} type="button"><Trash2 size={14} /> Remove</button>
             </figure>
           ))}
         </div>
@@ -105,7 +105,7 @@ function PhotosPanel({ caseId }: { caseId: string }) {
           <input accept="image/jpeg,image/png,image/webp" onChange={(e) => {
             const file = e.target.files?.[0]; e.target.value = '';
             if (!file) return;
-            void upload(caseId, file).then(async (path) => { check((await db().from('donation_case_media').insert({ case_id: caseId, path, caption: caption || null })).error); setCaption(''); notice.ok('Photo added.'); await refresh(); }).catch(notice.fail);
+            void upload(caseId, file).then(async (path) => { check((await db().rpc('add_case_media', { p_case_id: caseId, p_path: path, p_caption: caption || null })).error); setCaption(''); notice.ok('Photo added.'); await refresh(); }).catch(notice.fail);
           }} type="file" />
         </div>
       </section>

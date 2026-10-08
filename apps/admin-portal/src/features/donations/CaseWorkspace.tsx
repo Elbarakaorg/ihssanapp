@@ -8,7 +8,7 @@ import CaseForm from './CaseForm';
 import CommentsPanel from './CommentsPanel';
 import DonationsTab from './DonationsTab';
 import TeamTab from './TeamTab';
-import { type Analytics, type CaseRow, type Media, SOCIAL, caseUrl, check, db, errorText, formFromRow, mad, percent, publicUrl, when } from './shared';
+import { type Analytics, type CaseRow, type Audio, type Media, type Video, SOCIAL, caseUrl, check, db, errorText, formFromRow, mad, mediaUrl, percent, publicUrl, when } from './shared';
 import { BarChart, Badge, ProgressBar, Stat, Tabs, statusTone, useNotice } from './ui';
 
 type Tab = 'overview' | 'donations' | 'comments' | 'profile' | 'bank' | 'gallery' | 'team' | 'preview';
@@ -30,6 +30,14 @@ export default function CaseWorkspace() {
   const media = useQuery({
     queryKey: ['case-media', id],
     queryFn: async () => { const { data, error } = await db().from('donation_case_media').select('id,path,caption').eq('case_id', id).order('created_at'); check(error); return (data ?? []) as Media[]; },
+  });
+  const videos = useQuery({
+    queryKey: ['case-videos', id],
+    queryFn: async () => { const { data, error } = await db().from('donation_case_videos').select('id,kind,url,path,caption').eq('case_id', id).order('sort_order').order('created_at'); check(error); return (data ?? []) as Video[]; },
+  });
+  const audio = useQuery({
+    queryKey: ['case-audio', id],
+    queryFn: async () => { const { data, error } = await db().from('donation_case_audio').select('id,path,title,duration_seconds').eq('case_id', id).order('created_at'); check(error); return (data ?? []) as Audio[]; },
   });
   const refresh = () => { void qc.invalidateQueries({ queryKey: ['case', id] }); void qc.invalidateQueries({ queryKey: ['donation-analytics'] }); void qc.invalidateQueries({ queryKey: ['donation-cases'] }); };
 
@@ -94,6 +102,14 @@ export default function CaseWorkspace() {
           {c.show_contact && (c.contact_phone || c.contact_email) ? <p>Contact: {[c.contact_phone, c.contact_email].filter(Boolean).join(' · ')}</p> : null}
           {(c.social_links ?? []).filter((s) => (SOCIAL as readonly string[]).includes(s.kind)).map((s) => <p key={s.url}>{s.kind}: {s.url}</p>)}
           {media.data && media.data.length > 0 ? <div className="dn-gallery">{media.data.map((m) => <figure key={m.id}><img alt={m.caption ?? ''} src={publicUrl(m.path)} /><figcaption>{m.caption}</figcaption></figure>)}</div> : null}
+          {videos.data && videos.data.length > 0 ? (
+            <div className="dn-list">
+              {videos.data.map((v) => v.kind === 'upload' && v.path
+                ? <video controls key={v.id} preload="metadata" src={mediaUrl('case-videos', v.path)} />
+                : <p key={v.id}>Instagram: {v.url}</p>)}
+            </div>
+          ) : null}
+          {audio.data?.map((a) => <div key={a.id}><strong>{a.title || 'Audio message'}</strong><audio controls preload="none" src={mediaUrl('case-audio', a.path)} /></div>)}
           <p>Bank details are shown to donors only after they start a donation order.</p>
         </div>
       ) : null}

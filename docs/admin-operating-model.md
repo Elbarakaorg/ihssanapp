@@ -63,7 +63,9 @@ The admin portal is a separate web app and has a separate sign-in entry from the
 | `/articles` | Article editor/reviewer/publisher | Separate editorial queue for Home-feed articles |
 | `/articles/:articleId` | Article permission | Draft, source citations, review and publication history |
 | `/providers/:providerId/review` | `providers.verify` | Verify provider details and record decision/reason |
-| `/donations/:caseId/review` | `donations.review` | Review case evidence and moderation history |
+| `/donations`, `/donations/cases`, `/donations/cases/:id`, `/donations/comments` | `donations.review` | Giving analytics, case management, receipt review, donor comment approval. Bank accounts are platform-owner only. See `docs/donations.md` |
+| `/moderation` | `support.requests.manage` | Doctor comment reports |
+| `/locations` | `providers.verify` | Map locations, CSV import, duty pharmacies |
 | `/audit` | `admin.audit.read` | Purpose-limited, read-only admin audit search |
 
 Support admins see only routes and records allowed by their assigned permissions. The owner console can inspect membership history; support users cannot. The platform owner can manage content and support requests by owner authority, but still receives no blanket access to patient measurements.

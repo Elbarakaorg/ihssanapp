@@ -17,6 +17,36 @@ This plan is an implementation baseline, not a claim that any architecture is pe
 - Include a doctor portal for verified clinicians and a separate internal admin portal. There is no pharmacy operations dashboard in the initial scope.
 - Keep the first release narrow: patient-entered measurements, patient-approved doctor access, and provider discovery/navigation. Add ordering, advanced analytics, and other workflows only after their product and safety requirements are proven.
 
+## Current Implementation Status
+
+_Last updated 2026-10-08. The sections below are the original baseline; where the built system differs, this section and the "Status" notes in the roadmap win._
+
+### What exists
+
+| Area | State | Where |
+| --- | --- | --- |
+| Patient app (Expo, iOS/Android/web) | Built: health tracking, discovery map, doctors, sharing, treatments, give, verses, account deletion, Sign in with Apple (needs a dev client) | `apps/mobile` |
+| Admin portal (Vite/React) | Built, TOTP MFA required (aal2): metrics/articles, support, team, provider verification, map locations, doctor comment moderation, giving & community | `apps/admin-portal` |
+| API (Hono) | Deployed on Fly.io at `https://api.ihssanapp.com`; `/v1/admin/*` requires an aal2 token; 32 tests | `services/api` |
+| Database | Supabase Postgres, ordered migrations, latest `202610120001` | `supabase/migrations` |
+| Web hosting | Vercel (mobile web; admin at `alhamdulilah.ihssanapp.com`) | `docs/vercel-deployment.md` |
+| Medicine and treatments | Static generic-name directory (no doses), schedules, dose logging, local reminders, stock/refill, adherence reports, doctor prescribing. Not clinician-reviewed | `features/medicine` |
+| Care directory | Mapbox GL map (WebView/iframe), `care_providers` locations, admin picker, CSV import, duty pharmacies; verified doctor practice locations appear automatically | `features/discovery`, migration `202610100001` |
+| Donations | Direct bank-transfer model with receipt confirmation; see `docs/donations.md` | `features/donations` |
+| Content | Built-in articles/blogs merged with DB `blog_articles` (not clinician-reviewed); Verses of healing | `features/content`, `features/spirit` |
+| Visual language | Wabi-sabi paper palette, EB Garamond headings, frosted-glass cards, bento layout on home and the admin overview | `ui/palette.ts`, `ui/patient-ui.tsx` |
+
+### Deliberate deviations from the baseline
+
+- **Donations do not go through the foundation or CMI.** Donors transfer directly to the patient's own bank account using an order (reference `IH-XXXXXXX`, 48 h), then upload a receipt. An admin or a per-case fund collector confirms receipt; only confirmed amounts move the progress bar. There is no card checkout, ledger, refund or payout flow. This needs Moroccan legal review before launch.
+- **Maps:** Mapbox, not Google Maps. Hirassa and Google Places are optional API adapters.
+- **API scope:** the API serves admin, AI, email and directory adapters; much patient data still goes through Supabase RPCs and row-level security. Direct Supabase admin RPCs are not yet aal2-gated at the database level.
+- **Localization:** the UI is English only; Arabic appears only in verses.
+
+### Not built yet
+
+Arabic/French localization, appointment booking, paid consultations, pharmacy orders, dependent profiles, case updates timeline, donor notifications, CMI payments, clinician review of medicine and article content, device testing of native screens, a production pilot.
+
 ## Product and Risk Boundaries
 
 Before implementation, agree on:
@@ -171,7 +201,11 @@ Admin portal (React Router)
   /articles/new                    # article draft editor
   /articles/:articleId             # article versions, source citations, review state
   /articles/:articleId/edit        # author-owned draft editor
-  /donations/:caseId/review        # case verification and moderation history
+  /donations                       # giving overview and analytics
+  /donations/cases                 # case list
+  /donations/cases/:id             # workspace: overview, donations, comments, profile, bank, gallery, team, preview
+  /donations/comments              # bulk donor comment approval
+  /moderation                      # doctor comment reports
   /audit                           # purpose-limited, audited read-only review
 
 Future patient routes (add only in their delivery phase)
@@ -302,7 +336,7 @@ Avoid adopting the full FHIR model unless interoperability requirements justify 
 - Pilot with a small number of verified pharmacies and a narrow legally approved catalog. Expand geography and catalog only after stock accuracy, pharmacist response, refund handling, and patient support meet defined service levels.
 
 - Model donation cases and contributions as explicit state machines. Ihssan's foundation is the intended recipient/distributor; verify cases before publication and record allocation, disbursement, fees, refunds, and reconciliation separately. Keep donation funds and platform operating funds distinguishable in the ledger and operational controls.
-- Support donations by bank transfer to the foundation and card payment through CMI, subject to confirming the foundation's eligibility, merchant onboarding, supported checkout/callback model, settlement, refunds, disputes, and local requirements. For card payments, use CMI-hosted/tokenized flows and store provider references only, never raw card credentials. Verify callbacks/webhooks, make processing idempotent, reconcile bank transfers and CMI settlement against an auditable internal ledger, and clearly communicate when a bank transfer is pending confirmation.
+- **Status: the built flow is direct bank transfer to the patient with receipt confirmation (see Current Implementation Status and `docs/donations.md`); the CMI/foundation model below is not implemented.** Original plan: support donations by bank transfer to the foundation and card payment through CMI, subject to confirming the foundation's eligibility, merchant onboarding, supported checkout/callback model, settlement, refunds, disputes, and local requirements. For card payments, use CMI-hosted/tokenized flows and store provider references only, never raw card credentials. Verify callbacks/webhooks, make processing idempotent, reconcile bank transfers and CMI settlement against an auditable internal ledger, and clearly communicate when a bank transfer is pending confirmation.
 - Keep maps and pharmacy-hours integrations behind server-side adapters. Restrict Google Maps keys by application and API; comply with attribution, caching, and provider terms. Treat Hirassa hours as a discovery signal only, never as live stock or dispensing authorization; apply the same provider freshness and fallback checks described in the directory and pharmacy-order plans.
 
 ## Database and Access Controls
@@ -376,11 +410,11 @@ Support an initial, clinician-approved set including blood glucose and INR, with
 
 ### Phase 4: Care directory first release
 
-Launch nationwide doctor and pharmacy discovery using Google Maps Platform for map/navigation and evaluate Hirassa API for day/night pharmacy availability. Verify provider identity and clearly label the source and freshness of hours, including a call-to-confirm path and fallback when the availability API is unavailable or stale. Apply provider terms, quota controls, location minimization, and target-device performance tests. Appointment booking, live inventory, and medication ordering remain out of this launch scope; detailed follow-on plans are below. **Exit:** users can find and navigate to providers nationwide without the app implying that map data guarantees availability or pharmacy stock.
+**Status: built with Mapbox and an admin-managed `care_providers` directory.** Launch nationwide doctor and pharmacy discovery using Google Maps Platform for map/navigation and evaluate Hirassa API for day/night pharmacy availability. Verify provider identity and clearly label the source and freshness of hours, including a call-to-confirm path and fallback when the availability API is unavailable or stale. Apply provider terms, quota controls, location minimization, and target-device performance tests. Appointment booking, live inventory, and medication ordering remain out of this launch scope; detailed follow-on plans are below. **Exit:** users can find and navigate to providers nationwide without the app implying that map data guarantees availability or pharmacy stock.
 
 ### Phase 5: Donation workflow
 
-Implement moderation, verified case publication, foundation-owned receipt and distribution workflows, bank-transfer instructions and reconciliation, CMI card checkout/callback integration, idempotent contributions, refunds/disputes, allocation, payout/reconciliation, and audit. Validate the foundation's legal/fiscal operating model and CMI merchant/payment support for Morocco. Pilot with test payments and operational review before enabling real funds. **Exit:** finance and operations can trace donations to cases, reconcile both payment channels, and recover from duplicate, delayed, and failed events.
+**Status: partly built as a direct-transfer workflow (cases, bank accounts, orders, receipts, confirmation, comment moderation, analytics). Card checkout, refunds, payouts and ledger reconciliation are not built.** Implement moderation, verified case publication, foundation-owned receipt and distribution workflows, bank-transfer instructions and reconciliation, CMI card checkout/callback integration, idempotent contributions, refunds/disputes, allocation, payout/reconciliation, and audit. Validate the foundation's legal/fiscal operating model and CMI merchant/payment support for Morocco. Pilot with test payments and operational review before enabling real funds. **Exit:** finance and operations can trace donations to cases, reconcile both payment channels, and recover from duplicate, delayed, and failed events.
 
 ### Phase 6: Measurement explanations and AI safety
 

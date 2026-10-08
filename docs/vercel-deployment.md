@@ -24,3 +24,7 @@ For Google sign-in, add the exact deployed callback URLs to Supabase **Authentic
 The Google OAuth provider's authorized redirect URI remains the Supabase callback URL shown in `docs/google-oauth-setup.md`; it is not the Vercel domain. After a deployment, test the app root, nested routes opened directly, browser refresh on nested routes, and Google sign-in on desktop and mobile browsers.
 
 Both Vercel configs set a Content Security Policy. The mobile policy hashes Expo's current inline router-hydration script instead of allowing arbitrary inline scripts; if an Expo upgrade changes that generated script, update the SHA-256 source in `apps/mobile/vercel.json` to match the exported HTML and test all routes. `connect-src` permits secure HTTPS/WebSocket connections because the deployed API origin is selected by `VITE_API_BASE_URL`; tighten it to the exact API origin once that production URL is fixed.
+
+## API (Fly.io)
+
+The API is deployed separately from `services/api` (`fly.toml`, app `ihssan-api`, `https://api.ihssanapp.com`). Set secrets with `fly secrets set` using real values (never angle-bracket placeholders): `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `CORS_ORIGINS` and the optional OpenAI, Resend, Hirassa and Google Places keys. Point `VITE_API_BASE_URL` and `EXPO_PUBLIC_API_BASE_URL` at it. The admin portal requires TOTP MFA (enable TOTP in Supabase Auth); the API rejects `/v1/admin/*` without an `aal2` token. Map env: `EXPO_PUBLIC_MAPBOX_TOKEN`, `EXPO_PUBLIC_MAPBOX_STYLE_URL`, `VITE_MAPBOX_TOKEN`, `VITE_MAPBOX_STYLE_URL`.

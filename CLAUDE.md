@@ -44,3 +44,6 @@ Migration `202610110001` (apply after 202610070001, 080001, 080002, 090001, 1000
 ## Deploy & admin security
 - API on Fly.io (`services/api/fly.toml`, app `ihssan-api`, `https://api.ihssanapp.com`). Set secrets with `fly secrets set` using real values; never paste `<placeholders>` (angle brackets caused "Session is invalid or expired" once). Check by length/prefix via `fly ssh console`.
 - Admin portal (`alhamdulilah.ihssanapp.com`) requires TOTP MFA (aal2): `MfaGate` in `AdminConsole.tsx` enrols/challenges, and the API rejects `/v1/admin/*` without an `aal2` token. TOTP must be enabled in Supabase Auth. Direct Supabase RPCs are not yet aal2-gated at DB level.
+
+## Docs to keep current
+When a feature ships, update `docs/implementation-plan.md` (Current Implementation Status), `docs/donations.md` for giving changes, and the relevant section here.

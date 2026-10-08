@@ -133,3 +133,12 @@ export const wobble = {
   borderBottomRightRadius: 15,
   borderBottomLeftRadius: 11,
 } as const;
+
+
+/** Frosted-glass card surface; call inside themedStyles so it follows the active scheme. */
+export function glassSurface(): Record<string, unknown> {
+  const web = typeof document !== 'undefined';
+  return web
+    ? { backgroundColor: palette.glass, borderColor: palette.glassEdge, backdropFilter: 'blur(14px) saturate(1.15)', WebkitBackdropFilter: 'blur(14px) saturate(1.15)', boxShadow: '0 1px 0 rgba(255,255,255,.5) inset, 0 8px 24px -12px rgba(60,45,25,.28)' }
+    : { backgroundColor: palette.glass, borderColor: palette.glassEdge, shadowColor: '#3C2D19', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.1, shadowRadius: 14, elevation: 2 };
+}

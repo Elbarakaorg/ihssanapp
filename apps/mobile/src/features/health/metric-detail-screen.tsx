@@ -9,7 +9,7 @@ import { interpretPublishedRange } from '@/features/health/metric-interpretation
 import { getPatientMetric, type SavedMeasurement } from '@/features/health/measurement-repository';
 import { useLocale } from '@/platform/locale/locale-provider';
 import { Page, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
-import { display, palette, themedStyles, useScheme } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme, glassSurface } from '@/ui/palette';
 import { Loading } from '@/ui/loading';
 
 type DetailData = Awaited<ReturnType<typeof getPatientMetric>>;
@@ -162,11 +162,11 @@ const styles = themedStyles(() => StyleSheet.create({
   historySource: { color: palette.muted, fontSize: 10, marginTop: 4 },
   historyValue: { color: palette.ink, fontSize: 20, fontWeight: '500', fontVariant: ['tabular-nums'] },
   historyUnit: { color: palette.forest, fontFamily: 'System', fontSize: 11 },
-  emptyHistory: { backgroundColor: palette.white, borderRadius: 7, padding: 14 },
+  emptyHistory: { ...glassSurface(), borderRadius: 7, padding: 14 },
   bottomAdd: { alignItems: 'center', alignSelf: 'stretch', backgroundColor: palette.forest, borderRadius: 7, flexDirection: 'row', gap: 8, justifyContent: 'center', marginTop: 8, minHeight: 47 },
   relatedReading: { borderTopColor: palette.line, borderTopWidth: 1, gap: 5, marginTop: 15, paddingTop: 15 },
   relatedTitle: { color: palette.ink, fontSize: 13, fontWeight: '700' },
-  messageCard: { backgroundColor: palette.white, borderRadius: 7, gap: 9, padding: 16 },
+  messageCard: { ...glassSurface(), borderRadius: 7, gap: 9, padding: 16 },
   secondaryButton: { alignItems: 'center', alignSelf: 'flex-start', backgroundColor: palette.leaf, borderRadius: 6, marginTop: 4, minHeight: 40, justifyContent: 'center', paddingHorizontal: 14 },
   secondaryLabel: { color: palette.forest, fontSize: 12, fontWeight: '700' },
   loading: { alignItems: 'center', gap: 9, marginTop: 35 },

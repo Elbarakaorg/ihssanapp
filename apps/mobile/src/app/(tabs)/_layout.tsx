@@ -58,8 +58,9 @@ export default function TabLayout() {
           tabBarInactiveTintColor: palette.muted,
           tabBarButton: TabButton,
           tabBarStyle: {
-            backgroundColor: palette.white,
-            borderTopColor: palette.line,
+            backgroundColor: palette.glass,
+            ...(Platform.OS === 'web' ? ({ backdropFilter: 'blur(16px) saturate(1.15)', WebkitBackdropFilter: 'blur(16px) saturate(1.15)' } as object) : null),
+            borderTopColor: palette.glassEdge,
             borderTopWidth: StyleSheet.hairlineWidth,
             height: 58 + insets.bottom,
             paddingBottom: insets.bottom,

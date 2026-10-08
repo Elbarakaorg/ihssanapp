@@ -8,7 +8,7 @@ import { useAuth } from '@/features/auth/auth-provider';
 import { isMetricId, localDateString, metricDefinitions, validateBloodPressureInput, validateMeasurementInput } from '@/features/health/metric-input';
 import { getMetricSupportedUnits, saveCompositeMeasurement, saveMeasurement } from '@/features/health/measurement-repository';
 import { Page, PreviewNotice } from '@/ui/patient-ui';
-import { display, palette, themedStyles, useScheme } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme, glassSurface } from '@/ui/palette';
 
 export default function MeasurementEntryScreen() {
   useScheme();
@@ -431,8 +431,8 @@ const styles = themedStyles(() => StyleSheet.create({
     maxWidth: 360,
   },
   reviewCard: {
-    backgroundColor: palette.white,
-    borderColor: palette.line,
+    ...glassSurface(),
+    
     borderCurve: 'continuous',
     borderRadius: 18,
     borderWidth: 1,

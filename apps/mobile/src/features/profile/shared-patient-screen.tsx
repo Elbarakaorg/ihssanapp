@@ -7,7 +7,7 @@ import { SharedTreatmentsSection } from '@/features/medicine/shared-treatments-s
 import { PatientNotesSection } from '@/features/doctor/patient-notes-section';
 import { getMySharedPatientProfile, listSharedPatientMeasurements, type SharedMeasurement, type SharedPatientProfile } from '@/features/profile/clinician-patients-repository';
 import { Page, PageHeading, SectionHeading, uiStyles } from '@/ui/patient-ui';
-import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { palette, themedStyles, useScheme, glassSurface } from '@/ui/palette';
 import { Loading } from '@/ui/loading';
 
 export default function SharedPatientScreen() {
@@ -125,7 +125,7 @@ const styles = themedStyles(() => StyleSheet.create({
   backLabel: { color: palette.ink, fontSize: 13, fontWeight: '600' },
   loading: { alignItems: 'center', gap: 10, marginTop: 65 },
   body: { color: palette.muted, fontSize: 12, lineHeight: 18 },
-  unavailable: { alignItems: 'center', backgroundColor: palette.white, borderRadius: 14, marginTop: 30, padding: 24 },
+  unavailable: { alignItems: 'center', ...glassSurface(), borderRadius: 14, marginTop: 30, padding: 24 },
   unavailableTitle: { color: palette.ink, fontSize: 16, fontWeight: '700', marginTop: 8 },
   card: { gap: 2, padding: 15 },
   factRow: { alignItems: 'center', borderBottomColor: palette.line, borderBottomWidth: 1, flexDirection: 'row', justifyContent: 'space-between', minHeight: 42 },
@@ -141,7 +141,7 @@ const styles = themedStyles(() => StyleSheet.create({
   measurementCopy: { flex: 1, minWidth: 0 },
   measurementName: { color: palette.ink, fontSize: 12, fontWeight: '700' },
   measurementValue: { color: palette.ink, fontSize: 14, fontWeight: '700', textAlign: 'right' },
-  empty: { backgroundColor: palette.white, borderRadius: 12, padding: 14 },
+  empty: { ...glassSurface(), borderRadius: 12, padding: 14 },
   scopeNote: { alignItems: 'flex-start', backgroundColor: palette.leaf, borderRadius: 12, flexDirection: 'row', gap: 9, marginTop: 14, padding: 13 },
   scopeText: { color: palette.ink, flex: 1, fontSize: 11, lineHeight: 17 },
   privacyNote: { alignItems: 'flex-start', flexDirection: 'row', gap: 9, marginTop: 20 },

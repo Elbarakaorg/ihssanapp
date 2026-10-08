@@ -8,7 +8,7 @@ import { getAvatarUrl, getCurrentUserProfile, type AccountProfile } from '@/feat
 import { emptyMedicalProfile, getMedicalProfile, listDoctorShares, listFavoriteDoctors, listPendingShareRequests, respondToShareRequest, revokeDoctorShare, saveMedicalProfile, setDoctorFavorite, type DoctorShare, type FavoriteDoctor, type MedicalProfile, type ShareRequest } from '@/features/profile/medical-profile-repository';
 import { TreatmentsSummary } from '@/features/medicine/treatments-summary';
 import { Page, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
-import { display, palette, themedStyles, useScheme } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme, glassSurface } from '@/ui/palette';
 import { Loading } from '@/ui/loading';
 
 const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -444,7 +444,7 @@ const styles = themedStyles(() => StyleSheet.create({
   historyRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   historyName: { color: palette.muted, flex: 1, fontSize: 11 },
   historyDate: { color: palette.muted, fontSize: 10 },
-  emptyLine: { alignItems: 'center', backgroundColor: palette.white, borderRadius: 12, flexDirection: 'row', gap: 10, minHeight: 62, paddingHorizontal: 14 },
+  emptyLine: { alignItems: 'center', ...glassSurface(), borderRadius: 12, flexDirection: 'row', gap: 10, minHeight: 62, paddingHorizontal: 14 },
   appointmentEmpty: { alignItems: 'center', flexDirection: 'row', gap: 11, padding: 14 },
   appointmentIcon: { alignItems: 'center', backgroundColor: palette.sky, borderRadius: 18, height: 36, justifyContent: 'center', width: 36 },
   appointmentCopy: { flex: 1 },

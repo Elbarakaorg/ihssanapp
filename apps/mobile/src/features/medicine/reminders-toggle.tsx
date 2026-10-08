@@ -4,7 +4,7 @@ import { StyleSheet, Switch, Text, View } from 'react-native';
 import { Message } from '@/features/doctor/ui';
 import { remindersEnabled, remindersSupported, setReminders } from '@/features/medicine/reminders';
 import type { Treatment } from '@/features/medicine/schedule';
-import { palette, themedStyles, useScheme, wobble } from '@/ui/palette';
+import { palette, themedStyles, useScheme, wobble, glassSurface } from '@/ui/palette';
 
 export function RemindersToggle({ treatments }: { treatments: Treatment[] }) {
   useScheme();
@@ -37,7 +37,7 @@ export function RemindersToggle({ treatments }: { treatments: Treatment[] }) {
 }
 
 const styles = themedStyles(() => StyleSheet.create({
-  card: { ...wobble, backgroundColor: palette.white, borderColor: palette.line, borderWidth: 1, gap: 8, marginTop: 12, padding: 14 },
+  card: { ...wobble, ...glassSurface(), borderWidth: 1, gap: 8, marginTop: 12, padding: 14 },
   row: { alignItems: 'center', flexDirection: 'row', gap: 12 },
   copy: { flex: 1, gap: 2 },
   title: { color: palette.ink, fontSize: 15, fontWeight: '600' },

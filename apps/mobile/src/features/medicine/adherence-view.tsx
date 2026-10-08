@@ -5,7 +5,7 @@ import { Button, Chip, Message } from '@/features/doctor/ui';
 import { adherencePercent, adherenceReport, overallAdherence, type AdherenceRow } from '@/features/medicine/schedule';
 import { ProgressBar } from '@/features/medicine/treatments-screen';
 import { Loading } from '@/ui/loading';
-import { display, palette, themedStyles, useScheme, wobble } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme, wobble, glassSurface } from '@/ui/palette';
 
 const ranges = [7, 30, 90];
 
@@ -68,7 +68,7 @@ export function AdherenceView({ load, label, shareable = false }: { load: (days:
 
 const styles = themedStyles(() => StyleSheet.create({
   wrap: { flexDirection: 'row', gap: 6, marginBottom: 4 },
-  card: { ...wobble, backgroundColor: palette.white, borderColor: palette.line, borderWidth: 1, gap: 10, marginTop: 10, padding: 14 },
+  card: { ...wobble, ...glassSurface(), borderWidth: 1, gap: 10, marginTop: 10, padding: 14 },
   top: { alignItems: 'baseline', flexDirection: 'row', gap: 10 },
   percent: { ...display, color: palette.ink, fontSize: 34, fontVariant: ['tabular-nums'] },
   meta: { color: palette.muted, flexShrink: 1, fontSize: 12, lineHeight: 18 },

@@ -9,7 +9,7 @@ import { ActivityIndicator, Pressable, Share, StyleSheet, Switch, Text, View } f
 import { useAuth } from '@/features/auth/auth-provider';
 import { ThinkingOrb } from '@/ui/thinking-orb';
 import { Page } from '@/ui/patient-ui';
-import { display, palette, themedStyles, useScheme } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme, glassSurface } from '@/ui/palette';
 import { supabaseClient } from '@/platform/supabase/client';
 import { createShareInvite, revokeMyShareInvites, shareInviteLink, type ShareInvite } from './share-invite';
 
@@ -180,7 +180,7 @@ const styles = themedStyles(() => StyleSheet.create({
   eyebrow: { color: palette.forest, fontSize: 12, fontWeight: '600', marginBottom: 7 },
   title: { ...display, color: palette.ink, fontSize: 29 },
   description: { color: palette.muted, fontSize: 13, lineHeight: 20, marginTop: 8 },
-  qrCard: { alignItems: 'center', backgroundColor: palette.white, borderColor: palette.line, borderCurve: 'continuous', borderRadius: 18, borderWidth: 1, minHeight: 315, justifyContent: 'center', padding: 20 },
+  qrCard: { alignItems: 'center', ...glassSurface(), borderCurve: 'continuous', borderRadius: 18, borderWidth: 1, minHeight: 315, justifyContent: 'center', padding: 20 },
   qrLoading: { alignItems: 'center', gap: 12, height: 220, justifyContent: 'center' },
   body: { color: palette.muted, fontSize: 12 },
   error: { color: '#8A4A2C', fontSize: 12, lineHeight: 18, marginTop: 12, textAlign: 'center' },
@@ -189,7 +189,7 @@ const styles = themedStyles(() => StyleSheet.create({
   expiredDot: { backgroundColor: palette.coral },
   expiryText: { color: palette.ink, fontSize: 12, fontWeight: '700' },
   qrHint: { color: palette.muted, fontSize: 10, lineHeight: 15, marginTop: 6, textAlign: 'center' },
-  inviteCard: { backgroundColor: palette.white, borderColor: palette.line, borderRadius: 18, borderWidth: 1, gap: 10, marginTop: 16, padding: 16 },
+  inviteCard: { ...glassSurface(), borderRadius: 18, borderWidth: 1, gap: 10, marginTop: 16, padding: 16 },
   inviteHead: { alignItems: 'center', flexDirection: 'row', gap: 8 },
   inviteTitle: { color: palette.ink, fontSize: 15, fontWeight: '700' },
   codeText: { color: palette.ink, fontSize: 28, fontVariant: ['tabular-nums'], fontWeight: '700', letterSpacing: 3, textAlign: 'center', paddingVertical: 8 },

@@ -9,7 +9,7 @@ import { getPatientMetric, listActiveMetricDefinitions, listMeasurementsForCurre
 import { summarizeMeasurements } from '@/features/health/measurement-summary';
 import { useLocale } from '@/platform/locale/locale-provider';
 import { Page, PageHeading, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
-import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { palette, themedStyles, useScheme, glassSurface } from '@/ui/palette';
 import { Loading } from '@/ui/loading';
 
 type MetricCard = { id: string; databaseKey: string; category: string; name: string; detail: string; measurements: SavedMeasurement[]; content: PublishedMetricContent | null };
@@ -224,7 +224,7 @@ export default function HealthScreen() {
 }
 
 const styles = themedStyles(() => StyleSheet.create({
-  overviewChart: { backgroundColor: palette.white, borderColor: palette.line, borderCurve: 'continuous', borderRadius: 18, borderWidth: 1, marginBottom: 8, padding: 16 },
+  overviewChart: { ...glassSurface(), borderCurve: 'continuous', borderRadius: 18, borderWidth: 1, marginBottom: 8, padding: 16 },
   chartHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   chartTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 9 },
   chartIcon: { alignItems: 'center', backgroundColor: palette.leaf, borderRadius: 14, height: 28, justifyContent: 'center', width: 28 },
@@ -366,7 +366,7 @@ const styles = themedStyles(() => StyleSheet.create({
   errorText: { color: palette.dangerText, fontSize: 13, lineHeight: 19 },
   retryButton: { alignSelf: 'flex-start', justifyContent: 'center', minHeight: 44, paddingHorizontal: 4 },
   retryText: { color: palette.forest, fontSize: 14, fontWeight: '700' },
-  loadingNotice: { alignItems: 'center', backgroundColor: palette.white, borderColor: palette.line, borderCurve: 'continuous', borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 12, minHeight: 64, paddingHorizontal: 16 },
+  loadingNotice: { alignItems: 'center', ...glassSurface(), borderCurve: 'continuous', borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 12, minHeight: 64, paddingHorizontal: 16 },
   loadingText: { color: palette.muted, fontSize: 14 },
 }));
 

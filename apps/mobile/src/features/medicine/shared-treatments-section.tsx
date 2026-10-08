@@ -9,7 +9,7 @@ import { AdherenceView } from '@/features/medicine/adherence-view';
 import { getSharedPatientAdherence } from '@/features/medicine/repository';
 import { describeSchedule } from '@/features/medicine/schedule';
 import { SectionHeading } from '@/ui/patient-ui';
-import { display, palette, themedStyles, useScheme, wobble } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme, wobble, glassSurface } from '@/ui/palette';
 
 export function SharedTreatmentsSection({ grantId }: { grantId: string }) {
   useScheme();
@@ -55,7 +55,7 @@ export function SharedTreatmentsSection({ grantId }: { grantId: string }) {
 }
 
 const styles = themedStyles(() => StyleSheet.create({
-  card: { ...wobble, backgroundColor: palette.white, borderColor: palette.line, borderWidth: 1, gap: 6, marginTop: 10, padding: 14 },
+  card: { ...wobble, ...glassSurface(), borderWidth: 1, gap: 6, marginTop: 10, padding: 14 },
   head: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   title: { ...display, color: palette.ink, fontSize: 18 },
   status: { color: palette.forest, fontSize: 11, fontWeight: '700', textTransform: 'capitalize' },

@@ -231,3 +231,6 @@ body { background-attachment: fixed, fixed, fixed; background-image: url("data:i
 .panel { padding: 22px; }
 .dn-item-selected { border-color: var(--forest); box-shadow: 0 0 0 2px rgba(74,103,65,.15); }
 @supports not (backdrop-filter: blur(1px)) { .panel, .dn-stat, .dn-case, .dn-item { background: var(--surface); } }
+.sidebar { -webkit-backdrop-filter: blur(18px) saturate(1.15); backdrop-filter: blur(18px) saturate(1.15); background: rgba(250,246,236,.6); border-right-color: rgba(255,255,255,.7); }
+.dialog { -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); background: rgba(251,248,240,.86); border: 1px solid rgba(255,255,255,.7); }
+.dialog-backdrop { -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }

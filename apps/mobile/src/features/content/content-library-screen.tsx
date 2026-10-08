@@ -5,7 +5,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 
 import { supabaseClient } from '@/platform/supabase/client';
 import { Page, PageHeading, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
-import { display, palette, themedStyles, useScheme } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme, glassSurface } from '@/ui/palette';
 
 import { localLibrary } from '@/features/content/library';
 
@@ -113,7 +113,7 @@ const styles = themedStyles(() => StyleSheet.create({
   body: { color: palette.muted, fontSize: 12, lineHeight: 18 },
   readMore: { alignItems: 'center', flexDirection: 'row', gap: 6, marginTop: 2 },
   readMoreText: { color: palette.forest, fontSize: 11, fontWeight: '700' },
-  empty: { alignItems: 'center', backgroundColor: palette.white, borderColor: palette.line, borderRadius: 7, borderWidth: 1, gap: 9, justifyContent: 'center', minHeight: 190, padding: 20 },
+  empty: { alignItems: 'center', ...glassSurface(), borderRadius: 7, borderWidth: 1, gap: 9, justifyContent: 'center', minHeight: 190, padding: 20 },
   emptyTitle: { color: palette.ink, fontSize: 15, fontWeight: '700' },
   refreshButton: { alignItems: 'center', flexDirection: 'row', gap: 6, marginTop: 3, minHeight: 34 },
   refreshText: { color: palette.forest, fontSize: 11, fontWeight: '700' },

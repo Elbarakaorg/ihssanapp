@@ -14,7 +14,7 @@ import { useDevDataMode } from '@/features/medicine/dev-data';
 import { useTreatments } from '@/features/medicine/use-treatments';
 import { Loading } from '@/ui/loading';
 import { Page, PageHeading, SectionHeading } from '@/ui/patient-ui';
-import { display, palette, themedStyles, useScheme, wobble } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme, wobble, glassSurface } from '@/ui/palette';
 
 export function ProgressBar({ percent }: { percent: number }) {
   useScheme();
@@ -182,7 +182,7 @@ export default function TreatmentsScreen() {
 }
 
 const styles = themedStyles(() => StyleSheet.create({
-  card: { ...wobble, backgroundColor: palette.white, borderColor: palette.line, borderWidth: 1, gap: 8, marginTop: 12, padding: 14 },
+  card: { ...wobble, ...glassSurface(), borderWidth: 1, gap: 8, marginTop: 12, padding: 14 },
   cardHead: { alignItems: 'flex-start', flexDirection: 'row', gap: 10, justifyContent: 'space-between' },
   cardTitle: { ...display, color: palette.ink, fontSize: 19 },
   prescribed: { color: palette.gold, fontSize: 12, fontWeight: '600' },

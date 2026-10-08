@@ -7,7 +7,7 @@ import { useAuth } from '@/features/auth/auth-provider';
 import { listMyPatientProfiles, type AuthorizedPatient } from '@/features/profile/clinician-patients-repository';
 import { getClinicianVerificationStatus } from '@/features/profile/profile-repository';
 import { Page, PageHeading, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
-import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { palette, themedStyles, useScheme, glassSurface } from '@/ui/palette';
 import { Loading } from '@/ui/loading';
 
 export default function ClinicianPatientsScreen() {
@@ -123,7 +123,7 @@ const styles = themedStyles(() => StyleSheet.create({
   patientScope: { color: palette.forest, fontSize: 10, fontWeight: '600', marginTop: 4 },
   lastAccess: { alignItems: 'center', flexDirection: 'row', gap: 5, marginTop: 6 },
   lastAccessText: { color: palette.muted, fontSize: 10, lineHeight: 15 },
-  emptyState: { alignItems: 'center', backgroundColor: palette.white, borderRadius: 14, paddingHorizontal: 22, paddingVertical: 26 },
+  emptyState: { alignItems: 'center', ...glassSurface(), borderRadius: 14, paddingHorizontal: 22, paddingVertical: 26 },
   emptyIcon: { alignItems: 'center', backgroundColor: palette.leaf, borderRadius: 20, height: 40, justifyContent: 'center', width: 40 },
   emptyTitle: { color: palette.ink, fontSize: 14, fontWeight: '700', marginTop: 10 },
   emptyText: { color: palette.muted, fontSize: 12, lineHeight: 18, marginTop: 6, textAlign: 'center' },

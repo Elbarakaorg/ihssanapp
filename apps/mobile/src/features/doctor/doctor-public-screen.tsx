@@ -8,7 +8,7 @@ import { type DoctorProfile, type Slot, bookAppointment, getDoctorProfile, listA
 import { BackLink, Button, Chip, Field, Message, doctorStyles as s, formatDay, formatTime, toDateKey } from '@/features/doctor/ui';
 import { CommentsSection, LoveButton, SocialLinks } from '@/features/doctor/doctor-engagement';
 import { Ornament, Page } from '@/ui/patient-ui';
-import { display, palette, themedStyles, useScheme, wobble } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme, wobble, glassSurface } from '@/ui/palette';
 import { Loading } from '@/ui/loading';
 
 export default function DoctorPublicScreen() {
@@ -172,7 +172,7 @@ export default function DoctorPublicScreen() {
 }
 
 const styles = themedStyles(() => StyleSheet.create({
-  hero: { alignItems: 'center', backgroundColor: palette.white, borderColor: palette.line, borderWidth: 1, gap: 8, marginTop: 6, paddingBottom: 18, paddingHorizontal: 16, paddingTop: 22, ...wobble },
+  hero: { alignItems: 'center', ...glassSurface(), borderWidth: 1, gap: 8, marginTop: 6, paddingBottom: 18, paddingHorizontal: 16, paddingTop: 22, ...wobble },
   frame: { backgroundColor: palette.leaf, borderColor: palette.leafDeep, borderRadius: 64, borderWidth: 1, padding: 5 },
   avatar: { borderRadius: 56, height: 112, overflow: 'hidden', width: 112 },
   center: { textAlign: 'center' },

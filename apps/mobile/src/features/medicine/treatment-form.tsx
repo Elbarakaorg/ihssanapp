@@ -7,7 +7,7 @@ import { medicineDirectory } from '@/features/medicine/directory';
 import { MedicinePicker } from '@/features/medicine/medicine-picker';
 import type { MedicationInput, TreatmentInput } from '@/features/medicine/repository';
 import { doseUnits, formatAmount, toLocalDateKey, weekdayNames, type DurationUnit, type Frequency, type Treatment } from '@/features/medicine/schedule';
-import { display, palette, themedStyles, useScheme, wobble } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme, wobble, glassSurface } from '@/ui/palette';
 
 type DurationChoice = DurationUnit | 'ongoing';
 type DraftMedication = {
@@ -216,7 +216,7 @@ const styles = themedStyles(() => StyleSheet.create({
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   meta: { color: palette.muted, fontSize: 12, marginTop: 6 },
   section: { ...display, color: palette.ink, fontSize: 19, marginTop: 24 },
-  card: { ...wobble, backgroundColor: palette.white, borderColor: palette.line, borderWidth: 1, marginBottom: 12, marginTop: 12, padding: 14 },
+  card: { ...wobble, ...glassSurface(), borderWidth: 1, marginBottom: 12, marginTop: 12, padding: 14 },
   cardHead: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   cardTitle: { ...display, color: palette.ink, fontSize: 18 },
 }));

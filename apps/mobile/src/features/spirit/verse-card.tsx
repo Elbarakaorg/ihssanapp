@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { Reflection } from '@/features/spirit/verses';
-import { display, palette, themedStyles, useScheme, wobble } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme, wobble, glassSurface } from '@/ui/palette';
 
 export function VerseCard({ item, emphasis = false }: { item: Reflection; emphasis?: boolean }) {
   useScheme();
@@ -16,7 +16,7 @@ export function VerseCard({ item, emphasis = false }: { item: Reflection; emphas
 }
 
 const styles = themedStyles(() => StyleSheet.create({
-  card: { ...wobble, backgroundColor: palette.white, borderColor: palette.line, borderWidth: StyleSheet.hairlineWidth, gap: 10, marginTop: 12, padding: 18 },
+  card: { ...wobble, ...glassSurface(), borderWidth: StyleSheet.hairlineWidth, gap: 10, marginTop: 12, padding: 18 },
   emphasis: { backgroundColor: palette.leaf, borderColor: palette.leafDeep, marginTop: 0 },
   arabic: { color: palette.ink, fontFamily: 'Amiri_400Regular', fontSize: 24, lineHeight: 44, textAlign: 'center', writingDirection: 'rtl' },
   arabicLarge: { fontSize: 28, lineHeight: 50 },

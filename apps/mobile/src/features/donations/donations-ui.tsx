@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { RemoteImage } from '@/features/doctor/doctor-image';
-import { display, palette, themedStyles, useScheme, wobble } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme, wobble, glassSurface } from '@/ui/palette';
 import { CASE_BUCKET, type CaseSummary } from './donations-api';
 import { formatMad, percentFunded, pledgeStatus } from './donations-logic';
 
@@ -96,7 +96,7 @@ const styles = themedStyles(() => StyleSheet.create({
   pill: { alignSelf: 'flex-start', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5 },
   pillOk: { backgroundColor: palette.successBg }, pillBad: { backgroundColor: palette.dangerBg }, pillWait: { backgroundColor: palette.leaf }, pillInfo: { backgroundColor: palette.sky },
   pillLabel: { color: palette.ink, fontSize: 12, fontWeight: '700' },
-  card: { ...wobble, backgroundColor: palette.white, borderColor: palette.line, borderWidth: 1, marginTop: 14, overflow: 'hidden' },
+  card: { ...wobble, ...glassSurface(), borderWidth: 1, marginTop: 14, overflow: 'hidden' },
   pressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
   photo: { height: 170, width: '100%' },
   cardBody: { gap: 8, padding: 14 },

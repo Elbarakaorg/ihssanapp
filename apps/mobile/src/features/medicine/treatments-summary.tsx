@@ -6,7 +6,7 @@ import { describeSchedule, dosesForDay, progressOf, toLocalDateKey } from '@/fea
 import { useTreatments } from '@/features/medicine/use-treatments';
 import { ProgressBar } from '@/features/medicine/treatments-screen';
 import { SectionHeading } from '@/ui/patient-ui';
-import { display, palette, themedStyles, useScheme, wobble } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme, wobble, glassSurface } from '@/ui/palette';
 
 /** Medical-profile card: active treatments (including prescribed ones) and today's progress. */
 export function TreatmentsSummary() {
@@ -35,7 +35,7 @@ export function TreatmentsSummary() {
 }
 
 const styles = themedStyles(() => StyleSheet.create({
-  card: { ...wobble, backgroundColor: palette.white, borderColor: palette.line, borderWidth: 1, gap: 10, padding: 14 },
+  card: { ...wobble, ...glassSurface(), borderWidth: 1, gap: 10, padding: 14 },
   item: { gap: 4 },
   title: { ...display, color: palette.ink, fontSize: 18 },
   tag: { color: palette.gold, fontSize: 12, fontWeight: '600' },

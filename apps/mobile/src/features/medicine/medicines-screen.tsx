@@ -6,7 +6,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { BackLink, Button, Chip } from '@/features/doctor/ui';
 import { medicineCategories, medicineDirectory, searchMedicines, type MedicineCategory } from '@/features/medicine/directory';
 import { Page, PageHeading } from '@/ui/patient-ui';
-import { display, palette, themedStyles, useScheme, wobble } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme, wobble, glassSurface } from '@/ui/palette';
 
 export default function MedicinesScreen() {
   useScheme();
@@ -58,7 +58,7 @@ const styles = themedStyles(() => StyleSheet.create({
   chips: { flexGrow: 0, marginTop: 12 },
   chipRow: { gap: 6, paddingRight: 8 },
   count: { color: palette.muted, fontSize: 12, marginTop: 12 },
-  card: { ...wobble, backgroundColor: palette.white, borderColor: palette.line, borderWidth: 1, gap: 4, marginTop: 10, padding: 14 },
+  card: { ...wobble, ...glassSurface(), borderWidth: 1, gap: 4, marginTop: 10, padding: 14 },
   name: { ...display, color: palette.ink, fontSize: 18 },
   meta: { color: palette.muted, fontSize: 12, lineHeight: 18 },
   forms: { color: palette.forest, fontSize: 12, fontWeight: '600', marginTop: 6 },

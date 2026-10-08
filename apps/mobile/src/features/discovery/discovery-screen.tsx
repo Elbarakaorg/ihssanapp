@@ -5,7 +5,7 @@ import { router, type Href } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, LocateFixed, List, Map as MapIcon, Square, X } from 'lucide-react-native';
 
-import { display, palette, themedStyles, useScheme, wobble } from '@/ui/palette';
+import { display, palette, themedStyles, useScheme, wobble, glassSurface } from '@/ui/palette';
 import { listMapLocations } from './care-api';
 import {
   circleCovers, countByKind, DEFAULT_CENTER, directionsUrl, dutyLabels, fetchRadiusKm, filterLocations, formatDistance, hasActiveFilters,
@@ -213,7 +213,7 @@ const styles = themedStyles(() => StyleSheet.create({
   listPanel: { backgroundColor: palette.paper, bottom: 0, left: 0, paddingTop: 100, position: 'absolute', right: 0, top: 0 },
   listContent: { gap: 8, padding: 14, paddingBottom: 100 },
   listTitle: { ...display, color: palette.ink, fontSize: 20 },
-  row: { ...wobble, alignItems: 'center', backgroundColor: palette.white, borderColor: palette.line, borderWidth: 1, flexDirection: 'row', gap: 10, minHeight: 56, padding: 12 },
+  row: { ...wobble, alignItems: 'center', ...glassSurface(), borderWidth: 1, flexDirection: 'row', gap: 10, minHeight: 56, padding: 12 },
   dot: { borderRadius: 6, flexShrink: 0, height: 12, width: 12 },
   rowCopy: { flex: 1, gap: 2, minWidth: 0 },
   rowTitle: { color: palette.ink, fontSize: 15, fontWeight: '600' },

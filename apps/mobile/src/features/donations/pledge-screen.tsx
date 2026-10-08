@@ -2,6 +2,7 @@ import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { ThankYou } from './thank-you';
 import { BackLink, Button, Field, Message } from '@/features/doctor/ui';
 import { Loading } from '@/ui/loading';
 import { Ornament, Page, PageHeading, SectionHeading, uiStyles } from '@/ui/patient-ui';
@@ -18,6 +19,7 @@ export default function PledgeScreen() {
   const [note, setNote] = useState('');
   const [payer, setPayer] = useState('');
   const [busy, setBusy] = useState(false);
+  const [thanks, setThanks] = useState(false);
   const [message, setMessage] = useState<{ kind: 'error' | 'ok'; text: string } | null>(null);
   const [now, setNow] = useState(Date.now());
 
@@ -40,7 +42,7 @@ export default function PledgeScreen() {
     setMessage(null);
     try {
       const count = await pickAndSubmitReceipt(pledge.id, RECEIPT_LIMIT - pledge.receipt_count, note, payer);
-      if (count) setMessage({ kind: 'ok', text: 'Receipt received. A fund collector will review it soon.' });
+      if (count) { setMessage({ kind: 'ok', text: 'Receipt received. A fund collector will review it soon.' }); setThanks(true); }
       load();
     } catch (e) {
       setMessage({ kind: 'error', text: e instanceof Error ? e.message : 'Could not upload your receipt.' });
@@ -56,6 +58,7 @@ export default function PledgeScreen() {
     try {
       await markPledgePaid(pledge.id, payer, note);
       setMessage({ kind: 'ok', text: 'Thank you. A fund collector will check the transfer against the account name you gave.' });
+      setThanks(true);
       load();
     } catch (e) {
       setMessage({ kind: 'error', text: e instanceof Error ? e.message : 'Could not mark this order as paid.' });
@@ -79,6 +82,7 @@ export default function PledgeScreen() {
       </View>
       <Text style={styles.hint}>{status.hint}</Text>
       {pledge.review_note ? <Message kind="info">{pledge.review_note}</Message> : null}
+      <ThankYou visible={thanks} onClose={() => setThanks(false)} />
       {message ? <Message kind={message.kind}>{message.text}</Message> : null}
       <Ornament />
 

@@ -1,6 +1,7 @@
 import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
-import { Mail, MapPin, Phone, Share2, Trash2 } from 'lucide-react-native';
+import { Mail, Phone, Share2, Trash2 } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import { SocialLinks } from '@/features/doctor/doctor-engagement';
@@ -8,7 +9,7 @@ import { RemoteImage } from '@/features/doctor/doctor-image';
 import { BackLink, Button, Chip, Field, Message } from '@/features/doctor/ui';
 import { imageUrl } from '@/features/doctor/doctor-api';
 import { Loading } from '@/ui/loading';
-import { Ornament, Page, SectionHeading, uiStyles } from '@/ui/patient-ui';
+import { Page, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { display, palette, themedStyles, useScheme } from '@/ui/palette';
 import { AudioPlayer, Reels } from './case-media';
 import { CASE_BUCKET, type CaseDetail, type Wish, type WallEntry, createPledge, deleteWish, getCase, listWall, listWishes, postWish, shareCase } from './donations-api';
@@ -36,6 +37,8 @@ export default function CaseScreen() {
   const [error, setError] = useState('');
   const [note, setNote] = useState('');
   const [donating, setDonating] = useState(false);
+  const [wallLimit, setWallLimit] = useState(4);
+  const [wishLimit, setWishLimit] = useState(4);
 
   const load = useCallback(() => {
     if (!id) return;
@@ -65,18 +68,20 @@ export default function CaseScreen() {
   return (
     <Page>
       <BackLink href="/give" label="Giving" />
-      <RemoteImage bucket={CASE_BUCKET} path={item.photo_path} placeholderSize={40} style={styles.hero} />
-      <View style={styles.tags}>
-        {item.category_label ? <Text style={styles.tag}>{item.category_label}</Text> : null}
-        {item.is_urgent ? <UrgentBadge /> : null}
+      <View style={styles.heroWrap}>
+        <RemoteImage bucket={CASE_BUCKET} path={item.photo_path} placeholderSize={40} style={styles.hero} />
+        <LinearGradient colors={['rgba(16,32,22,0)', 'rgba(16,32,22,0.78)']} locations={[0.35, 1]} pointerEvents="none" style={StyleSheet.absoluteFill} />
+        <View style={styles.heroText} pointerEvents="none">
+          <View style={styles.tags}>
+            {item.category_label ? <Text style={styles.tag}>{item.category_label}</Text> : null}
+            {item.is_urgent ? <UrgentBadge /> : null}
+          </View>
+          <Text style={styles.title}>{item.title}</Text>
+          <Text style={styles.meta}>
+            {[item.beneficiary_name, item.age !== null ? `${item.age} years old` : null, item.city].filter(Boolean).join(' · ')}
+          </Text>
+        </View>
       </View>
-      <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.meta}>
-        {[item.beneficiary_name, item.age !== null ? `${item.age} years old` : null].filter(Boolean).join(' · ')}
-      </Text>
-      {item.city ? <View style={styles.cityRow}><MapPin color={palette.muted} size={14} /><Text style={styles.meta}>{item.city}</Text></View> : null}
-      <Ornament />
-
       <View style={[uiStyles.card, styles.fundCard]}>
         <Progress raised={item.raised_mad} goal={item.goal_mad} donors={item.donor_count} />
         {item.status === 'funded' ? <Message kind="ok">This case is fully funded, alhamdulillah. Thank you to everyone who gave.</Message> : null}
@@ -90,7 +95,7 @@ export default function CaseScreen() {
       {open && donating ? <DonateForm item={item} remaining={remaining} onDone={(pledgeId) => router.push(`/pledge/${pledgeId}` as Href)} onCancel={() => setDonating(false)} /> : null}
 
       <SectionHeading title="Their story" />
-      <Text style={styles.body}>{item.bio || item.summary}</Text>
+      <Story text={item.bio || item.summary} />
 
       {item.audio.length ? <><SectionHeading title="Listen" /><AudioPlayer clips={item.audio} /></> : null}
       {item.videos.length ? <><SectionHeading title="Watch" /><Reels videos={item.videos} /></> : null}
@@ -125,7 +130,7 @@ export default function CaseScreen() {
       ) : null}
 
       <SectionHeading title="Recent donations" detail={wall.length ? undefined : 'Confirmed donations appear here'} />
-      {wall.map((entry, index) => (
+      {wall.slice(0, wallLimit).map((entry, index) => (
         <View key={`${entry.confirmed_at}-${index}`} style={[uiStyles.card, styles.wallRow]}>
           <View style={styles.wallHead}>
             <Text style={styles.wallName}>{entry.display_name}</Text>
@@ -134,8 +139,9 @@ export default function CaseScreen() {
           {entry.comment ? <Text style={styles.wallComment}>{entry.comment}</Text> : null}
         </View>
       ))}
+      {wall.length > wallLimit ? <Pressable accessibilityRole="button" onPress={() => setWallLimit(wall.length)}><Text style={styles.more}>Show all {wall.length} donations</Text></Pressable> : null}
       <SectionHeading title="Kind words" detail={wishes.length ? undefined : 'Be the first to leave a warm message'} />
-      {wishes.map((wish) => (
+      {wishes.slice(0, wishLimit).map((wish) => (
         <View key={wish.id} style={[uiStyles.card, styles.wallRow]}>
           <View style={styles.wallHead}>
             <Text style={styles.wallName}>{wish.display_name}</Text>
@@ -148,9 +154,22 @@ export default function CaseScreen() {
           <Text style={styles.wallComment}>{wish.body}</Text>
         </View>
       ))}
+      {wishes.length > wishLimit ? <Pressable accessibilityRole="button" onPress={() => setWishLimit(wishes.length)}><Text style={styles.more}>Show all {wishes.length} messages</Text></Pressable> : null}
       <WishForm caseId={item.id} onSent={() => void listWishes(item.id).then(setWishes).catch(() => undefined)} />
       <Text style={styles.fine}>Donations go directly to the family&apos;s bank account. Ihssan never holds the money; a fund collector confirms each transfer before it counts.</Text>
     </Page>
+  );
+}
+
+function Story({ text }: { text: string }) {
+  useScheme();
+  const [open, setOpen] = useState(false);
+  const long = text.length > 420;
+  return (
+    <View style={[uiStyles.card, styles.story]}>
+      <Text numberOfLines={long && !open ? 7 : undefined} style={styles.body}>{text}</Text>
+      {long ? <Pressable accessibilityRole="button" onPress={() => setOpen((v) => !v)}><Text style={styles.more}>{open ? 'Show less' : 'Read the full story'}</Text></Pressable> : null}
+    </View>
   );
 }
 
@@ -233,11 +252,15 @@ function DonateForm({ item, remaining, onDone, onCancel }: { item: CaseDetail; r
 
 const styles = themedStyles(() => StyleSheet.create({
   flex: { flex: 1 },
-  hero: { ...{ borderRadius: 18 }, height: 380, overflow: 'hidden', width: '100%' },
-  tags: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 },
+  heroWrap: { borderRadius: 22, overflow: 'hidden' },
+  hero: { height: 420, width: '100%' },
+  heroText: { bottom: 0, left: 0, padding: 18, position: 'absolute', right: 0 },
+  story: { padding: 16 },
+  more: { color: palette.forest, fontSize: 13, fontWeight: '700', marginTop: 10, minHeight: 28 },
+  tags: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tag: { backgroundColor: palette.leaf, borderRadius: 10, color: palette.forest, fontSize: 11, fontWeight: '700', overflow: 'hidden', paddingHorizontal: 8, paddingVertical: 3 },
-  title: { ...display, color: palette.ink, fontSize: 28, lineHeight: 34, marginTop: 8 },
-  meta: { color: palette.muted, fontSize: 13, lineHeight: 19, marginTop: 4 },
+  title: { ...display, color: '#FFFFFF', fontSize: 28, lineHeight: 34, marginTop: 8 },
+  meta: { color: 'rgba(255,255,255,0.88)', fontSize: 13, lineHeight: 19, marginTop: 4 },
   cityRow: { alignItems: 'center', flexDirection: 'row', gap: 4, marginTop: 4 },
   fundCard: { gap: 6, marginTop: 14, padding: 16 },
   body: { color: palette.ink, fontSize: 15, lineHeight: 24 },

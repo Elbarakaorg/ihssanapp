@@ -28,7 +28,7 @@ _Last updated 2026-10-08. The sections below are the original baseline; where th
 | Patient app (Expo, iOS/Android/web) | Built: health tracking, discovery map, doctors, sharing, treatments, give, verses, account deletion, Sign in with Apple (needs a dev client) | `apps/mobile` |
 | Admin portal (Vite/React) | Built, TOTP MFA required (aal2): metrics/articles, support, team, provider verification, map locations, doctor comment moderation, giving & community | `apps/admin-portal` |
 | API (Hono) | Deployed on Fly.io at `https://api.ihssanapp.com`; `/v1/admin/*` requires an aal2 token; 32 tests | `services/api` |
-| Database | Supabase Postgres, ordered migrations, latest `202610130001` | `supabase/migrations` |
+| Database | Supabase Postgres, ordered migrations, latest `202610140001` | `supabase/migrations` |
 | Web hosting | Vercel (mobile web; admin at `alhamdulilah.ihssanapp.com`) | `docs/vercel-deployment.md` |
 | Medicine and treatments | Static generic-name directory (no doses), schedules, dose logging, local reminders, stock/refill, adherence reports, doctor prescribing. Not clinician-reviewed | `features/medicine` |
 | Care directory | Mapbox GL map (WebView/iframe), `care_providers` locations, admin picker, CSV import, duty pharmacies; verified doctor practice locations appear automatically | `features/discovery`, migration `202610100001` |

@@ -8,13 +8,14 @@ import { useAuth } from '@/features/auth/auth-provider';
 import { getCurrentUserProfile } from '@/features/profile/profile-repository';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
 
-type NavItem = { label: string; href: Href; icon: LucideIcon; clinicianOnly?: boolean };
+type NavItem = { label: string; href: Href; icon: LucideIcon; clinicianOnly?: boolean; signedInOnly?: boolean };
 
 const navItems: NavItem[] = [
   { href: '/', icon: House, label: 'Home' },
   { href: '/health', icon: Activity, label: 'Health tracking' },
   { href: '/discover', icon: Compass, label: 'Discover care' },
   { href: '/give', icon: HeartHandshake, label: 'Give' },
+  { href: '/collect' as Href, icon: HeartHandshake, label: 'My giving cases', signedInOnly: true },
   { href: '/profile', icon: UserRound, label: 'Medical profile' },
   { href: '/doctors', icon: Stethoscope, label: 'Find a doctor' },
   { href: '/appointments', icon: CalendarCheck, label: 'Appointments' },
@@ -117,7 +118,7 @@ export function RightDrawer({ visible, onClose }: { visible: boolean; onClose: (
 
           <Text style={styles.sectionLabel}>Navigate</Text>
           <View style={styles.navList}>
-            {navItems.filter((item) => !item.clinicianOnly || profileType === 'clinician').map((item) => {
+            {navItems.filter((item) => (!item.clinicianOnly || profileType === 'clinician') && (!item.signedInOnly || !!session)).map((item) => {
               const Icon = item.icon;
               return (
                 <Pressable accessibilityRole="button" key={item.label} onPress={() => go(item.href)} style={styles.navRow}>

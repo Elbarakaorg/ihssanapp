@@ -46,7 +46,8 @@ export type PledgeView = {
   expires_at: string; created_at: string; receipt_count: number; review_note: string | null; case_id: string; case_title: string; banks: BankAccount[]; can_upload: boolean;
 };
 export type MyPledge = { id: string; reference: string; case_id: string; case_title: string; amount_mad: number; status: string; created_at: string; expires_at: string };
-export type CollectorCase = { id: string; title: string; status: string; goal_mad: number; raised_mad: number; donor_count: number; awaiting_review: number; role: 'admin' | 'collector' };
+export type CollectorCase = { id: string; title: string; status: string; goal_mad: number; raised_mad: number; donor_count: number; awaiting_review: number; role: 'admin' | 'collector' | 'beneficiary'; pending_comments?: number };
+export type CaseComment = { id: string; reference: string; case_id: string; case_title: string; display_name: string | null; is_anonymous: boolean; comment: string; comment_status: 'pending' | 'approved' | 'hidden'; amount_mad: number; confirmed_at: string };
 export type ReviewPledge = {
   id: string; reference: string; case_id: string; case_title: string; amount_mad: number; display_name: string | null; is_anonymous: boolean; comment: string | null; comment_visible: boolean;
   status: string; created_at: string; expires_at: string; receipt_paths: string[]; receipt_note: string | null; receipt_uploaded_at: string | null;
@@ -143,8 +144,12 @@ export const listCollectorCases = () => rpc<CollectorCase[]>('list_my_collector_
 export const listCasePledges = (caseId: string, status?: string) =>
   rpc<ReviewPledge[]>('list_case_pledges', { p_case_id: caseId, p_status: status ?? null, p_limit: 100 }, 'Could not load donations.').then((rows) => rows ?? []);
 export const reviewPledge = (input: { id: string; decision: 'confirm' | 'reject' | 'hide_comment'; amount?: number; note?: string; showComment?: boolean }) =>
-  rpc('review_pledge', { p_id: input.id, p_decision: input.decision, p_amount: input.amount ?? null, p_note: input.note?.trim() || null, p_show_comment: input.showComment ?? true }, 'Could not save your decision.');
-export const acceptCollectorInvite = (token: string) => rpc<{ case_id: string; case_title: string }>('accept_collector_invite', { p_token: token }, 'This invitation is invalid or has expired.');
+  rpc('review_pledge', { p_id: input.id, p_decision: input.decision, p_amount: input.amount ?? null, p_note: input.note?.trim() || null, p_show_comment: input.showComment ?? false }, 'Could not save your decision.');
+export const listCaseComments = (caseId: string, status: 'pending' | 'approved' | 'hidden') =>
+  rpc<CaseComment[]>('list_case_comments', { p_case_id: caseId, p_status: status, p_limit: 100 }, 'Could not load comments.').then((rows) => rows ?? []);
+export const bulkReviewComments = (ids: string[], decision: 'approve' | 'hide') =>
+  rpc('bulk_review_comments', { p_ids: ids, p_decision: decision }, 'Could not save your decision.');
+export const acceptCollectorInvite = (token: string) => rpc<{ case_id: string; case_title: string; role?: string }>('accept_collector_invite', { p_token: token }, 'This invitation is invalid or has expired.');
 
 export async function receiptUrl(path: string): Promise<string | null> {
   const { data } = await client().storage.from(RECEIPT_BUCKET).createSignedUrl(path, 600);

@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { Activity, BookOpenText, ClipboardList, FileText, HeartHandshake, LayoutDashboard, LogOut, MapPinned, Shield, UsersRound } from 'lucide-react';
+import { Activity, BookOpenText, ChartNoAxesCombined, Flag, MessageSquareText, ClipboardList, FileText, HeartHandshake, LayoutDashboard, LogOut, MapPinned, Shield, UsersRound } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 
 import { adminApi } from '../../lib/admin-api';
@@ -10,7 +10,7 @@ import { supabase } from '../../lib/supabase';
 import TeamPage from '../team/TeamPage';
 import MetricCatalogPage from '../metrics/MetricCatalogPage';
 import LocationsPage from '../locations/LocationsPage';
-import DonationsPage from '../donations/DonationsPage';
+import DonationsRoutes from '../donations/DonationsRoutes';
 import ModerationPage from '../moderation/ModerationPage';
 import ProvidersPage from '../providers/ProvidersPage';
 import RestrictedPage from '../workspace/RestrictedPage';
@@ -24,6 +24,7 @@ type NavigationItem = {
   permission?: string;
   anyPermissions?: string[];
   ownerOnly?: boolean;
+  group?: string;
   icon: typeof LayoutDashboard;
 };
 
@@ -32,12 +33,14 @@ const navigation: NavigationItem[] = [
   { path: '/support', label: 'Support inbox', permission: 'support.requests.manage', icon: ClipboardList },
   { path: '/metrics', label: 'Metric Catalog', anyPermissions: ['metrics.edit', 'metrics.review', 'metrics.publish'], icon: Activity },
   { path: '/articles', label: 'Articles', permission: 'articles.edit', icon: BookOpenText },
-  { path: '/moderation', label: 'Comment reports', permission: 'support.requests.manage', icon: ClipboardList },
   { path: '/locations', label: 'Map locations', permission: 'providers.verify', icon: MapPinned },
   { path: '/providers', label: 'Provider verification', permission: 'providers.verify', icon: Shield },
-  { path: '/donations', label: 'Donation cases', permission: 'donations.review', icon: HeartHandshake },
-  { path: '/audit', label: 'Audit log', permission: 'admin.audit.read', icon: FileText },
-  { path: '/team', label: 'Team access', ownerOnly: true, icon: UsersRound },
+  { path: '/donations', label: 'Giving overview', permission: 'donations.review', group: 'Giving & community', icon: ChartNoAxesCombined },
+  { path: '/donations/cases', label: 'Cases', permission: 'donations.review', group: 'Giving & community', icon: HeartHandshake },
+  { path: '/donations/comments', label: 'Donor comments', permission: 'donations.review', group: 'Giving & community', icon: MessageSquareText },
+  { path: '/moderation', label: 'Doctor comment reports', permission: 'support.requests.manage', group: 'Giving & community', icon: Flag },
+  { path: '/audit', label: 'Audit log', permission: 'admin.audit.read', group: 'System', icon: FileText },
+  { path: '/team', label: 'Team access', ownerOnly: true, group: 'System', icon: UsersRound },
 ];
 
 export default function AdminConsole() {
@@ -223,7 +226,7 @@ function AdminShell({ membership, session }: { membership: AdminMembership; sess
     return !item.permission || hasPermission(membership, item.permission);
   }), [membership]);
   const roleLabel = membership.role === 'platform_owner' ? 'Platform owner' : 'Support administrator';
-  const currentPage = items.find((item) => item.path === location.pathname)?.label ?? 'Admin workspace';
+  const currentPage = items.filter((item) => item.path === location.pathname || (item.path !== '/' && location.pathname.startsWith(`${item.path}/`))).sort((a, b) => b.path.length - a.path.length)[0]?.label ?? 'Admin workspace';
 
   const signOut = async () => {
     await supabase?.auth.signOut({ scope: 'local' });
@@ -235,9 +238,10 @@ function AdminShell({ membership, session }: { membership: AdminMembership; sess
         <div className="brand-lockup"><span className="brand-mark">ih</span><span>ihssan</span></div>
         <p className="sidebar-caption">ADMINISTRATION</p>
         <nav className="side-nav">
-          {items.map((item) => {
+          {items.map((item, index) => {
             const Icon = item.icon;
-            return <NavLink end={item.path === '/'} key={item.path} to={item.path} className={({ isActive }) => `nav-item${isActive ? ' nav-item-active' : ''}`}><Icon size={17} strokeWidth={1.8} /><span>{item.label}</span>{item.ownerOnly ? <span className="owner-mark">OWNER</span> : null}</NavLink>;
+            const heading = item.group && item.group !== items[index - 1]?.group ? <p className="sidebar-caption nav-group" key={`g-${item.group}`}>{item.group.toUpperCase()}</p> : null;
+            return <Fragment key={item.path}>{heading}<NavLink end={item.path === '/' || item.path === '/donations'} to={item.path} className={({ isActive }) => `nav-item${isActive ? ' nav-item-active' : ''}`}><Icon size={17} strokeWidth={1.8} /><span>{item.label}</span>{item.ownerOnly ? <span className="owner-mark">OWNER</span> : null}</NavLink></Fragment>;
           })}
         </nav>
         <div className="sidebar-bottom">
@@ -259,7 +263,7 @@ function AdminShell({ membership, session }: { membership: AdminMembership; sess
             <Route path="/moderation" element={<ModerationPage />} />
             <Route path="/locations" element={<LocationsPage />} />
             <Route path="/providers" element={<ProvidersPage />} />
-            <Route path="/donations" element={<DonationsPage />} />
+            <Route path="/donations/*" element={<DonationsRoutes />} />
             <Route path="/audit" element={<RestrictedPage title="Audit log" eyebrow="SECURITY" description="Review administrative changes for which you have audit permission." detail="Audit access is read-only and purpose-limited. Audit export and filters will be added with the operations API." />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

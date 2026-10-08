@@ -1,5 +1,5 @@
 import { type Href, useFocusEffect, useRouter } from 'expo-router';
-import { HandHeart, ShieldCheck } from 'lucide-react-native';
+import { HandHeart, History, ShieldCheck } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
@@ -29,7 +29,7 @@ export default function DonationsScreen() {
   const [more, setMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
-  const [orders, setOrders] = useState<{ id: string; reference: string; caseTitle: string; amount: number }[]>([]);
+  const [hasOrders, setHasOrders] = useState(false);
   const [collects, setCollects] = useState(0);
   const request = useRef(0);
 
@@ -39,7 +39,7 @@ export default function DonationsScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => {
-    void listStoredPledges().then((items) => setOrders(items.slice(0, 5)));
+    void listStoredPledges().then((items) => setHasOrders(items.length > 0));
     if (session) void listCollectorCases().then((rows) => setCollects(rows.length)).catch(() => setCollects(0));
     else setCollects(0);
   }, [session]));
@@ -74,6 +74,10 @@ export default function DonationsScreen() {
 
   return (
     <Page>
+      <Pressable accessibilityLabel="My donation history" accessibilityRole="button" hitSlop={8} onPress={() => router.push('/my-donations' as Href)} style={({ pressed }) => [styles.historyButton, pressed && styles.pressed]}>
+        <History color={palette.forest} size={20} />
+        {hasOrders ? <View style={styles.historyDot} /> : null}
+      </Pressable>
       <PageHeading eyebrow="Ihssan Giving" title="Give with purpose">
         Every case is reviewed. Your gift goes straight to the family&apos;s own bank account, and a fund collector confirms it so the progress you see is real.
       </PageHeading>
@@ -83,21 +87,6 @@ export default function DonationsScreen() {
           <ShieldCheck color={palette.forest} size={20} />
           <View style={styles.flex}><Text style={styles.collectTitle}>Fund collector dashboard</Text><Text style={styles.muted}>Review receipts and confirm donations.</Text></View>
         </Pressable>
-      ) : null}
-
-      {orders.length ? (
-        <>
-          <SectionHeading title="Your donation orders" />
-          {orders.map((order) => (
-            <Pressable key={order.id} accessibilityRole="button" onPress={() => router.push(`/pledge/${order.id}` as Href)} style={({ pressed }) => [uiStyles.card, styles.order, pressed && styles.pressed]}>
-              <View style={styles.flex}>
-                <Text numberOfLines={1} style={styles.orderTitle}>{order.caseTitle}</Text>
-                <Text style={styles.muted}>{order.reference} · {formatMad(order.amount)}</Text>
-              </View>
-              <Text style={styles.open}>Open</Text>
-            </Pressable>
-          ))}
-        </>
       ) : null}
 
       <Field label="Search by name, city or story" value={filters.search} onChangeText={(search) => set({ search })} autoCorrect={false} maxLength={80} />
@@ -167,9 +156,8 @@ const styles = themedStyles(() => StyleSheet.create({
   pressed: { opacity: 0.88 },
   collect: { alignItems: 'center', flexDirection: 'row', gap: 12, marginTop: 14, padding: 14 },
   collectTitle: { ...display, color: palette.ink, fontSize: 16 },
-  order: { alignItems: 'center', flexDirection: 'row', gap: 10, marginTop: 8, padding: 14 },
-  orderTitle: { ...display, color: palette.ink, fontSize: 15 },
-  open: { color: palette.forest, fontSize: 13, fontWeight: '700' },
+  historyButton: { alignItems: 'center', alignSelf: 'flex-end', backgroundColor: palette.glass, borderColor: palette.line, borderRadius: 22, borderWidth: 1, height: 44, justifyContent: 'center', width: 44 },
+  historyDot: { backgroundColor: palette.forest, borderRadius: 4, height: 8, position: 'absolute', right: 10, top: 10, width: 8 },
   filterLabel: { color: palette.muted, fontSize: 12, fontWeight: '600', letterSpacing: 0.4, marginBottom: 6, marginTop: 14 },
   chips: { gap: 8, paddingRight: 16 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

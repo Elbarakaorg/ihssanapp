@@ -65,7 +65,19 @@ export function safeHttpsUrl(value: string | null | undefined) {
   }
 }
 
-export const caseShareUrl = (webBase: string, id: string) => `${webBase.replace(/\/+$/, '')}/cases/${id}`;
+/** `key` is the case id or its readable link name (the beneficiary's name). */
+export const caseShareUrl = (webBase: string, key: string) => `${webBase.replace(/\/+$/, '')}/cases/${encodeURIComponent(key)}`;
+export const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+
+/** Returns the embeddable Instagram URL for a public reel, post or tv link, or null for anything else. */
+export function instagramEmbedUrl(value: string | null | undefined) {
+  if (!value) return null;
+  const match = /^https:\/\/(?:www\.)?instagram\.com\/(reel|reels|p|tv)\/([A-Za-z0-9_-]{5,30})\/?(?:[?#].*)?$/.exec(value.trim());
+  if (!match) return null;
+  return `https://www.instagram.com/${match[1] === 'reels' ? 'reel' : match[1]}/${match[2]}/embed`;
+}
+
+export const ACCOUNT_RECEIPT_NOTICE = 'Please upload your transfer receipt. If you forget it, you will need to write the name of the account you paid from so we can confirm the transfer is yours.';
 export const collectorInviteUrl = (webBase: string, token: string) => `${webBase.replace(/\/+$/, '')}/collect/accept?token=${encodeURIComponent(token)}`;
 
 /** Groups an account number in fours so it can be read and checked against the bank app. */

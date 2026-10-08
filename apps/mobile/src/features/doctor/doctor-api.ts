@@ -148,7 +148,7 @@ export async function deleteGalleryImage(id: string) {
 
 export async function imageUrl(bucket: string | null, path: string | null): Promise<string | null> {
   if (!bucket || !path || !supabaseClient) return null;
-  if (bucket === 'doctor-media' || bucket === 'case-media') return supabaseClient.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+  if (['doctor-media', 'case-media', 'case-videos', 'case-audio'].includes(bucket)) return supabaseClient.storage.from(bucket).getPublicUrl(path).data.publicUrl;
   const { data } = await supabaseClient.storage.from(bucket).createSignedUrl(path, 3600);
   return data?.signedUrl ?? null;
 }

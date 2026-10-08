@@ -2,11 +2,11 @@ import { useState, type FormEvent } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 
-import { type CaseForm as Form, type Category, SOCIAL, blankForm, check, db, publicUrl, saveCase, upload } from './shared';
+import { type CaseForm as Form, type Category, SOCIAL, APP_URL, blankForm, check, db, publicUrl, saveCase, upload } from './shared';
 import { Field } from './ui';
 
-type Bank = { bank_name: string; account_holder: string; account_number: string; note: string };
-const emptyBank: Bank = { bank_name: '', account_holder: '', account_number: '', note: '' };
+type Bank = { bank_name: string; account_holder: string; rib: string; account_number: string; note: string };
+const emptyBank: Bank = { bank_name: '', account_holder: '', rib: '', account_number: '', note: '' };
 
 export default function CaseForm({ initial, onSaved, onFail, onCancel }: { initial?: Form; onSaved: (id: string, message: string) => void; onFail: (e: unknown) => void; onCancel?: () => void }) {
   const [form, setForm] = useState<Form>(initial ?? blankForm);
@@ -24,11 +24,11 @@ export default function CaseForm({ initial, onSaved, onFail, onCancel }: { initi
     event.preventDefault();
     setBusy(true);
     try {
-      const wantsBank = isNew && bank.account_number.trim() !== '';
+      const wantsBank = isNew && (bank.rib.trim() !== '' || bank.account_number.trim() !== '');
       // A case can only be published once it has an active bank account, so create it as a draft first.
       const id = await saveCase(wantsBank && form.status !== 'draft' ? { ...form, status: 'draft' } : form);
       if (wantsBank) {
-        check((await db().from('donation_bank_accounts').insert({ case_id: id, ...bank, note: bank.note || null }).select('id').single()).error);
+        check((await db().from('donation_bank_accounts').insert({ case_id: id, ...bank, rib: bank.rib || null, account_number: bank.account_number || null, note: bank.note || null }).select('id').single()).error);
         if (form.status !== 'draft') await saveCase({ ...form, id });
       }
       onSaved(id, isNew ? 'Case created.' : 'Changes saved.');
@@ -45,8 +45,8 @@ export default function CaseForm({ initial, onSaved, onFail, onCancel }: { initi
           <Field label="Age"><input max={120} min={0} onChange={(e) => set('age', e.target.value)} type="number" value={form.age} /></Field>
           <Field label="City"><input maxLength={80} onChange={(e) => set('city', e.target.value)} value={form.city} /></Field>
           <Field hint="Used for filters on the Give page." label="Category"><select onChange={(e) => set('category', e.target.value)} value={form.category}><option value="">Choose…</option>{categories.data?.map((c) => <option key={c.slug} value={c.slug}>{c.label_en}</option>)}</select></Field>
-          <Field hint="20–1000 characters. Shown on cards and in search." label="Short summary" wide><textarea maxLength={1000} minLength={20} onChange={(e) => set('summary', e.target.value)} required rows={3} value={form.summary} /></Field>
-          <Field hint="Up to 5000 characters. The full story and what the money is for." label="Full story" wide><textarea maxLength={5000} onChange={(e) => set('bio', e.target.value)} rows={7} value={form.bio} /></Field>
+          <Field hint="20–4000 characters. Who they are, what happened and what the money is for. Cards show the first lines." label="Story" wide><textarea maxLength={4000} minLength={20} onChange={(e) => set('bio', e.target.value)} required rows={8} value={form.bio} /></Field>
+          <Field hint={`Link name: ${APP_URL.replace(/^https?:\/\//, '')}/cases/${form.slug || 'beneficiary-name'}. Leave empty to build it from the beneficiary name. Changing it breaks links already shared.`} label="Link name (optional)" wide><input maxLength={60} onChange={(e) => set('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="amina-el-fassi" value={form.slug} /></Field>
           <label className="dn-toggle dn-wide"><input checked={form.is_urgent} onChange={(e) => set('is_urgent', e.target.checked)} type="checkbox" /><span>Mark as urgent<small>Urgent cases are highlighted and sorted first.</small></span></label>
         </div>
       </section>
@@ -67,7 +67,8 @@ export default function CaseForm({ initial, onSaved, onFail, onCancel }: { initi
           <div className="dn-grid">
             <Field label="Bank"><input maxLength={80} onChange={(e) => setBank({ ...bank, bank_name: e.target.value })} placeholder="e.g. CIH, Attijariwafa" value={bank.bank_name} /></Field>
             <Field label="Account holder"><input maxLength={80} onChange={(e) => setBank({ ...bank, account_holder: e.target.value })} value={bank.account_holder} /></Field>
-            <Field hint="24-digit RIB or IBAN." label="RIB / account number"><input autoComplete="off" inputMode="numeric" maxLength={40} minLength={bank.account_number ? 8 : undefined} onChange={(e) => setBank({ ...bank, account_number: e.target.value })} required={Boolean(bank.bank_name || bank.account_holder)} value={bank.account_number} /></Field>
+            <Field hint="24 digits. Spaces are fine." label="RIB"><input autoComplete="off" inputMode="numeric" maxLength={32} onChange={(e) => setBank({ ...bank, rib: e.target.value })} pattern="[0-9 ]{24,32}" value={bank.rib} /></Field>
+            <Field hint="Filled in from the RIB (digits 7 to 22) when left empty." label="Account number"><input autoComplete="off" inputMode="numeric" maxLength={40} minLength={bank.account_number ? 8 : undefined} onChange={(e) => setBank({ ...bank, account_number: e.target.value })} value={bank.account_number} /></Field>
             <Field label="Note for donors"><input maxLength={200} onChange={(e) => setBank({ ...bank, note: e.target.value })} placeholder="Optional, e.g. include the order reference" value={bank.note} /></Field>
           </div>
         </section>

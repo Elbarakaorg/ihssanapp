@@ -6,7 +6,7 @@ import { Platform, Share } from 'react-native';
 
 import { supabaseClient } from '@/platform/supabase/client';
 import type { SocialLink } from '@/features/doctor/doctor-api';
-import { RECEIPT_LIMIT, caseShareUrl } from './donations-logic';
+import { RECEIPT_LIMIT, caseShareUrl, isUuid } from './donations-logic';
 
 export const CASE_BUCKET = 'case-media';
 const RECEIPT_BUCKET = 'donation-receipts';
@@ -32,26 +32,32 @@ export type CaseSort = 'newest' | 'urgent' | 'nearly_funded' | 'least_funded' | 
 export type CaseStatusFilter = 'active' | 'funded' | 'all';
 export type CaseFilters = { category: string; city: string; status: CaseStatusFilter; search: string; urgent: boolean; sort: CaseSort };
 export type CaseSummary = {
-  id: string; title: string; summary: string; city: string | null; category: string | null; category_label: string | null; beneficiary_name: string | null; age: number | null;
+  id: string; slug: string; title: string; summary: string; city: string | null; category: string | null; category_label: string | null; beneficiary_name: string | null; age: number | null;
   goal_mad: number; raised_mad: number; donor_count: number; percent: number; status: string; is_urgent: boolean; photo_path: string | null; published_at: string | null;
 };
 export type CaseDetail = Omit<CaseSummary, 'percent'> & {
   bio: string | null; min_donation_mad: number; social_links: SocialLink[]; contact: { phone: string | null; email: string | null } | null;
   media: { id: string; path: string; caption: string | null }[];
+  videos: { id: string; kind: 'instagram' | 'upload'; url: string | null; path: string | null; caption: string | null }[];
+  audio: { id: string; path: string; title: string | null; duration_seconds: number | null }[];
+  can_manage: boolean;
 };
+export type Wish = { id: string; display_name: string; body: string; created_at: string };
 export type WallEntry = { display_name: string; amount_mad: number; comment: string | null; confirmed_at: string };
-export type BankAccount = { id: string; bank_name: string; account_holder: string; account_number: string; note: string | null };
+export type BankAccount = { id: string; bank_name: string; account_holder: string; account_number: string | null; rib: string | null; note: string | null };
 export type PledgeView = {
   id: string; reference: string; status: string; amount_mad: number; confirmed_amount_mad: number | null; display_name: string | null; is_anonymous: boolean; comment: string | null;
-  expires_at: string; created_at: string; receipt_count: number; review_note: string | null; case_id: string; case_title: string; banks: BankAccount[]; can_upload: boolean;
+  expires_at: string; created_at: string; receipt_count: number; review_note: string | null; case_id: string; case_slug?: string; case_title: string; banks: BankAccount[]; can_upload: boolean;
+  payer_name: string | null; paid_marked_at: string | null; can_mark_paid: boolean;
 };
 export type MyPledge = { id: string; reference: string; case_id: string; case_title: string; amount_mad: number; status: string; created_at: string; expires_at: string };
-export type CollectorCase = { id: string; title: string; status: string; goal_mad: number; raised_mad: number; donor_count: number; awaiting_review: number; role: 'admin' | 'collector' | 'beneficiary'; pending_comments?: number };
-export type CaseComment = { id: string; reference: string; case_id: string; case_title: string; display_name: string | null; is_anonymous: boolean; comment: string; comment_status: 'pending' | 'approved' | 'hidden'; amount_mad: number; confirmed_at: string };
+export type CollectorCase = { id: string; title: string; status: string; goal_mad: number; raised_mad: number; donor_count: number; awaiting_review: number; role: 'admin' | 'collector' | 'beneficiary'; pending_comments?: number; slug?: string };
+export type CaseComment = { id: string; reference: string; case_id: string; case_title: string; display_name: string | null; is_anonymous: boolean; comment: string; comment_status: 'pending' | 'approved' | 'hidden'; amount_mad: number | null; kind?: 'donation' | 'wish'; confirmed_at: string };
 export type ReviewPledge = {
   id: string; reference: string; case_id: string; case_title: string; amount_mad: number; display_name: string | null; is_anonymous: boolean; comment: string | null; comment_visible: boolean;
   status: string; created_at: string; expires_at: string; receipt_paths: string[]; receipt_note: string | null; receipt_uploaded_at: string | null;
   confirmed_amount_mad: number | null; review_note: string | null; reviewed_at: string | null; donor_contact: string | null;
+  payer_name: string | null; paid_marked_at: string | null; source: 'platform' | 'external'; received_on: string | null;
 };
 
 export const defaultFilters: CaseFilters = { category: '', city: '', status: 'active', search: '', urgent: false, sort: 'newest' };
@@ -70,7 +76,14 @@ export const listCases = (filters: CaseFilters, offset: number, limit = 20) =>
     p_urgent: filters.urgent, p_sort: filters.sort, p_limit: limit, p_offset: offset,
   }, 'Could not load cases.').then((rows) => rows ?? []);
 
-export const getCase = (id: string) => rpc<CaseDetail | null>('get_donation_case', { p_id: id }, 'Could not load this case.');
+/** Accepts either the case id or its readable link name. */
+export const getCase = (key: string) =>
+  isUuid(key)
+    ? rpc<CaseDetail | null>('get_donation_case', { p_id: key }, 'Could not load this case.')
+    : rpc<CaseDetail | null>('get_donation_case_by_slug', { p_slug: key }, 'Could not load this case.');
+export const listWishes = (id: string) => rpc<Wish[]>('list_case_wishes', { p_case_id: id, p_limit: 30 }, 'Could not load messages.').then((rows) => rows ?? []);
+export const postWish = (id: string, body: string, name: string, anonymous: boolean) =>
+  rpc('post_case_wish', { p_case_id: id, p_body: body.trim(), p_display_name: anonymous ? null : name.trim() || null, p_is_anonymous: anonymous || !name.trim() }, 'Could not send your message. Please try again in a little while.');
 export const listWall = (id: string) => rpc<WallEntry[]>('list_case_donations', { p_case_id: id, p_limit: 30 }, 'Could not load donations.').then((rows) => rows ?? []);
 
 // Donation orders -----------------------------------------------------------------------------------------------------
@@ -116,7 +129,7 @@ const randomId = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now().toStri
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 /** Lets the donor pick up to the remaining number of receipt photos or screenshots, uploads them and attaches them to the order. */
-export async function pickAndSubmitReceipt(pledgeId: string, remaining: number, note: string): Promise<number> {
+export async function pickAndSubmitReceipt(pledgeId: string, remaining: number, note: string, payerName = ''): Promise<number> {
   if (remaining <= 0) throw new Error(`You can attach up to ${RECEIPT_LIMIT} files.`);
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!permission.granted) throw new Error('Photo library permission is needed to choose your receipt.');
@@ -135,8 +148,13 @@ export async function pickAndSubmitReceipt(pledgeId: string, remaining: number, 
     paths.push(path);
   }
   if (!paths.length) return 0;
-  await rpc('submit_pledge_receipt', { p_id: pledgeId, p_token: await getPledgeToken(pledgeId), p_paths: paths, p_note: note.trim() || null }, 'Could not attach your receipt.');
+  await rpc('submit_pledge_receipt', { p_id: pledgeId, p_token: await getPledgeToken(pledgeId), p_paths: paths, p_note: note.trim() || null, p_payer_name: payerName.trim() || null }, 'Could not attach your receipt.');
   return paths.length;
+}
+
+/** For a donor who paid but has no receipt: they must say whose account the money came from. */
+export async function markPledgePaid(pledgeId: string, payerName: string, note: string) {
+  await rpc('mark_pledge_paid', { p_id: pledgeId, p_token: await getPledgeToken(pledgeId), p_payer_name: payerName.trim(), p_note: note.trim() || null }, 'Could not mark this order as paid.');
 }
 
 // Collectors ----------------------------------------------------------------------------------------------------------
@@ -151,19 +169,86 @@ export const bulkReviewComments = (ids: string[], decision: 'approve' | 'hide') 
   rpc('bulk_review_comments', { p_ids: ids, p_decision: decision }, 'Could not save your decision.');
 export const acceptCollectorInvite = (token: string) => rpc<{ case_id: string; case_title: string; role?: string }>('accept_collector_invite', { p_token: token }, 'This invitation is invalid or has expired.');
 
+export const addExternalDonation = (input: { caseId: string; amount: number; donorName: string; anonymous: boolean; receivedOn: string; note: string; comment: string }) =>
+  rpc('add_external_donation', {
+    p_case_id: input.caseId, p_amount: input.amount, p_donor_name: input.anonymous ? null : input.donorName.trim() || null, p_is_anonymous: input.anonymous,
+    p_received_on: input.receivedOn || null, p_note: input.note.trim() || null, p_comment: input.comment.trim() || null,
+  }, 'Could not record this donation.');
+
+// Profile management (collector or beneficiary) -----------------------------------------------------------------------
+export type CaseProfilePatch = Partial<{ title: string; bio: string; city: string; age: number | null; beneficiary_name: string; photo_path: string; social_links: SocialLink[]; contact_phone: string; contact_email: string; show_contact: boolean }>;
+export const updateCaseProfile = (caseId: string, patch: CaseProfilePatch) => rpc('update_case_profile', { p_case_id: caseId, p: patch }, 'Could not save your changes.');
+export const addCaseVideoLink = (caseId: string, url: string, caption: string) => rpc('add_case_video', { p_case_id: caseId, p_kind: 'instagram', p_value: url.trim(), p_caption: caption.trim() || null }, 'Enter a public Instagram reel or post link.');
+export async function deleteCaseVideo(id: string) {
+  const path = await rpc<string | null>('delete_case_video', { p_id: id }, 'Could not remove this video.');
+  if (path) await client().storage.from('case-videos').remove([path]);
+}
+export async function deleteCaseAudio(id: string) {
+  const path = await rpc<string | null>('delete_case_audio', { p_id: id }, 'Could not remove this recording.');
+  if (path) await client().storage.from('case-audio').remove([path]);
+}
+export async function deleteCasePhoto(id: string) {
+  const path = await rpc<string | null>('delete_case_media', { p_id: id }, 'Could not remove this photo.');
+  if (path) await client().storage.from(CASE_BUCKET).remove([path]);
+}
+
+async function uploadBlob(bucket: string, caseId: string, uri: string, mime: string, ext: string, limit: number) {
+  const blob = await (await fetch(uri)).blob();
+  if (blob.size > limit) throw new Error(`This file is too large (limit ${Math.round(limit / 1048576)} MB).`);
+  const path = `${caseId}/${randomId()}.${ext}`;
+  const { error } = await client().storage.from(bucket).upload(path, blob, { contentType: mime, upsert: false });
+  if (error) throw new Error('Could not upload this file. Check your connection and try again.');
+  return path;
+}
+
+export async function pickAndAddCasePhoto(caseId: string, caption: string, asFeatured: boolean): Promise<boolean> {
+  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!permission.granted) throw new Error('Photo library permission is needed to choose a photo.');
+  const result = await ImagePicker.launchImageLibraryAsync({ allowsEditing: asFeatured, aspect: [4, 5], mediaTypes: ['images'], quality: 0.8 });
+  const asset = result.canceled ? null : result.assets[0];
+  if (!asset) return false;
+  const mime = asset.mimeType ?? 'image/jpeg';
+  if (!IMAGE_TYPES.includes(mime)) throw new Error('Choose a JPG, PNG, or WebP image.');
+  const path = await uploadBlob(CASE_BUCKET, caseId, asset.uri, mime, mime === 'image/png' ? 'png' : mime === 'image/webp' ? 'webp' : 'jpg', 5 * 1048576);
+  if (asFeatured) await updateCaseProfile(caseId, { photo_path: path });
+  else await rpc('add_case_media', { p_case_id: caseId, p_path: path, p_caption: caption.trim() || null }, 'Could not add this photo.');
+  return true;
+}
+
+export async function pickAndAddCaseVideo(caseId: string, caption: string): Promise<boolean> {
+  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!permission.granted) throw new Error('Library permission is needed to choose a video.');
+  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['videos'], quality: 0.7 });
+  const asset = result.canceled ? null : result.assets[0];
+  if (!asset) return false;
+  const mime = asset.mimeType ?? 'video/mp4';
+  if (!['video/mp4', 'video/quicktime', 'video/webm'].includes(mime)) throw new Error('Choose an MP4, MOV or WebM video.');
+  const path = await uploadBlob('case-videos', caseId, asset.uri, mime, mime === 'video/quicktime' ? 'mov' : mime === 'video/webm' ? 'webm' : 'mp4', 50 * 1048576);
+  await rpc('add_case_video', { p_case_id: caseId, p_kind: 'upload', p_value: path, p_caption: caption.trim() || null }, 'Could not add this video.');
+  return true;
+}
+
+const AUDIO_EXT: Record<string, string> = { 'audio/mp4': 'm4a', 'audio/x-m4a': 'm4a', 'audio/m4a': 'm4a', 'audio/mpeg': 'mp3', 'audio/webm': 'webm', 'audio/ogg': 'ogg', 'audio/wav': 'wav', 'audio/aac': 'aac' };
+export async function addCaseAudioFromUri(caseId: string, uri: string, mime: string, title: string, seconds: number | null) {
+  const ext = AUDIO_EXT[mime];
+  if (!ext) throw new Error('This audio format is not supported.');
+  const path = await uploadBlob('case-audio', caseId, uri, mime, ext, 10 * 1048576);
+  await rpc('add_case_audio', { p_case_id: caseId, p_path: path, p_title: title.trim() || null, p_duration: seconds ? Math.round(seconds) : null }, 'Could not add this recording.');
+}
+
 export async function receiptUrl(path: string): Promise<string | null> {
   const { data } = await client().storage.from(RECEIPT_BUCKET).createSignedUrl(path, 600);
   return data?.signedUrl ?? null;
 }
 
 // Sharing ---------------------------------------------------------------------------------------------------------------
-export function caseLink(id: string) {
+export function caseLink(key: string) {
   const webBase = Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : process.env.EXPO_PUBLIC_WEB_URL;
-  return webBase ? caseShareUrl(webBase, id) : ExpoLinking.createURL(`/cases/${id}`);
+  return webBase ? caseShareUrl(webBase, key) : ExpoLinking.createURL(`/cases/${encodeURIComponent(key)}`);
 }
 
-export async function shareCase(id: string, title: string): Promise<'shared' | 'copied'> {
-  const url = caseLink(id);
+export async function shareCase(key: string, title: string): Promise<'shared' | 'copied'> {
+  const url = caseLink(key);
   const message = `${title} — help on Ihssan`;
   if (Platform.OS === 'web') {
     if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {

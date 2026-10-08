@@ -10,8 +10,9 @@ import { imageUrl } from '@/features/doctor/doctor-api';
 import { Loading } from '@/ui/loading';
 import { Ornament, Page, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { display, palette, themedStyles, useScheme } from '@/ui/palette';
-import { CASE_BUCKET, type CaseDetail, type WallEntry, createPledge, getCase, listWall, shareCase } from './donations-api';
-import { formatMad, parseAmount, suggestedAmounts, validateAmount } from './donations-logic';
+import { AudioPlayer, Reels } from './case-media';
+import { CASE_BUCKET, type CaseDetail, type Wish, type WallEntry, createPledge, getCase, listWall, listWishes, postWish, shareCase } from './donations-api';
+import { ACCOUNT_RECEIPT_NOTICE, formatMad, parseAmount, suggestedAmounts, validateAmount } from './donations-logic';
 import { Progress, UrgentBadge } from './donations-ui';
 
 function GalleryImage({ path, caption }: { path: string; caption: string | null }) {
@@ -31,6 +32,7 @@ export default function CaseScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [item, setItem] = useState<CaseDetail | null | undefined>(undefined);
   const [wall, setWall] = useState<WallEntry[]>([]);
+  const [wishes, setWishes] = useState<Wish[]>([]);
   const [error, setError] = useState('');
   const [note, setNote] = useState('');
   const [donating, setDonating] = useState(false);
@@ -38,8 +40,13 @@ export default function CaseScreen() {
   const load = useCallback(() => {
     if (!id) return;
     setError('');
-    getCase(id).then(setItem).catch((e) => { setError(e instanceof Error ? e.message : 'Could not load this case.'); setItem(null); });
-    listWall(id).then(setWall).catch(() => undefined);
+    getCase(id).then((found) => {
+      setItem(found);
+      if (found) {
+        listWall(found.id).then(setWall).catch(() => undefined);
+        listWishes(found.id).then(setWishes).catch(() => undefined);
+      }
+    }).catch((e) => { setError(e instanceof Error ? e.message : 'Could not load this case.'); setItem(null); });
   }, [id]);
   useEffect(load, [load]);
 
@@ -49,7 +56,7 @@ export default function CaseScreen() {
   const open = item.status === 'published';
   const remaining = Math.max(item.goal_mad - item.raised_mad, 0);
   const share = async () => {
-    try { setNote((await shareCase(item.id, item.title)) === 'copied' ? 'Link copied. Share it with family and friends.' : ''); } catch { setNote(''); }
+    try { setNote((await shareCase(item.slug || item.id, item.title)) === 'copied' ? 'Link copied. Share it with family and friends.' : ''); } catch { setNote(''); }
   };
 
   return (
@@ -74,13 +81,16 @@ export default function CaseScreen() {
         {open && !donating ? <Button label="Donate to this case" onPress={() => setDonating(true)} /> : null}
         <Button tone="secondary" label="Share this case" onPress={() => void share()} />
         {note ? <Message kind="ok">{note}</Message> : null}
+        {item.can_manage ? <Button tone="secondary" label="Manage this case" onPress={() => router.push(`/collect/${item.id}` as Href)} /> : null}
       </View>
 
       {open && donating ? <DonateForm item={item} remaining={remaining} onDone={(pledgeId) => router.push(`/pledge/${pledgeId}` as Href)} onCancel={() => setDonating(false)} /> : null}
 
       <SectionHeading title="Their story" />
-      <Text style={styles.body}>{item.summary}</Text>
-      {item.bio ? <Text style={[styles.body, styles.gap]}>{item.bio}</Text> : null}
+      <Text style={styles.body}>{item.bio || item.summary}</Text>
+
+      {item.audio.length ? <><SectionHeading title="Listen" /><AudioPlayer clips={item.audio} /></> : null}
+      {item.videos.length ? <><SectionHeading title="Watch" /><Reels videos={item.videos} /></> : null}
 
       {item.media.length ? (
         <>
@@ -121,8 +131,48 @@ export default function CaseScreen() {
           {entry.comment ? <Text style={styles.wallComment}>{entry.comment}</Text> : null}
         </View>
       ))}
+      <SectionHeading title="Kind words" detail={wishes.length ? undefined : 'Be the first to leave a warm message'} />
+      {wishes.map((wish) => (
+        <View key={wish.id} style={[uiStyles.card, styles.wallRow]}>
+          <Text style={styles.wallName}>{wish.display_name}</Text>
+          <Text style={styles.wallComment}>{wish.body}</Text>
+        </View>
+      ))}
+      <WishForm caseId={item.id} />
       <Text style={styles.fine}>Donations go directly to the family&apos;s bank account. Ihssan never holds the money; a fund collector confirms each transfer before it counts.</Text>
     </Page>
+  );
+}
+
+function WishForm({ caseId }: { caseId: string }) {
+  useScheme();
+  const [body, setBody] = useState('');
+  const [name, setName] = useState('');
+  const [anonymous, setAnonymous] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ kind: 'error' | 'ok'; text: string } | null>(null);
+  const send = async () => {
+    if (body.trim().length < 2) { setMsg({ kind: 'error', text: 'Write a short message first.' }); return; }
+    if (!anonymous && name.trim().length < 2) { setMsg({ kind: 'error', text: 'Enter a name, or send it anonymously.' }); return; }
+    setBusy(true); setMsg(null);
+    try {
+      await postWish(caseId, body, name, anonymous);
+      setBody('');
+      setMsg({ kind: 'ok', text: 'Thank you. Your message will appear once it has been approved.' });
+    } catch (e) { setMsg({ kind: 'error', text: e instanceof Error ? e.message : 'Could not send your message.' }); } finally { setBusy(false); }
+  };
+  return (
+    <View style={[uiStyles.card, styles.form]}>
+      <Text style={styles.formTitle}>Leave a kind word</Text>
+      <Field label="Your message" value={body} onChangeText={setBody} maxLength={500} multiline />
+      <View style={styles.switchRow}>
+        <View style={styles.flex}><Text style={styles.switchTitle}>Send anonymously</Text></View>
+        <Switch accessibilityLabel="Send anonymously" onValueChange={setAnonymous} trackColor={{ true: palette.forest }} value={anonymous} />
+      </View>
+      {!anonymous ? <Field label="Name to display" value={name} onChangeText={setName} maxLength={60} /> : null}
+      {msg ? <Message kind={msg.kind}>{msg.text}</Message> : null}
+      <Button label="Send message" busy={busy} onPress={() => void send()} />
+    </View>
   );
 }
 
@@ -156,6 +206,7 @@ function DonateForm({ item, remaining, onDone, onCancel }: { item: CaseDetail; r
     <View style={[uiStyles.card, styles.form]}>
       <Text style={styles.formTitle}>Start your donation order</Text>
       <Text style={styles.meta}>You will get the bank details next, and 48 hours to send your transfer and upload the receipt.</Text>
+      <Message kind="info">{ACCOUNT_RECEIPT_NOTICE}</Message>
       <Field label="Amount (MAD)" value={amountText} onChangeText={setAmountText} keyboardType="number-pad" maxLength={9} placeholder={`${item.min_donation_mad} or more`} />
       <View style={styles.chips}>
         {suggestedAmounts(item.min_donation_mad, remaining).map((value) => <Chip key={value} label={`${value}`} selected={amount === value} onPress={() => setAmountText(String(value))} />)}
@@ -176,7 +227,7 @@ function DonateForm({ item, remaining, onDone, onCancel }: { item: CaseDetail; r
 
 const styles = themedStyles(() => StyleSheet.create({
   flex: { flex: 1 },
-  hero: { ...{ borderRadius: 18 }, height: 220, overflow: 'hidden', width: '100%' },
+  hero: { ...{ borderRadius: 18 }, height: 380, overflow: 'hidden', width: '100%' },
   tags: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 },
   tag: { backgroundColor: palette.leaf, borderRadius: 10, color: palette.forest, fontSize: 11, fontWeight: '700', overflow: 'hidden', paddingHorizontal: 8, paddingVertical: 3 },
   title: { ...display, color: palette.ink, fontSize: 28, lineHeight: 34, marginTop: 8 },

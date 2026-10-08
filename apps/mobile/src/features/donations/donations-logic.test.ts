@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { caseShareUrl, collectorInviteUrl, formatMad, groupAccountNumber, parseAmount, percentFunded, pledgeStatus, safeHttpsUrl, suggestedAmounts, timeLeft, validateAmount } from './donations-logic';
+import { caseShareUrl, instagramEmbedUrl, isUuid, collectorInviteUrl, formatMad, groupAccountNumber, parseAmount, percentFunded, pledgeStatus, safeHttpsUrl, suggestedAmounts, timeLeft, validateAmount } from './donations-logic';
 
 describe('donation logic', () => {
   it('computes progress safely', () => {
@@ -50,5 +50,20 @@ describe('donation logic', () => {
     expect(collectorInviteUrl('https://ihssanapp.com', 'a b')).toBe('https://ihssanapp.com/collect/accept?token=a%20b');
     expect(formatMad(1234.4)).toBe('1,234 MAD');
     expect(groupAccountNumber('230780000000000000000001')).toBe('2307 8000 0000 0000 0000 0001');
+  });
+});
+
+describe('case links and reels', () => {
+  it('detects uuids versus readable names', () => {
+    expect(isUuid('b392287a-f4e0-4a64-9e8b-a0c26262c652')).toBe(true);
+    expect(isUuid('amina-el-fassi')).toBe(false);
+    expect(caseShareUrl('https://ihssanapp.com/', 'amina-el-fassi')).toBe('https://ihssanapp.com/cases/amina-el-fassi');
+  });
+  it('only embeds instagram reel and post links', () => {
+    expect(instagramEmbedUrl('https://www.instagram.com/reel/Cabc12345/?igsh=x')).toBe('https://www.instagram.com/reel/Cabc12345/embed');
+    expect(instagramEmbedUrl('https://instagram.com/p/Cabc12345')).toBe('https://www.instagram.com/p/Cabc12345/embed');
+    expect(instagramEmbedUrl('https://evil.com/reel/Cabc12345/')).toBeNull();
+    expect(instagramEmbedUrl('javascript:alert(1)')).toBeNull();
+    expect(instagramEmbedUrl(null)).toBeNull();
   });
 });

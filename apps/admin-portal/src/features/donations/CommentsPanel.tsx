@@ -45,7 +45,7 @@ export default function CommentsPanel({ caseId, onChanged }: { caseId?: string; 
   return (
     <div className="dn-page">
       {notice.view}
-      <p className="dn-sub" style={{ margin: 0 }}>Donor comments are public once approved. Approve the kind ones, hide anything that is spam, abusive or identifies someone.</p>
+      <p className="dn-sub" style={{ margin: 0 }}>Donor comments and well-wishes from visitors are public once approved. Approve the kind ones, hide anything that is spam, abusive or identifies someone.</p>
       <Chips onChange={(s) => { setStatus(s); setSelected(new Set()); }} options={[{ id: 'pending', label: 'To approve' }, { id: 'approved', label: 'Approved' }, { id: 'hidden', label: 'Hidden' }]} value={status} />
 
       {rows.length > 0 ? (
@@ -69,10 +69,10 @@ export default function CommentsPanel({ caseId, onChanged }: { caseId?: string; 
           <div className={`dn-item${selected.has(r.id) ? ' dn-item-selected' : ''}`} key={r.id}>
             <div className="dn-item-row">
               <div className="dn-actions" style={{ alignItems: 'flex-start', flexWrap: 'nowrap' }}>
-                <input aria-label={`Select comment ${r.reference}`} checked={selected.has(r.id)} className="dn-check" onChange={() => toggle(r.id)} type="checkbox" />
+                <input aria-label={`Select ${r.kind === 'wish' ? 'well-wish' : 'comment'} from ${r.display_name ?? 'Anonymous'}`} checked={selected.has(r.id)} className="dn-check" onChange={() => toggle(r.id)} type="checkbox" />
                 <div>
                   <span className="dn-item-title">{r.is_anonymous || !r.display_name ? 'Anonymous' : r.display_name}</span>
-                  <div className="dn-item-meta">{mad(r.amount_mad)} · {r.reference} · {when(r.confirmed_at)}{caseId ? '' : ` · ${r.case_title}`}</div>
+                  <div className="dn-item-meta">{r.kind === 'wish' ? 'Well-wish' : `${mad(r.amount_mad ?? 0)} · ${r.reference}`} · {when(r.confirmed_at)}{caseId ? '' : ` · ${r.case_title}`}</div>
                 </div>
               </div>
               <Badge tone={r.comment_status === 'hidden' ? 'danger' : r.comment_status === 'pending' ? 'warn' : undefined}>{r.comment_status}</Badge>

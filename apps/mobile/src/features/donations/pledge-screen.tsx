@@ -6,8 +6,8 @@ import { BackLink, Button, Field, Message } from '@/features/doctor/ui';
 import { Loading } from '@/ui/loading';
 import { Ornament, Page, PageHeading, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { display, palette, themedStyles, useScheme } from '@/ui/palette';
-import { type PledgeView, cancelPledge, getPledge, pickAndSubmitReceipt } from './donations-api';
-import { RECEIPT_LIMIT, formatMad, groupAccountNumber, pledgeStatus, timeLeft } from './donations-logic';
+import { type PledgeView, cancelPledge, getPledge, markPledgePaid, pickAndSubmitReceipt } from './donations-api';
+import { ACCOUNT_RECEIPT_NOTICE, RECEIPT_LIMIT, formatMad, groupAccountNumber, pledgeStatus, timeLeft } from './donations-logic';
 import { CopyRow, StatusPill } from './donations-ui';
 
 export default function PledgeScreen() {
@@ -16,6 +16,7 @@ export default function PledgeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [pledge, setPledge] = useState<PledgeView | null | undefined>(undefined);
   const [note, setNote] = useState('');
+  const [payer, setPayer] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ kind: 'error' | 'ok'; text: string } | null>(null);
   const [now, setNow] = useState(Date.now());
@@ -38,11 +39,26 @@ export default function PledgeScreen() {
     setBusy(true);
     setMessage(null);
     try {
-      const count = await pickAndSubmitReceipt(pledge.id, RECEIPT_LIMIT - pledge.receipt_count, note);
+      const count = await pickAndSubmitReceipt(pledge.id, RECEIPT_LIMIT - pledge.receipt_count, note, payer);
       if (count) setMessage({ kind: 'ok', text: 'Receipt received. A fund collector will review it soon.' });
       load();
     } catch (e) {
       setMessage({ kind: 'error', text: e instanceof Error ? e.message : 'Could not upload your receipt.' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const markPaid = async () => {
+    if (payer.trim().length < 2) { setMessage({ kind: 'error', text: 'Write the name of the account you paid from, so we can match your transfer.' }); return; }
+    setBusy(true);
+    setMessage(null);
+    try {
+      await markPledgePaid(pledge.id, payer, note);
+      setMessage({ kind: 'ok', text: 'Thank you. A fund collector will check the transfer against the account name you gave.' });
+      load();
+    } catch (e) {
+      setMessage({ kind: 'error', text: e instanceof Error ? e.message : 'Could not mark this order as paid.' });
     } finally {
       setBusy(false);
     }
@@ -73,7 +89,8 @@ export default function PledgeScreen() {
             <View key={bank.id} style={[uiStyles.card, styles.bank]}>
               <Text style={styles.bankName}>{bank.bank_name}</Text>
               <CopyRow label="Account holder" value={bank.account_holder} />
-              <CopyRow label="Account number / RIB" value={bank.account_number} display={groupAccountNumber(bank.account_number)} />
+              {bank.rib ? <CopyRow label="RIB (24 digits)" value={bank.rib} display={groupAccountNumber(bank.rib)} /> : null}
+              {bank.account_number ? <CopyRow label="Account number" value={bank.account_number} display={groupAccountNumber(bank.account_number)} /> : null}
               <CopyRow label="Amount" value={String(pledge.amount_mad)} display={formatMad(pledge.amount_mad)} />
               <CopyRow label="Transfer reference" value={pledge.reference} />
               {bank.note ? <Text style={styles.hint}>{bank.note}</Text> : null}
@@ -86,12 +103,16 @@ export default function PledgeScreen() {
       {pledge.can_upload ? (
         <>
           <SectionHeading title="Your receipt" detail={`${pledge.receipt_count} of ${RECEIPT_LIMIT} attached`} />
+          <Message kind="info">{ACCOUNT_RECEIPT_NOTICE}</Message>
+          <Field label="Name of the account you paid from" value={payer} onChangeText={setPayer} maxLength={80} placeholder={pledge.receipt_count ? 'Optional' : 'Required if you have no receipt'} />
           <Field label="Note for the collector (optional)" value={note} onChangeText={setNote} maxLength={300} multiline />
           <Button label={pledge.receipt_count ? 'Add another receipt' : 'Upload receipt'} busy={busy} disabled={pledge.receipt_count >= RECEIPT_LIMIT} onPress={() => void upload()} />
+          {pledge.can_mark_paid && pledge.receipt_count === 0 ? <Button tone="secondary" label="I paid but have no receipt" busy={busy} onPress={() => void markPaid()} /> : null}
         </>
       ) : null}
+      {pledge.payer_name ? <Text style={styles.hint}>Paid from the account of: {pledge.payer_name}</Text> : null}
       {waiting ? <Button tone="secondary" label="Cancel this order" disabled={busy} onPress={() => void cancel()} /> : null}
-      <Button tone="secondary" label="Back to the case" onPress={() => router.push(`/cases/${pledge.case_id}` as Href)} />
+      <Button tone="secondary" label="Back to the case" onPress={() => router.push(`/cases/${pledge.case_slug ?? pledge.case_id}` as Href)} />
     </Page>
   );
 }

@@ -31,6 +31,12 @@
       "expo-router",
       "expo-apple-authentication",
       [
+        "expo-audio",
+        {
+          "microphonePermission": "Ihssan uses the microphone so you can record a voice message for a giving case."
+        }
+      ],
+      [
         "expo-notifications",
         {
           "color": "#2f6f4f"

@@ -8,7 +8,7 @@ import CaseForm from './CaseForm';
 import CommentsPanel from './CommentsPanel';
 import DonationsTab from './DonationsTab';
 import TeamTab from './TeamTab';
-import { APP_URL, type Analytics, type CaseRow, type Media, SOCIAL, check, db, errorText, formFromRow, mad, percent, publicUrl, when } from './shared';
+import { type Analytics, type CaseRow, type Media, SOCIAL, caseUrl, check, db, errorText, formFromRow, mad, percent, publicUrl, when } from './shared';
 import { BarChart, Badge, ProgressBar, Stat, Tabs, statusTone, useNotice } from './ui';
 
 type Tab = 'overview' | 'donations' | 'comments' | 'profile' | 'bank' | 'gallery' | 'team' | 'preview';
@@ -47,7 +47,7 @@ export default function CaseWorkspace() {
           <h1>{c.title}</h1>
           <p className="dn-sub">{[c.beneficiary_name, c.city, c.category].filter(Boolean).join(' · ')}</p>
         </div>
-        <a className="button button-secondary" href={`${APP_URL.replace(/\/+$/, '')}/cases/${c.id}`} rel="noopener noreferrer" target="_blank"><ExternalLink size={15} /> View in app</a>
+        <a className="button button-secondary" href={caseUrl(c)} rel="noopener noreferrer" target="_blank"><ExternalLink size={15} /> View in app</a>
       </header>
       <ProgressBar donors={c.donor_count} goal={c.goal_mad} raised={c.raised_mad} />
       {notice.view}
@@ -59,7 +59,7 @@ export default function CaseWorkspace() {
           { id: 'comments', label: 'Comments', count: p?.pending_comments },
           { id: 'profile', label: 'Profile' },
           { id: 'bank', label: 'Bank' },
-          { id: 'gallery', label: 'Gallery' },
+          { id: 'gallery', label: 'Photos & media' },
           { id: 'team', label: 'Team & invites' },
           { id: 'preview', label: 'Preview' },
         ]}
@@ -90,7 +90,6 @@ export default function CaseWorkspace() {
           {c.photo_path ? <img alt="" className="dn-preview-photo" src={publicUrl(c.photo_path)} /> : <div className="dn-preview-photo" />}
           <h2>{c.title}</h2>
           <ProgressBar donors={c.donor_count} goal={c.goal_mad} raised={c.raised_mad} />
-          <p>{c.summary}</p>
           {c.bio ? <p>{c.bio}</p> : null}
           {c.show_contact && (c.contact_phone || c.contact_email) ? <p>Contact: {[c.contact_phone, c.contact_email].filter(Boolean).join(' · ')}</p> : null}
           {(c.social_links ?? []).filter((s) => (SOCIAL as readonly string[]).includes(s.kind)).map((s) => <p key={s.url}>{s.kind}: {s.url}</p>)}

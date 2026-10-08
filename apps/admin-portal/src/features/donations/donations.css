@@ -92,6 +92,9 @@
 .dn-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; }
 .dn-receipts { display: flex; flex-wrap: wrap; gap: 8px; }
 .dn-receipt { background: var(--leaf); border: 1px solid var(--line); border-radius: 10px; height: 110px; object-fit: cover; width: 110px; }
+.dn-receipt-card { display: grid; gap: 6px; justify-items: start; }
+.dn-receipt-card .button { min-height: 32px; padding: 0 12px; font-size: 12px; }
+.dn-lightbox { border-radius: 10px; display: block; max-height: 70vh; max-width: 100%; object-fit: contain; margin: 0 auto; }
 .dn-receipt-file { align-items: center; color: var(--forest); display: inline-flex; font-size: 12px; font-weight: 700; justify-content: center; text-decoration: none; }
 .dn-bulk { align-items: center; background: var(--forest); border-radius: 12px; color: #FBF8F0; display: flex; flex-wrap: wrap; font-size: 13px; gap: 10px; justify-content: space-between; padding: 10px 14px; position: sticky; top: 8px; z-index: 2; }
 .dn-bulk .button-secondary { min-height: 34px; }
@@ -106,10 +109,13 @@
 .dn-role { background: var(--leaf); border-radius: 6px; color: var(--forest); font-size: 10px; font-weight: 700; letter-spacing: .06em; padding: 2px 7px; text-transform: uppercase; }
 
 .dn-preview { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; display: grid; gap: 16px; margin: 0 auto; max-width: 480px; padding: 18px; width: 100%; }
-.dn-preview-photo { aspect-ratio: 16 / 10; background: var(--leaf); border-radius: 14px; object-fit: cover; width: 100%; }
+.dn-preview-photo { aspect-ratio: 4 / 5; max-height: 460px; background: var(--leaf); border-radius: 14px; object-fit: cover; width: 100%; }
 .dn-preview h2 { font-size: 24px; line-height: 1.2; margin: 0; }
 .dn-preview p { color: #44564b; font-size: 14px; line-height: 1.6; margin: 0; white-space: pre-wrap; }
 .dn-confirm-note { background: #fbf1e3; border-radius: 10px; color: #7a4a1e; font-size: 12px; line-height: 1.5; padding: 10px 12px; }
 
 /* Bento: the first stat is featured across two columns on wide screens */
 @media (min-width: 900px) { .dn-stats > :first-child { grid-column: span 2; } .dn-stats > :first-child .dn-stat-value { font-size: 36px; } }
+
+.dn-media-row { align-items: center; display: flex; gap: 10px; justify-content: space-between; }
+.dn-media-row audio, .dn-media-row video { max-width: 100%; }

@@ -1,13 +1,13 @@
 import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/auth-provider';
 import { BackLink, Button, Chip, Field, Message } from '@/features/doctor/ui';
 import { Loading } from '@/ui/loading';
 import { Ornament, Page, PageHeading, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { display, palette, themedStyles, useScheme } from '@/ui/palette';
-import { type CaseComment, type CollectorCase, type ReviewPledge, acceptCollectorInvite, bulkReviewComments, listCasePledges, listCaseComments, listCollectorCases, receiptUrl, reviewPledge } from './donations-api';
+import { type CaseComment, addExternalDonation, type CollectorCase, type ReviewPledge, acceptCollectorInvite, bulkReviewComments, listCasePledges, listCaseComments, listCollectorCases, receiptUrl, reviewPledge } from './donations-api';
 import { formatMad, parseAmount } from './donations-logic';
 import { Progress, StatusPill } from './donations-ui';
 
@@ -41,8 +41,58 @@ const TABS: [string, string][] = [['receipt_submitted', 'Awaiting review'], ['pl
 
 function Receipts({ paths }: { paths: string[] }) {
   const [urls, setUrls] = useState<string[]>([]);
+  const [open, setOpen] = useState<string | null>(null);
   useEffect(() => { void Promise.all(paths.map(receiptUrl)).then((all) => setUrls(all.filter((u): u is string => !!u))); }, [paths]);
-  return <View style={styles.receipts}>{urls.map((u) => <Pressable key={u} accessibilityRole="link" onPress={() => { if (typeof window !== 'undefined') window.open(u, '_blank', 'noopener'); }}><Image accessibilityLabel="Receipt" source={{ uri: u }} style={styles.receipt} resizeMode="cover" /></Pressable>)}</View>;
+  return (
+    <View style={styles.receipts}>
+      {urls.map((u, i) => (
+        <Pressable key={u} accessibilityLabel={`View receipt ${i + 1}`} accessibilityRole="button" onPress={() => setOpen(u)} style={styles.receiptWrap}>
+          <Image accessibilityIgnoresInvertColors source={{ uri: u }} style={styles.receipt} resizeMode="cover" />
+          <Text style={styles.viewLink}>View receipt</Text>
+        </Pressable>
+      ))}
+      <Modal animationType="fade" onRequestClose={() => setOpen(null)} transparent visible={open !== null}>
+        <Pressable accessibilityLabel="Close receipt" onPress={() => setOpen(null)} style={styles.lightbox}>
+          {open ? <Image accessibilityLabel="Receipt" source={{ uri: open }} style={styles.lightboxImage} resizeMode="contain" /> : null}
+          <Text style={styles.lightboxClose}>Tap anywhere to close</Text>
+        </Pressable>
+      </Modal>
+    </View>
+  );
+}
+
+function ExternalForm({ caseId, onDone }: { caseId: string; onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [name, setName] = useState('');
+  const [anonymous, setAnonymous] = useState(false);
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  if (!open) return <Button tone="secondary" label="Record an outside donation" onPress={() => setOpen(true)} />;
+  const save = async () => {
+    const value = parseAmount(amount);
+    if (value === null) { setError('Enter the amount received in MAD.'); return; }
+    if (!anonymous && name.trim().length < 2) { setError('Add the donor name or mark the donor anonymous.'); return; }
+    setBusy(true); setError('');
+    try {
+      await addExternalDonation({ caseId, amount: value, donorName: name, anonymous, receivedOn: new Date().toISOString().slice(0, 10), note, comment: '' });
+      setOpen(false); setAmount(''); setName(''); setNote(''); onDone();
+    } catch (e) { setError(e instanceof Error ? e.message : 'Could not record this donation.'); } finally { setBusy(false); }
+  };
+  return (
+    <View style={[uiStyles.card, styles.card]}>
+      <Text style={styles.title}>Outside donation</Text>
+      <Text style={styles.muted}>Money received outside the app (for example cash or a direct transfer). It counts toward the progress bar straight away.</Text>
+      <Field label="Amount received (MAD)" value={amount} onChangeText={setAmount} keyboardType="number-pad" maxLength={9} />
+      <Chip label="Anonymous donor" selected={anonymous} onPress={() => setAnonymous(!anonymous)} />
+      {anonymous ? null : <Field label="Donor name" value={name} onChangeText={setName} maxLength={60} />}
+      <Field label="Internal note (optional)" value={note} onChangeText={setNote} maxLength={300} />
+      {error ? <Message kind="error">{error}</Message> : null}
+      <Button label="Add donation" busy={busy} onPress={() => void save()} />
+      <Button tone="secondary" label="Cancel" disabled={busy} onPress={() => setOpen(false)} />
+    </View>
+  );
 }
 
 function PledgeRow({ pledge, onChanged }: { pledge: ReviewPledge; onChanged: () => void }) {
@@ -61,6 +111,8 @@ function PledgeRow({ pledge, onChanged }: { pledge: ReviewPledge; onChanged: () 
   return (
     <View style={[uiStyles.card, styles.card]}>
       <View style={styles.row}><Text style={styles.title}>{formatMad(pledge.amount_mad)}</Text><StatusPill status={pledge.status} /></View>
+      {pledge.source === 'external' ? <Text style={styles.badge}>External donation{pledge.received_on ? ` · ${pledge.received_on}` : ''}</Text> : null}
+      {pledge.payer_name ? <Text style={styles.body}>Paid from the account of: <Text style={styles.strong}>{pledge.payer_name}</Text>{pledge.receipt_paths.length === 0 ? ' (no receipt)' : ''}</Text> : null}
       <Text style={styles.muted}>{pledge.reference} · {pledge.is_anonymous ? 'Anonymous' : pledge.display_name}</Text>
       {pledge.donor_contact ? <Text style={styles.muted}>Contact: {pledge.donor_contact}</Text> : null}
       {pledge.comment ? <Text style={styles.body}>“{pledge.comment}”</Text> : null}
@@ -99,7 +151,7 @@ function Comments({ caseId }: { caseId: string }) {
   return (
     <>
       <SectionHeading title="Comments to approve" />
-      <Text style={styles.muted}>Comments from donors stay private until you approve them.</Text>
+      <Text style={styles.muted}>Donor comments and visitors’ well-wishes stay private until approved.</Text>
       {error ? <Message kind="error">{error}</Message> : null}
       {rows === null ? <Loading label="Loading" /> : null}
       {rows?.length === 0 && !error ? <Text style={styles.muted}>No comments waiting.</Text> : null}
@@ -116,7 +168,7 @@ function Comments({ caseId }: { caseId: string }) {
       ) : null}
       {rows?.map((c) => (
         <Pressable key={c.id} accessibilityRole="checkbox" accessibilityState={{ checked: picked.includes(c.id) }} onPress={() => toggle(c.id)} style={[uiStyles.card, styles.card, picked.includes(c.id) && styles.picked]}>
-          <Text style={styles.muted}>{c.is_anonymous || !c.display_name ? 'Anonymous' : c.display_name} · {formatMad(c.amount_mad)}</Text>
+          <Text style={styles.muted}>{c.is_anonymous || !c.display_name ? 'Anonymous' : c.display_name} · {c.kind === 'wish' || c.amount_mad === null ? 'Well-wish' : formatMad(c.amount_mad)}</Text>
           <Text style={styles.body}>“{c.comment}”</Text>
         </Pressable>
       ))}
@@ -126,6 +178,7 @@ function Comments({ caseId }: { caseId: string }) {
 
 export function CollectCase() {
   useScheme();
+  const router = useRouter();
   const { caseId } = useLocalSearchParams<{ caseId: string }>();
   const [tab, setTab] = useState('receipt_submitted');
   const [role, setRole] = useState<CollectorCase['role'] | null>(null);
@@ -145,6 +198,8 @@ export function CollectCase() {
       <PageHeading eyebrow={isBeneficiary ? 'Your case' : 'Fund collector'} title={isBeneficiary ? 'Comments' : 'Donations'}>{isBeneficiary ? 'Approve the kind words donors leave on your case.' : 'Check each receipt against your bank statement before confirming.'}</PageHeading>
       {role === null ? <Loading label="Loading" /> : null}
       {caseId && role !== null ? <Comments caseId={caseId} /> : null}
+      {caseId && role !== null ? <Button tone="secondary" label="Edit the public profile, photos, reels and audio" onPress={() => router.push(`/collect/manage/${caseId}` as Href)} /> : null}
+      {caseId && role !== null && !isBeneficiary ? <ExternalForm caseId={caseId} onDone={load} /> : null}
       {isBeneficiary ? null : <View style={styles.tabs}>{TABS.map(([key, label]) => <Chip key={key} label={label} selected={tab === key} onPress={() => setTab(key)} />)}</View>}
       {isBeneficiary ? null : (
         <>
@@ -191,5 +246,11 @@ const styles = themedStyles(() => StyleSheet.create({
   badge: { color: palette.coral, fontSize: 13, fontWeight: '700' },
   tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   receipts: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  receiptWrap: { gap: 4 },
+  viewLink: { color: palette.forest, fontSize: 12, fontWeight: '700' },
+  strong: { fontWeight: '700' },
+  lightbox: { alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.88)', flex: 1, justifyContent: 'center', padding: 16 },
+  lightboxImage: { height: '80%', width: '100%' },
+  lightboxClose: { color: palette.white, fontSize: 13, marginTop: 12 },
   receipt: { backgroundColor: palette.leaf, borderRadius: 10, height: 96, width: 96 },
 }));

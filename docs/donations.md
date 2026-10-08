@@ -1,6 +1,6 @@
 # Donations: how it works
 
-Last updated 2026-10-08. Migrations: `202610110001_donation_cases_workflow.sql`, then `202610120001_donation_comments_beneficiaries_analytics.sql`. Needs Moroccan legal review before launch.
+Last updated 2026-10-08. Migrations: `202610110001_donation_cases_workflow.sql`, then `202610120001_donation_comments_beneficiaries_analytics.sql`, then `202610130001_donation_media_wishes_external.sql`. Needs Moroccan legal review before launch.
 
 ## Model
 
@@ -38,3 +38,17 @@ Tables: `donation_cases`, `donation_categories`, `donation_case_media`, `donatio
 ## Not built
 
 Case updates timeline, donor notifications, card payments, refunds, payouts, ledger reconciliation.
+
+## Media, well-wishes and outside donations (migration 202610130001)
+
+- **Link name:** each case has a unique `slug` made from the beneficiary name (`/cases/amina-el-fassi`); UUID links still work. Admin can override it in the case form. Search matches slug and name.
+- **One story:** `bio` (20–4000 chars) replaces summary plus full story; `summary` is derived from its first 300 characters.
+- **Bank:** separate RIB (24 digits) and account number; the account number is derived from the RIB (digits 7–22) when left empty.
+- **Reels and video:** `donation_case_videos` (max 12). Instagram links are validated and embedded (public accounts with embedding only); otherwise upload to the `case-videos` bucket (50 MB).
+- **Audio:** `donation_case_audio` (max 5, `case-audio` bucket, 10 MB). Collectors record in the mobile app; the player shows only when a clip exists.
+- **Profile management:** admin, collectors and beneficiaries can edit story, photos, reels and audio (`update_case_profile`, `add_case_*`, `delete_case_*`; mobile route `/collect/manage/[caseId]`). Edits are public immediately.
+- **Well-wishes:** anyone can leave a message on a case (named or anonymous, rate limited); it is public once approved, in the same moderation queue as donor comments.
+- **Forgotten receipts:** donors can use "I paid but have no receipt" (`mark_pledge_paid`) and must give the name of the paying account; the order moves to review and the collector sees the name. The order screens warn about this up front.
+- **Outside donations:** admin and collectors record cash or direct transfers (`add_external_donation`, reference `EX-…`, shown as External); they count toward the progress bar and can be reversed.
+- **Receipts:** collectors and admins open each receipt full size from the donations list.
+- **Not verified:** Instagram embed rendering, native audio recording and video upload on a real device, backfill on production data, storage policies on real Supabase.

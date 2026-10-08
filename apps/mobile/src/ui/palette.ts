@@ -15,6 +15,10 @@ export type PaletteColors = {
   dangerBg: string;
   dangerText: string;
   successBg: string;
+  glass: string;
+  glassEdge: string;
+  washSage: string;
+  washClay: string;
 };
 
 export const lightPalette: PaletteColors = {
@@ -32,6 +36,10 @@ export const lightPalette: PaletteColors = {
   dangerBg: '#F3E1D6',
   dangerText: '#7A3F29',
   successBg: '#E3E7D3',
+  glass: 'rgba(250,246,236,0.66)',
+  glassEdge: 'rgba(255,255,255,0.7)',
+  washSage: 'rgba(122,150,104,0.20)',
+  washClay: 'rgba(196,128,90,0.16)',
 };
 
 // In dark mode "white" is the raised surface and "ink" the primary text, so contrast pairings invert together.
@@ -50,6 +58,10 @@ export const darkPalette: PaletteColors = {
   dangerBg: '#2E1D16',
   dangerText: '#EFA98E',
   successBg: '#1F2619',
+  glass: 'rgba(38,33,28,0.62)',
+  glassEdge: 'rgba(255,240,215,0.09)',
+  washSage: 'rgba(120,150,100,0.16)',
+  washClay: 'rgba(200,120,80,0.10)',
 };
 
 // Mutated in place so existing `palette.x` reads follow the active scheme.

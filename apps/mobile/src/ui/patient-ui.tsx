@@ -1,5 +1,6 @@
 import type { PropsWithChildren, ReactNode } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Svg, { Path, Text as SvgText } from 'react-native-svg';
@@ -9,7 +10,8 @@ import { display, palette, radii, spacing, themedStyles, useScheme, wobble } fro
 export function Page({ children }: PropsWithChildren) {
   useScheme();
   return (
-    <SafeAreaView style={[styles.safeArea, paperGrain]} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.safeArea, paperBackground()]} edges={['top', 'left', 'right']}>
+      {Platform.OS === 'web' ? null : <LinearGradient colors={[palette.washSage, 'transparent', palette.washClay]} pointerEvents="none" style={StyleSheet.absoluteFill} />}
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
@@ -77,13 +79,35 @@ export function BrandMark() {
   );
 }
 
+/** Bento grid: tiles of different sizes that wrap. `wide` takes a full row, `tall` is a taller half. */
+export function Bento({ children, style }: PropsWithChildren<{ style?: StyleProp<ViewStyle> }>) {
+  return <View style={[styles.bento, style]}>{children}</View>;
+}
+
+export function BentoTile({ children, span = 'half', onPress, label, hint, style }: PropsWithChildren<{ span?: 'half' | 'wide'; onPress?: () => void; label?: string; hint?: string; style?: StyleProp<ViewStyle> }>) {
+  useScheme();
+  const tileStyle = [uiStyles.card, styles.tile, span === 'wide' ? styles.tileWide : styles.tileHalf, style];
+  if (!onPress) return <View style={tileStyle}>{children}</View>;
+  return (
+    <Pressable accessibilityHint={hint} accessibilityLabel={label} accessibilityRole="button" onPress={onPress} style={({ pressed }) => [tileStyle, pressed && styles.tilePressed]}>
+      {children}
+    </Pressable>
+  );
+}
+
+// Frosted glass on web; native uses a translucent fill over the page wash.
+const glass = Platform.OS === 'web'
+  ? ({ backdropFilter: 'blur(14px) saturate(1.15)', WebkitBackdropFilter: 'blur(14px) saturate(1.15)', boxShadow: '0 1px 0 rgba(255,255,255,.5) inset, 0 8px 24px -12px rgba(60,45,25,.28)' } as object)
+  : ({ shadowColor: '#3C2D19', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.1, shadowRadius: 14, elevation: 2 } as object);
+
 export const uiStyles = themedStyles(() => StyleSheet.create({
   card: {
-    backgroundColor: palette.white,
-    borderColor: palette.line,
+    backgroundColor: palette.glass,
+    borderColor: palette.glassEdge,
     ...wobble,
+    ...glass,
     borderCurve: 'continuous',
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     padding: 16,
   },
   iconTile: {
@@ -97,9 +121,10 @@ export const uiStyles = themedStyles(() => StyleSheet.create({
   },
 }));
 
-/** Faint paper fibre on web; native keeps the flat paper colour. */
-const paperGrain = Platform.OS === 'web'
-  ? ({ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .28 0 0 0 0 .18 0 0 0 .08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")` } as object)
+/** Faint paper fibre plus two soft colour washes on web; native keeps the flat paper colour with a gradient wash. */
+const GRAIN = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .28 0 0 0 0 .18 0 0 0 .08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`;
+const paperBackground = () => Platform.OS === 'web'
+  ? ({ backgroundImage: `${GRAIN}, radial-gradient(60% 40% at 8% 0%, ${palette.washSage}, transparent), radial-gradient(50% 35% at 100% 18%, ${palette.washClay}, transparent)` } as object)
   : null;
 
 const styles = themedStyles(() => StyleSheet.create({
@@ -107,6 +132,11 @@ const styles = themedStyles(() => StyleSheet.create({
     backgroundColor: palette.paper,
     flex: 1,
   },
+  bento: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  tile: { gap: 4, minHeight: 132 },
+  tileHalf: { flexBasis: 150, flexGrow: 1, flexShrink: 1 },
+  tileWide: { flexBasis: '100%', flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 96 },
+  tilePressed: { opacity: 0.82, transform: [{ scale: 0.985 }] },
   content: {
     alignSelf: 'center',
     maxWidth: 720,

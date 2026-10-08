@@ -8,7 +8,7 @@ import ActivityTracker from '@/features/home/activity-tracker';
 import { listMeasurementsForCurrentUser } from '@/features/health/measurement-repository';
 import { summarizeMeasurements } from '@/features/health/measurement-summary';
 import { getCurrentUserProfile } from '@/features/profile/profile-repository';
-import { BrandMark, Page, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
+import { Bento, BentoTile, BrandMark, Page, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { localLibrary } from '@/features/content/library';
 import { dosesForDay, progressOf, stockState, toLocalDateKey } from '@/features/medicine/schedule';
 import { useTreatments } from '@/features/medicine/use-treatments';
@@ -162,42 +162,44 @@ export default function HomeScreen() {
       ) : null}
 
       <SectionHeading title="Start here" detail="Choose a next step" />
-      <View style={styles.actionGrid}>
-        <Pressable accessibilityRole="button" onPress={() => router.navigate('/health')} style={[uiStyles.card, styles.actionCard]}>
-          <View style={uiStyles.iconTile}>
-            <Heart color={palette.forest} size={19} strokeWidth={1.9} />
+      <Bento>
+        <BentoTile span="wide" onPress={() => router.navigate('/health')}>
+          <View style={uiStyles.iconTile}><Heart color={palette.forest} size={19} strokeWidth={1.9} /></View>
+          <View style={styles.tileCopy}>
+            <Text style={styles.tileTitle}>Track a result</Text>
+            <Text style={styles.actionBody}>Blood sugar, INR, and more</Text>
           </View>
-          <Text style={styles.actionTitle}>Track a result</Text>
-          <Text style={styles.actionBody}>Blood sugar, INR, and more</Text>
-        </Pressable>
-        <Pressable accessibilityRole="button" onPress={() => router.navigate('/discover')} style={[uiStyles.card, styles.actionCard]}>
-          <View style={[uiStyles.iconTile, { backgroundColor: palette.sky }]}>
-            <MapPin color={palette.forest} size={19} strokeWidth={1.9} />
-          </View>
+          <ArrowRight color={palette.forest} size={18} />
+        </BentoTile>
+        <BentoTile onPress={() => router.navigate('/discover')}>
+          <View style={[uiStyles.iconTile, { backgroundColor: palette.sky }]}><MapPin color={palette.forest} size={19} strokeWidth={1.9} /></View>
           <Text style={styles.actionTitle}>Find care</Text>
           <Text style={styles.actionBody}>Doctors and pharmacies nearby</Text>
-        </Pressable>
-        <Pressable accessibilityRole="button" onPress={() => router.push('/treatments' as Href)} style={[uiStyles.card, styles.actionCard]}>
-          <View style={[uiStyles.iconTile, { backgroundColor: palette.sky }]}><Pill color={palette.forest} size={19} strokeWidth={1.9} /></View>
+        </BentoTile>
+        <BentoTile onPress={() => router.push('/treatments' as Href)}>
+          <View style={uiStyles.iconTile}><Pill color={palette.forest} size={19} strokeWidth={1.9} /></View>
           <Text style={styles.actionTitle}>My treatments</Text>
           <Text style={styles.actionBody}>Track doses and daily progress</Text>
-        </Pressable>
-        <Pressable accessibilityRole="button" onPress={() => router.push('/medicines' as Href)} style={[uiStyles.card, styles.actionCard]}>
-          <View style={uiStyles.iconTile}><Search color={palette.forest} size={19} strokeWidth={1.9} /></View>
-          <Text style={styles.actionTitle}>Medicine directory</Text>
-          <Text style={styles.actionBody}>Look up any medicine by name</Text>
-        </Pressable>
-        <Pressable accessibilityRole="button" onPress={() => router.push('/articles' as Href)} style={[uiStyles.card, styles.actionCard]}>
-          <View style={[uiStyles.iconTile, { backgroundColor: palette.sky }]}><BookOpenText color={palette.forest} size={19} strokeWidth={1.9} /></View>
+        </BentoTile>
+        <BentoTile span="wide" onPress={() => router.push('/medicines' as Href)}>
+          <View style={[uiStyles.iconTile, { backgroundColor: palette.sky }]}><Search color={palette.forest} size={19} strokeWidth={1.9} /></View>
+          <View style={styles.tileCopy}>
+            <Text style={styles.tileTitle}>Medicine directory</Text>
+            <Text style={styles.actionBody}>Look up any medicine by name</Text>
+          </View>
+          <ArrowRight color={palette.forest} size={18} />
+        </BentoTile>
+        <BentoTile onPress={() => router.push('/articles' as Href)}>
+          <View style={uiStyles.iconTile}><BookOpenText color={palette.forest} size={19} strokeWidth={1.9} /></View>
           <Text style={styles.actionTitle}>Articles</Text>
           <Text style={styles.actionBody}>Plain-language health guides</Text>
-        </Pressable>
-        <Pressable accessibilityRole="button" onPress={() => router.push('/blogs' as Href)} style={[uiStyles.card, styles.actionCard]}>
-          <View style={uiStyles.iconTile}><NotebookPen color={palette.forest} size={19} strokeWidth={1.9} /></View>
+        </BentoTile>
+        <BentoTile onPress={() => router.push('/blogs' as Href)}>
+          <View style={[uiStyles.iconTile, { backgroundColor: palette.sky }]}><NotebookPen color={palette.forest} size={19} strokeWidth={1.9} /></View>
           <Text style={styles.actionTitle}>Health blogs</Text>
           <Text style={styles.actionBody}>Nutrition, sleep and movement</Text>
-        </Pressable>
-      </View>
+        </BentoTile>
+      </Bento>
 
       <SectionHeading title="Worth reading" detail="General information" />
       <View style={styles.readList}>
@@ -357,6 +359,8 @@ const styles = themedStyles(() => StyleSheet.create({
   readList: { gap: 10, marginBottom: 18 },
   readCard: { gap: 4 },
   readTag: { color: palette.coral, fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
+  tileCopy: { flex: 1 },
+  tileTitle: { color: palette.ink, fontSize: 17, fontWeight: '600' },
   actionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -371,7 +375,7 @@ const styles = themedStyles(() => StyleSheet.create({
     color: palette.ink,
     fontSize: 17,
     fontWeight: '600',
-    marginTop: 15,
+    marginTop: 12,
   },
   actionBody: {
     color: palette.muted,

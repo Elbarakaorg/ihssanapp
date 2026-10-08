@@ -224,3 +224,10 @@ textarea { padding: 10px 12px; width: 100%; }
 .form-grid label.check input { height: 16px; min-height: 16px; width: 16px; }
 .picker { display: grid; gap: 8px; margin-top: 12px; }
 .picker-map { border: 1px solid var(--line); border-radius: 14px 10px 13px 9px; height: 340px; overflow: hidden; }
+
+/* Glass surfaces over soft washes (wabi-sabi paper underneath) */
+body { background-attachment: fixed, fixed, fixed; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .28 0 0 0 0 .18 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), radial-gradient(60% 40% at 8% 0%, rgba(122,150,104,.20), transparent), radial-gradient(50% 35% at 100% 18%, rgba(196,128,90,.16), transparent); }
+.panel, .dn-stat, .dn-case, .dn-item { -webkit-backdrop-filter: blur(14px) saturate(1.15); backdrop-filter: blur(14px) saturate(1.15); background: rgba(250,246,236,.66); border-color: rgba(255,255,255,.7); box-shadow: 0 1px 0 rgba(255,255,255,.5) inset, 0 8px 24px -12px rgba(60,45,25,.28); }
+.panel { padding: 22px; }
+.dn-item-selected { border-color: var(--forest); box-shadow: 0 0 0 2px rgba(74,103,65,.15); }
+@supports not (backdrop-filter: blur(1px)) { .panel, .dn-stat, .dn-case, .dn-item { background: var(--surface); } }

@@ -110,3 +110,6 @@
 .dn-preview h2 { font-size: 24px; line-height: 1.2; margin: 0; }
 .dn-preview p { color: #44564b; font-size: 14px; line-height: 1.6; margin: 0; white-space: pre-wrap; }
 .dn-confirm-note { background: #fbf1e3; border-radius: 10px; color: #7a4a1e; font-size: 12px; line-height: 1.5; padding: 10px 12px; }
+
+/* Bento: the first stat is featured across two columns on wide screens */
+@media (min-width: 900px) { .dn-stats > :first-child { grid-column: span 2; } .dn-stats > :first-child .dn-stat-value { font-size: 36px; } }

@@ -24,7 +24,7 @@ const supportMembership: AdminMembership = {
 
 function makeDataAccess(actorId: string, actorMembership: AdminMembership | null): DataAccess {
   return {
-    verifyAccessToken: vi.fn(async (token) => token === 'valid' ? { id: actorId, email: null } : null),
+    verifyAccessToken: vi.fn(async (token) => token === aal2Token ? { id: actorId, email: null } : null),
     getProfile: vi.fn(),
     updateProfile: vi.fn(),
     listMetricDefinitions: vi.fn(),
@@ -42,12 +42,13 @@ function makeDataAccess(actorId: string, actorMembership: AdminMembership | null
   };
 }
 
+const aal2Token = `x.${Buffer.from(JSON.stringify({ aal: 'aal2' })).toString('base64url')}.y`;
 describe('admin membership routes', () => {
   it('denies membership management to a support admin even when signed in', async () => {
     const dataAccess = makeDataAccess('support-id', supportMembership);
     const app = createApi(dataAccess);
     const response = await app.request('/v1/admin/memberships', {
-      headers: { Authorization: 'Bearer valid' },
+      headers: { Authorization: `Bearer ${aal2Token}` },
     });
 
     expect(response.status).toBe(403);
@@ -57,7 +58,7 @@ describe('admin membership routes', () => {
   it('denies membership management to ordinary signed-in users', async () => {
     const app = createApi(makeDataAccess('patient-id', null));
     const response = await app.request('/v1/admin/memberships', {
-      headers: { Authorization: 'Bearer valid' },
+      headers: { Authorization: `Bearer ${aal2Token}` },
     });
 
     expect(response.status).toBe(403);
@@ -68,12 +69,12 @@ describe('admin membership routes', () => {
     const app = createApi(dataAccess);
     const response = await app.request('/v1/admin/memberships', {
       method: 'POST',
-      headers: { Authorization: 'Bearer valid', 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${aal2Token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: 'f65ca080-93a5-46c0-a6c8-7d933e9f4f31', permissions: ['articles.edit'] }),
     });
 
     expect(response.status).toBe(201);
-    expect(dataAccess.grantSupportAdmin).toHaveBeenCalledWith('valid', 'f65ca080-93a5-46c0-a6c8-7d933e9f4f31', ['articles.edit']);
+    expect(dataAccess.grantSupportAdmin).toHaveBeenCalledWith(aal2Token, 'f65ca080-93a5-46c0-a6c8-7d933e9f4f31', ['articles.edit']);
   });
 
   it('rejects the reserved membership-management permission in support grants', async () => {
@@ -81,7 +82,7 @@ describe('admin membership routes', () => {
     const app = createApi(dataAccess);
     const response = await app.request('/v1/admin/memberships', {
       method: 'POST',
-      headers: { Authorization: 'Bearer valid', 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${aal2Token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: 'f65ca080-93a5-46c0-a6c8-7d933e9f4f31', permissions: ['admin.memberships.manage'] }),
     });
 
@@ -96,13 +97,13 @@ describe('email-based support invitations', () => {
     const app = createApi(dataAccess);
     const response = await app.request('/v1/admin/invitations', {
       method: 'POST',
-      headers: { Authorization: 'Bearer valid', 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${aal2Token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: ' Support.Person@example.com ', permissions: ['support.requests.manage', 'articles.edit'] }),
     });
 
     expect(response.status).toBe(201);
     expect(dataAccess.inviteSupportAdminByEmail).toHaveBeenCalledWith(
-      'valid',
+      aal2Token,
       'support.person@example.com',
       ['support.requests.manage', 'articles.edit'],
     );
@@ -114,7 +115,7 @@ describe('email-based support invitations', () => {
     const app = createApi(dataAccess, [], { send });
     const response = await app.request('/v1/admin/invitations', {
       method: 'POST',
-      headers: { Authorization: 'Bearer valid', 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${aal2Token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: 'new.person@example.com', permissions: ['articles.edit'] }),
     });
 
@@ -128,7 +129,7 @@ describe('email-based support invitations', () => {
     const app = createApi(dataAccess);
     const response = await app.request('/v1/admin/invitations', {
       method: 'POST',
-      headers: { Authorization: 'Bearer valid', 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${aal2Token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: 'new.person@example.com', permissions: ['articles.edit'] }),
     });
 
@@ -141,7 +142,7 @@ describe('email-based support invitations', () => {
     const app = createApi(dataAccess);
     const response = await app.request('/v1/admin/invitations', {
       method: 'POST',
-      headers: { Authorization: 'Bearer valid', 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${aal2Token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: 'not-an-email', permissions: ['admin.memberships.manage'] }),
     });
 
@@ -153,12 +154,12 @@ describe('email-based support invitations', () => {
     const dataAccess = makeDataAccess('support-id', supportMembership);
     const app = createApi(dataAccess);
     const response = await app.request('/v1/admin/me', {
-      headers: { Authorization: 'Bearer valid' },
+      headers: { Authorization: `Bearer ${aal2Token}` },
     });
 
     expect(response.status).toBe(200);
-    expect(dataAccess.acceptSupportAdminInvitation).toHaveBeenCalledWith('valid');
-    expect(dataAccess.getAdminMembership).toHaveBeenCalledWith('valid', 'support-id');
+    expect(dataAccess.acceptSupportAdminInvitation).toHaveBeenCalledWith(aal2Token);
+    expect(dataAccess.getAdminMembership).toHaveBeenCalledWith(aal2Token, 'support-id');
   });
 });
 
@@ -168,13 +169,13 @@ describe('email-first support invitations', () => {
     const app = createApi(dataAccess);
     const response = await app.request('/v1/admin/invitations', {
       method: 'POST',
-      headers: { Authorization: 'Bearer valid', 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${aal2Token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: ' Support.Person@example.com ', permissions: ['support.requests.manage', 'articles.edit'] }),
     });
 
     expect(response.status).toBe(201);
     expect(dataAccess.inviteSupportAdminByEmail).toHaveBeenCalledWith(
-      'valid',
+      aal2Token,
       'support.person@example.com',
       ['support.requests.manage', 'articles.edit'],
     );
@@ -185,7 +186,7 @@ describe('email-first support invitations', () => {
     const app = createApi(dataAccess);
     const response = await app.request('/v1/admin/invitations', {
       method: 'POST',
-      headers: { Authorization: 'Bearer valid', 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${aal2Token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: 'new.person@example.com', permissions: ['articles.edit'] }),
     });
 
@@ -198,7 +199,7 @@ describe('email-first support invitations', () => {
     const app = createApi(dataAccess);
     const response = await app.request('/v1/admin/invitations', {
       method: 'POST',
-      headers: { Authorization: 'Bearer valid', 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${aal2Token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: 'not-an-email', permissions: ['admin.memberships.manage'] }),
     });
 
@@ -210,11 +211,11 @@ describe('email-first support invitations', () => {
     const dataAccess = makeDataAccess('support-id', supportMembership);
     const app = createApi(dataAccess);
     const response = await app.request('/v1/admin/me', {
-      headers: { Authorization: 'Bearer valid' },
+      headers: { Authorization: `Bearer ${aal2Token}` },
     });
 
     expect(response.status).toBe(200);
-    expect(dataAccess.acceptSupportAdminInvitation).toHaveBeenCalledWith('valid');
+    expect(dataAccess.acceptSupportAdminInvitation).toHaveBeenCalledWith(aal2Token);
     expect(dataAccess.getAdminMembership).toHaveBeenCalledAfter(dataAccess.acceptSupportAdminInvitation as never);
   });
 });

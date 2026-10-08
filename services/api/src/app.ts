@@ -79,6 +79,16 @@ export function createApi(dataAccess: DataAccess, allowedOrigins: string[] = [],
     await next();
   });
 
+  app.use('/v1/admin/*', async (context, next) => {
+    try {
+      const payload = JSON.parse(Buffer.from(context.get('accessToken').split('.')[1], 'base64url').toString());
+      if (payload.aal !== 'aal2') return context.json({ error: 'Two-factor authentication required.' }, 403);
+    } catch {
+      return context.json({ error: 'Session is invalid or expired.' }, 401);
+    }
+    await next();
+  });
+
   const cvUses = new Map<string, number[]>();
   app.post('/v1/doctor/cv-extract', bodyLimit({ maxSize: 7_200_000, onError: (c) => c.json({ error: 'Upload a PDF smaller than 5 MB.' }, 413) }), async (context) => {
     if (!cvExtractor) return context.json({ error: 'CV reading is not configured yet. Fill your profile in manually.' }, 503);

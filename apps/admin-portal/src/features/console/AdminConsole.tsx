@@ -47,7 +47,85 @@ export default function AdminConsole() {
   if (!ready) return <LoadingScreen label="Checking admin session" />;
   if (!session) return <SignInScreen initialError={error} />;
 
-  return <AdminAccess session={session} />;
+  return <MfaGate session={session}><AdminAccess session={session} /></MfaGate>;
+}
+
+function MfaGate({ session, children }: { session: Session; children: React.ReactNode }) {
+  const [state, setState] = useState<'loading' | 'ok' | 'challenge' | 'enroll'>('loading');
+  const [factorId, setFactorId] = useState('');
+  const [qr, setQr] = useState('');
+  const [secret, setSecret] = useState('');
+  const [code, setCode] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const run = async () => {
+      if (!supabase) return;
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (!active) return;
+      if (aal?.currentLevel === 'aal2') return setState('ok');
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const verified = factors?.totp?.[0];
+      if (verified) {
+        setFactorId(verified.id);
+        return setState('challenge');
+      }
+      for (const stale of factors?.all ?? []) await supabase.auth.mfa.unenroll({ factorId: stale.id });
+      const { data, error: enrollError } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: `admin-${Date.now()}` });
+      if (!active) return;
+      if (enrollError || !data) {
+        setError(enrollError?.message ?? 'Could not start two-factor setup. Enable TOTP in Supabase Auth settings.');
+        return setState('enroll');
+      }
+      setFactorId(data.id);
+      setQr(data.totp.qr_code);
+      setSecret(data.totp.secret);
+      setState('enroll');
+    };
+    void run();
+    return () => { active = false; };
+  }, [session.user.id]);
+
+  const verify = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!supabase) return;
+    setBusy(true);
+    setError('');
+    const { error: verifyError } = await supabase.auth.mfa.challengeAndVerify({ factorId, code: code.trim() });
+    setBusy(false);
+    if (verifyError) return setError(verifyError.message);
+    setState('ok');
+  };
+
+  if (state === 'ok') return <>{children}</>;
+  if (state === 'loading') return <LoadingScreen label="Checking two-factor status" />;
+
+  return (
+    <main className="auth-layout">
+      <section className="auth-panel">
+        <p className="eyebrow">TWO-FACTOR AUTHENTICATION</p>
+        <h1>{state === 'enroll' ? 'Set up your authenticator' : 'Enter your 6-digit code'}</h1>
+        {state === 'enroll' && qr ? (
+          <>
+            <p className="auth-lede">Scan this QR code with an authenticator app, then enter the code it shows.</p>
+            <img alt="Two-factor QR code" height={180} src={qr} width={180} />
+            <p className="fine-print">Or enter this key manually: {secret}</p>
+          </>
+        ) : null}
+        {factorId ? (
+          <form className="auth-form" onSubmit={verify}>
+            <label htmlFor="mfa-code">Authenticator code</label>
+            <input id="mfa-code" autoComplete="one-time-code" inputMode="numeric" maxLength={6} onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))} pattern="[0-9]{6}" required value={code} />
+            {error ? <p className="alert alert-error" role="alert">{error}</p> : null}
+            <button className="button button-primary button-full" disabled={busy || code.length !== 6} type="submit">{busy ? 'Verifying…' : 'Verify'}</button>
+          </form>
+        ) : error ? <p className="alert alert-error" role="alert">{error}</p> : null}
+        <button className="button button-full" onClick={() => void supabase?.auth.signOut()} type="button">Sign out</button>
+      </section>
+    </main>
+  );
 }
 
 function SignInScreen({ initialError }: { initialError: string }) {

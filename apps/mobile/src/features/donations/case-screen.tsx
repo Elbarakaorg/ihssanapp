@@ -1,13 +1,12 @@
 import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
-import { Mail, Phone, Share2, Trash2 } from 'lucide-react-native';
+import { AtSign, Mail, Phone, Share2, Trash2 } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
-import { SocialLinks } from '@/features/doctor/doctor-engagement';
 import { RemoteImage } from '@/features/doctor/doctor-image';
 import { BackLink, Button, Chip, Field, Message } from '@/features/doctor/ui';
-import { imageUrl } from '@/features/doctor/doctor-api';
+import { imageUrl, socialKinds, type SocialLink } from '@/features/doctor/doctor-api';
 import { Loading } from '@/ui/loading';
 import { Page, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { display, palette, themedStyles, useScheme } from '@/ui/palette';
@@ -58,6 +57,8 @@ export default function CaseScreen() {
 
   const open = item.status === 'published';
   const remaining = Math.max(item.goal_mad - item.raised_mad, 0);
+  const phone = item.contact?.phone;
+  const email = item.contact?.email;
   const removeWish = async (wishId: string) => {
     try { await deleteWish(wishId); setWishes((current) => current.filter((w) => w.id !== wishId)); } catch (e) { setNote(e instanceof Error ? e.message : 'Could not delete this message.'); }
   };
@@ -109,20 +110,27 @@ export default function CaseScreen() {
         </>
       ) : null}
 
-      {item.social_links.length ? <><SectionHeading title="Follow their journey" /><SocialLinks links={item.social_links} /></> : null}
-
-      {item.contact && (item.contact.phone || item.contact.email) ? (
+      {(item.social_links.length > 0 || item.contact && (item.contact.phone || item.contact.email)) ? (
         <>
-          <SectionHeading title="Contact" />
-          <View style={styles.contact}>
-            {item.contact.phone ? (
-              <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(`tel:${item.contact?.phone?.replace(/[^+\d]/g, '')}`)} style={styles.contactRow}>
-                <Phone color={palette.forest} size={16} /><Text style={styles.contactText}>{item.contact.phone}</Text>
+          <SectionHeading title="Connect" />
+          <View style={styles.contactLinks}>
+            {item.social_links.filter((link) => /^https:\/\//i.test(link.url)).map((link) => {
+              const label = socialLinkLabel(link);
+              return (
+                <Pressable key={link.kind} accessibilityRole="link" accessibilityLabel={`${socialKinds.find((kind) => kind.kind === link.kind)?.label ?? link.kind}: ${label}`} onPress={() => void Linking.openURL(link.url)} style={styles.contactLink}>
+                  {link.kind === 'instagram' ? <AtSign color={palette.forest} size={17} /> : <Share2 color={palette.forest} size={17} />}
+                  <Text numberOfLines={1} style={styles.contactText}>{label}</Text>
+                </Pressable>
+              );
+            })}
+            {phone ? (
+              <Pressable accessibilityRole="link" accessibilityLabel={`Call ${phone}`} onPress={() => void Linking.openURL(`tel:${phone.replace(/[^+\d]/g, '')}`)} style={styles.contactLink}>
+                <Phone color={palette.forest} size={17} /><Text numberOfLines={1} style={styles.contactText}>{phone}</Text>
               </Pressable>
             ) : null}
-            {item.contact.email ? (
-              <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(`mailto:${encodeURIComponent(item.contact?.email ?? '')}`)} style={styles.contactRow}>
-                <Mail color={palette.forest} size={16} /><Text style={styles.contactText}>{item.contact.email}</Text>
+            {email ? (
+              <Pressable accessibilityRole="link" accessibilityLabel={`Email ${email}`} onPress={() => void Linking.openURL(`mailto:${encodeURIComponent(email)}`)} style={styles.contactLink}>
+                <Mail color={palette.forest} size={17} /><Text numberOfLines={1} style={styles.contactText}>{email}</Text>
               </Pressable>
             ) : null}
           </View>
@@ -159,6 +167,18 @@ export default function CaseScreen() {
       <Text style={styles.fine}>Donations go directly to the family&apos;s bank account. Ihssan never holds the money; a fund collector confirms each transfer before it counts.</Text>
     </Page>
   );
+}
+
+function socialLinkLabel(link: SocialLink) {
+  if (link.kind !== 'instagram') return socialKinds.find((kind) => kind.kind === link.kind)?.label ?? link.kind;
+  try {
+    const segment = new URL(link.url).pathname.split('/').filter(Boolean)[0]?.replace(/^@/, '');
+    return segment && !['p', 'reel', 'reels', 'tv', 'stories', 'explore', 'accounts'].includes(segment.toLowerCase())
+      ? `@${segment}`
+      : 'Instagram';
+  } catch {
+    return 'Instagram';
+  }
 }
 
 function Story({ text }: { text: string }) {
@@ -276,9 +296,9 @@ const styles = themedStyles(() => StyleSheet.create({
   galleryItem: { width: 220 },
   galleryImage: { backgroundColor: palette.leaf, borderRadius: 14, height: 160, width: 220 },
   caption: { color: palette.muted, fontSize: 12, lineHeight: 17, marginTop: 6 },
-  contact: { gap: 8 },
-  contactRow: { alignItems: 'center', flexDirection: 'row', gap: 10, minHeight: 44 },
-  contactText: { color: palette.forest, fontSize: 15, fontWeight: '600' },
+  contactLinks: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  contactLink: { alignItems: 'center', backgroundColor: palette.glass, borderColor: palette.line, borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 7, maxWidth: '100%', minHeight: 44, paddingHorizontal: 12 },
+  contactText: { color: palette.forest, flexShrink: 1, fontSize: 14, fontWeight: '600' },
   wallRow: { gap: 4, marginTop: 8, padding: 12 },
   wallHead: { flexDirection: 'row', justifyContent: 'space-between' },
   wallName: { color: palette.ink, fontSize: 14, fontWeight: '700' },

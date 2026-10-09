@@ -77,7 +77,7 @@ export default function CaseScreen() {
             {item.is_urgent ? <UrgentBadge /> : null}
           </View>
           <Text style={styles.title}>{item.title}</Text>
-          <Text style={styles.meta}>
+          <Text style={styles.heroMeta}>
             {[item.beneficiary_name, item.age !== null ? `${item.age} years old` : null, item.city].filter(Boolean).join(' · ')}
           </Text>
         </View>
@@ -229,10 +229,12 @@ function DonateForm({ item, remaining, onDone, onCancel }: { item: CaseDetail; r
 
   return (
     <View style={[uiStyles.card, styles.form]}>
-      <Text style={styles.formTitle}>Start your donation order</Text>
-      <Text style={styles.meta}>You will get the bank details next, and 48 hours to send your transfer and upload the receipt.</Text>
-      <Message kind="info">{ACCOUNT_RECEIPT_NOTICE}</Message>
-      <Field label="Amount (MAD)" value={amountText} onChangeText={setAmountText} keyboardType="number-pad" maxLength={9} placeholder={`${item.min_donation_mad} or more`} />
+      <Text style={styles.formTitle}>Your donation</Text>
+      <Text style={styles.fieldTitle}>Amount</Text>
+      <View style={styles.amountBox}>
+        <TextInput accessibilityLabel="Amount in MAD" keyboardType="number-pad" maxLength={9} onChangeText={setAmountText} placeholder={`${item.min_donation_mad}`} placeholderTextColor={palette.muted} style={styles.amountInput} value={amountText} />
+        <Text style={styles.currency}>MAD</Text>
+      </View>
       <View style={styles.chips}>
         {suggestedAmounts(item.min_donation_mad, remaining).map((value) => <Chip key={value} label={`${value}`} selected={amount === value} onPress={() => setAmountText(String(value))} />)}
       </View>
@@ -240,12 +242,16 @@ function DonateForm({ item, remaining, onDone, onCancel }: { item: CaseDetail; r
         <View style={styles.flex}><Text style={styles.switchTitle}>Give anonymously</Text><Text style={styles.meta}>Your name is never shown publicly.</Text></View>
         <Switch accessibilityLabel="Give anonymously" onValueChange={setAnonymous} trackColor={{ true: palette.forest }} value={anonymous} />
       </View>
-      {!anonymous ? <Field label="Name to display" value={name} onChangeText={setName} maxLength={60} /> : null}
-      <Field label="A kind word (optional)" value={comment} onChangeText={setComment} maxLength={300} multiline />
-      <Field label="Phone or email, only for the foundation (optional)" value={contact} onChangeText={setContact} maxLength={120} autoCapitalize="none" />
+      {!anonymous ? <Field label="Name to display" value={name} onChangeText={setName} maxLength={60} placeholder="How your name appears" /> : null}
+      <Field label="A kind word (optional)" value={comment} onChangeText={setComment} maxLength={300} multiline placeholder="Write a short prayer or message" />
+      <Field label="Phone or email (optional)" value={contact} onChangeText={setContact} maxLength={120} autoCapitalize="none" placeholder="Only seen by the foundation" />
       {error ? <Message kind="error">{error}</Message> : null}
       <Button label="Continue to bank details" busy={busy} onPress={() => void submit()} />
       <Button tone="secondary" label="Cancel" onPress={onCancel} />
+      <View style={styles.notes}>
+        <Text style={styles.noteText}>Next you get the bank details and 48 hours to send your transfer and upload the receipt.</Text>
+        <Text style={styles.noteText}>{ACCOUNT_RECEIPT_NOTICE}</Text>
+      </View>
     </View>
   );
 }
@@ -260,7 +266,8 @@ const styles = themedStyles(() => StyleSheet.create({
   tags: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tag: { backgroundColor: palette.leaf, borderRadius: 10, color: palette.forest, fontSize: 11, fontWeight: '700', overflow: 'hidden', paddingHorizontal: 8, paddingVertical: 3 },
   title: { ...display, color: '#FFFFFF', fontSize: 28, lineHeight: 34, marginTop: 8 },
-  meta: { color: 'rgba(255,255,255,0.88)', fontSize: 13, lineHeight: 19, marginTop: 4 },
+  heroMeta: { color: 'rgba(255,255,255,0.88)', fontSize: 13, lineHeight: 19, marginTop: 4 },
+  meta: { color: palette.muted, fontSize: 13, lineHeight: 19, marginTop: 4 },
   cityRow: { alignItems: 'center', flexDirection: 'row', gap: 4, marginTop: 4 },
   fundCard: { gap: 6, marginTop: 14, padding: 16 },
   body: { color: palette.ink, fontSize: 15, lineHeight: 24 },
@@ -284,6 +291,12 @@ const styles = themedStyles(() => StyleSheet.create({
   wishSend: { alignItems: 'center', backgroundColor: palette.forest, borderRadius: 12, justifyContent: 'center', minHeight: 42, paddingHorizontal: 18 },
   wishSendLabel: { color: palette.white, fontSize: 14, fontWeight: '700' },
   wishError: { color: palette.dangerText, fontSize: 12 },
+  fieldTitle: { color: palette.ink, fontSize: 13, fontWeight: '600', marginTop: 14 },
+  amountBox: { alignItems: 'center', backgroundColor: palette.white, borderColor: palette.line, borderRadius: 16, borderWidth: 1, flexDirection: 'row', marginTop: 6, paddingHorizontal: 16 },
+  amountInput: { ...display, color: palette.ink, flex: 1, fontSize: 32, minHeight: 64, outlineStyle: 'none' } as object,
+  currency: { color: palette.muted, fontSize: 15, fontWeight: '700' },
+  notes: { backgroundColor: palette.leaf, borderRadius: 14, gap: 8, marginTop: 14, padding: 12 },
+  noteText: { color: palette.ink, fontSize: 13, lineHeight: 19 },
   form: { gap: 4, marginTop: 14, padding: 16 },
   formTitle: { ...display, color: palette.ink, fontSize: 20 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },

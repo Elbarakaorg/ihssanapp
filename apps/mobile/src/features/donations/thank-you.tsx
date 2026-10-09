@@ -6,11 +6,7 @@ import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, w
 import { Button } from '@/features/doctor/ui';
 import { display, palette, themedStyles, useScheme } from '@/ui/palette';
 
-// Arabic follows the Uthmani script (Tanzil via alquran.cloud); fragments are marked with an ellipsis in the translation.
-const VERSES = [
-  { arabic: 'وَمَآ أَنفَقْتُم مِّن شَىْءٍۢ فَهُوَ يُخْلِفُهُۥ ۖ وَهُوَ خَيْرُ ٱلرَّٰزِقِينَ', english: '…And whatever you spend of anything, He will replace it; and He is the best of providers.', source: 'Surah Saba’ 34:39' },
-  { arabic: 'فَمَن يَعْمَلْ مِثْقَالَ ذَرَّةٍ خَيْرًۭا يَرَهُۥ', english: 'So whoever does an atom’s weight of good will see it.', source: 'Surah Az-Zalzalah 99:7' },
-];
+import { givingVerses } from './giving-verses';
 
 function Ring({ delay, reduced }: { delay: number; reduced: boolean }) {
   const progress = useSharedValue(reduced ? 1 : 0);
@@ -24,7 +20,7 @@ function Ring({ delay, reduced }: { delay: number; reduced: boolean }) {
 export function ThankYou({ visible, onClose, title = 'JazakAllahu khayran' }: { visible: boolean; onClose: () => void; title?: string }) {
   useScheme();
   const reduced = useReducedMotion();
-  const verse = useMemo(() => VERSES[Math.floor(Math.random() * VERSES.length)], [visible]); // eslint-disable-line react-hooks/exhaustive-deps
+  const verse = useMemo(() => givingVerses[Math.floor(Math.random() * givingVerses.length)], [visible]); // eslint-disable-line react-hooks/exhaustive-deps
   const heart = useSharedValue(reduced ? 1 : 0);
   const text = useSharedValue(reduced ? 1 : 0);
 

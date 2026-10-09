@@ -2,10 +2,11 @@ import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { GivingVerseCard } from './giving-verse-card';
 import { ThankYou } from './thank-you';
 import { BackLink, Button, Field, Message } from '@/features/doctor/ui';
 import { Loading } from '@/ui/loading';
-import { Ornament, Page, PageHeading, SectionHeading, uiStyles } from '@/ui/patient-ui';
+import { Page, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { display, palette, themedStyles, useScheme } from '@/ui/palette';
 import { type PledgeView, cancelPledge, getPledge, markPledgePaid, pickAndSubmitReceipt } from './donations-api';
 import { ACCOUNT_RECEIPT_NOTICE, RECEIPT_LIMIT, formatMad, groupAccountNumber, pledgeStatus, timeLeft } from './donations-logic';
@@ -75,16 +76,19 @@ export default function PledgeScreen() {
   return (
     <Page>
       <BackLink href="/give" label="Giving" />
-      <PageHeading eyebrow={`Order ${pledge.reference}`} title={formatMad(pledge.amount_mad)}>{pledge.case_title}</PageHeading>
-      <View style={styles.statusRow}>
-        <StatusPill status={pledge.status} />
-        {waiting ? <Text style={[styles.timer, left.expired && styles.timerOut]}>{left.label}</Text> : null}
+      <View style={styles.summary}>
+        <View style={styles.flex}>
+          <Text style={styles.amount}>{formatMad(pledge.amount_mad)}</Text>
+          <Text numberOfLines={1} style={styles.caseName}>{pledge.case_title} · {pledge.reference}</Text>
+        </View>
+        <View style={styles.summaryRight}>
+          <StatusPill status={pledge.status} />
+          {waiting ? <Text style={[styles.timer, left.expired && styles.timerOut]}>{left.label}</Text> : null}
+        </View>
       </View>
-      <Text style={styles.hint}>{status.hint}</Text>
       {pledge.review_note ? <Message kind="info">{pledge.review_note}</Message> : null}
       <ThankYou visible={thanks} onClose={() => setThanks(false)} />
       {message ? <Message kind={message.kind}>{message.text}</Message> : null}
-      <Ornament />
 
       {pledge.banks.length ? (
         <>
@@ -104,6 +108,8 @@ export default function PledgeScreen() {
         </>
       ) : null}
 
+      {waiting || pledge.can_upload ? <GivingVerseCard /> : null}
+
       {pledge.can_upload ? (
         <>
           <SectionHeading title="Your receipt" detail={`${pledge.receipt_count} of ${RECEIPT_LIMIT} attached`} />
@@ -114,6 +120,7 @@ export default function PledgeScreen() {
           {pledge.can_mark_paid && pledge.receipt_count === 0 ? <Button tone="secondary" label="I paid but have no receipt" busy={busy} onPress={() => void markPaid()} /> : null}
         </>
       ) : null}
+      <Text style={styles.hint}>{status.hint}</Text>
       {pledge.payer_name ? <Text style={styles.hint}>Paid from the account of: {pledge.payer_name}</Text> : null}
       {waiting ? <Button tone="secondary" label="Cancel this order" disabled={busy} onPress={() => void cancel()} /> : null}
       <Button tone="secondary" label="Back to the case" onPress={() => router.push(`/cases/${pledge.case_slug ?? pledge.case_id}` as Href)} />
@@ -122,7 +129,11 @@ export default function PledgeScreen() {
 }
 
 const styles = themedStyles(() => StyleSheet.create({
-  statusRow: { alignItems: 'center', flexDirection: 'row', gap: 12, marginTop: 6 },
+  flex: { flex: 1 },
+  summary: { alignItems: 'center', flexDirection: 'row', gap: 12 },
+  summaryRight: { alignItems: 'flex-end', gap: 4 },
+  amount: { ...display, color: palette.ink, fontSize: 30, lineHeight: 36 },
+  caseName: { color: palette.muted, fontSize: 12 },
   timer: { color: palette.muted, fontSize: 13, fontWeight: '600' },
   timerOut: { color: palette.coral },
   hint: { color: palette.muted, fontSize: 13, lineHeight: 19, marginTop: 8 },

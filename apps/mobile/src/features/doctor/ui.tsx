@@ -1,6 +1,6 @@
 import { type Href, useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, type TextInputProps, View } from 'react-native';
 
 import { display, palette, themedStyles, useScheme, wobble, glassSurface } from '@/ui/palette';
@@ -28,10 +28,11 @@ export function Button({ label, onPress, busy, disabled, tone = 'primary' }: { l
 
 export function Field({ label, ...props }: TextInputProps & { label: string }) {
   useScheme();
+  const [focused, setFocused] = useState(false);
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <TextInput accessibilityLabel={label} placeholderTextColor={palette.muted} {...props} value={props.value ?? ''} style={[styles.input, props.multiline && styles.multiline]} />
+      <TextInput accessibilityLabel={label} placeholderTextColor={palette.muted} {...props} onBlur={(e) => { setFocused(false); props.onBlur?.(e); }} onFocus={(e) => { setFocused(true); props.onFocus?.(e); }} value={props.value ?? ''} style={[styles.input, props.multiline && styles.multiline, focused && styles.inputFocused]} />
     </View>
   );
 }
@@ -79,8 +80,9 @@ const styles = themedStyles(() => StyleSheet.create({
   off: { opacity: 0.5 },
   pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
   field: { marginTop: 14 },
-  fieldLabel: { color: palette.muted, fontSize: 12, fontWeight: '600', letterSpacing: 0.4, marginBottom: 6 },
+  fieldLabel: { color: palette.ink, fontSize: 13, fontWeight: '600', marginBottom: 6 },
   input: { ...wobble, backgroundColor: palette.white, borderColor: palette.line, borderWidth: 1, color: palette.ink, fontSize: 15, minHeight: 48, paddingHorizontal: 14 },
+  inputFocused: { backgroundColor: palette.white, borderColor: palette.forest, borderWidth: 1.5 },
   multiline: { minHeight: 96, paddingTop: 12, textAlignVertical: 'top' },
   chip: { borderColor: palette.line, borderRadius: 18, borderWidth: 1, minHeight: 38, justifyContent: 'center', paddingHorizontal: 14 },
   chipOn: { backgroundColor: palette.forest, borderColor: palette.forest },

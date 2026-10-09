@@ -1,9 +1,9 @@
 import { type Href, useFocusEffect, useRouter } from 'expo-router';
 import { HandHeart, History, ShieldCheck } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Chip, Field, Message } from '@/features/doctor/ui';
+import { Chip, Message } from '@/features/doctor/ui';
 import { useAuth } from '@/features/auth/auth-provider';
 import { Loading } from '@/ui/loading';
 import { Page, PageHeading, SectionHeading, uiStyles } from '@/ui/patient-ui';
@@ -13,9 +13,11 @@ import {
 } from './donations-api';
 import { formatMad } from './donations-logic';
 import { CaseCard } from './donations-ui';
+import { Dropdown, SearchBar, ToggleChip } from './filter-ui';
 
 const PAGE = 12;
 const SORTS: [CaseSort, string][] = [['newest', 'Newest'], ['urgent', 'Most urgent'], ['nearly_funded', 'Nearly funded'], ['least_funded', 'Needs most help'], ['most_funded', 'Most raised']];
+const STATUS_LABEL: Record<string, string> = { active: 'Open for donations', funded: 'Fully funded', all: 'All cases' };
 const STEPS = ['Choose a verified case and start a donation order.', 'Send your transfer to the family’s bank account within 48 hours.', 'Come back and upload your receipt.', 'A fund collector confirms it, and the progress bar moves.'];
 
 export default function DonationsScreen() {
@@ -79,7 +81,7 @@ export default function DonationsScreen() {
         {hasOrders ? <View style={styles.historyDot} /> : null}
       </Pressable>
       <PageHeading eyebrow="Ihssan Giving" title="Give with purpose">
-        Every case is reviewed. Your gift goes straight to the family&apos;s own bank account, and a fund collector confirms it so the progress you see is real.
+        Every case is reviewed. Gifts go straight to the family&apos;s own bank account.
       </PageHeading>
 
       {collects > 0 ? (
@@ -89,39 +91,31 @@ export default function DonationsScreen() {
         </Pressable>
       ) : null}
 
-      <Field label="Search by name, city or story" value={filters.search} onChangeText={(search) => set({ search })} autoCorrect={false} maxLength={80} />
+      <SearchBar value={filters.search} onChange={(search) => set({ search })} />
 
-      <Text style={styles.filterLabel}>Category</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.categoryRow}>
         <Chip label="All" selected={filters.category === ''} onPress={() => set({ category: '' })} />
         {categories.map((c) => <Chip key={c.slug} label={c.label_en} selected={filters.category === c.slug} onPress={() => set({ category: filters.category === c.slug ? '' : c.slug })} />)}
       </ScrollView>
 
-      {cities.length ? (
-        <>
-          <Text style={styles.filterLabel}>City</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-            <Chip label="Everywhere" selected={filters.city === ''} onPress={() => set({ city: '' })} />
-            {cities.map((c) => <Chip key={c.city} label={`${c.city} (${c.total})`} selected={filters.city === c.city} onPress={() => set({ city: filters.city === c.city ? '' : c.city })} />)}
-          </ScrollView>
-        </>
-      ) : null}
-
-      <Text style={styles.filterLabel}>Show</Text>
-      <View style={styles.chipsWrap}>
-        <Chip label="Open for donations" selected={filters.status === 'active'} onPress={() => set({ status: 'active' })} />
-        <Chip label="Fully funded" selected={filters.status === 'funded'} onPress={() => set({ status: 'funded' })} />
-        <Chip label="All" selected={filters.status === 'all'} onPress={() => set({ status: 'all' })} />
+      <View style={styles.filterRow}>
+        <Dropdown
+          label="City"
+          display={filters.city || 'City'}
+          active={filters.city !== ''}
+          groups={[{ options: [{ value: '', label: 'Everywhere' }, ...cities.map((c) => ({ value: c.city, label: `${c.city} (${c.total})` }))], value: filters.city, onSelect: (city) => set({ city }) }]}
+        />
+        <Dropdown
+          label="Show & sort"
+          display={filters.status === 'active' && filters.sort === 'newest' ? 'Show' : STATUS_LABEL[filters.status]}
+          active={filters.status !== 'active' || filters.sort !== 'newest'}
+          groups={[
+            { title: 'Show', options: Object.entries(STATUS_LABEL).map(([value, label]) => ({ value, label })), value: filters.status, onSelect: (status) => set({ status: status as CaseFilters['status'] }) },
+            { title: 'Sort by', options: SORTS.map(([value, label]) => ({ value, label })), value: filters.sort, onSelect: (sort) => set({ sort: sort as CaseSort }) },
+          ]}
+        />
+        <ToggleChip label="Urgent" selected={filters.urgent} onPress={() => set({ urgent: !filters.urgent })} />
       </View>
-      <View style={styles.urgentRow}>
-        <Text style={styles.urgentLabel}>Urgent cases only</Text>
-        <Switch accessibilityLabel="Urgent cases only" onValueChange={(urgent) => set({ urgent })} trackColor={{ true: palette.forest }} value={filters.urgent} />
-      </View>
-
-      <Text style={styles.filterLabel}>Sort by</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        {SORTS.map(([value, label]) => <Chip key={value} label={label} selected={filters.sort === value} onPress={() => set({ sort: value })} />)}
-      </ScrollView>
       {filtered ? <Pressable accessibilityRole="button" onPress={() => { setCases(null); setFilters(defaultFilters); }}><Text style={styles.reset}>Clear filters</Text></Pressable> : null}
 
       {error ? <Message kind="error">{error}</Message> : null}
@@ -159,6 +153,8 @@ const styles = themedStyles(() => StyleSheet.create({
   historyButton: { alignItems: 'center', alignSelf: 'flex-end', backgroundColor: palette.glass, borderColor: palette.line, borderRadius: 22, borderWidth: 1, height: 44, justifyContent: 'center', width: 44 },
   historyDot: { backgroundColor: palette.forest, borderRadius: 4, height: 8, position: 'absolute', right: 10, top: 10, width: 8 },
   filterLabel: { color: palette.muted, fontSize: 12, fontWeight: '600', letterSpacing: 0.4, marginBottom: 6, marginTop: 14 },
+  categoryRow: { marginTop: 12 },
+  filterRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
   chips: { gap: 8, paddingRight: 16 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   urgentRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },

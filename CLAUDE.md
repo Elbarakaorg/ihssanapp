@@ -45,5 +45,10 @@ Migration `202610110001` (apply after 202610070001, 080001, 080002, 090001, 1000
 - API on Fly.io (`services/api/fly.toml`, app `ihssan-api`, `https://api.ihssanapp.com`). Set secrets with `fly secrets set` using real values; never paste `<placeholders>` (angle brackets caused "Session is invalid or expired" once). Check by length/prefix via `fly ssh console`.
 - Admin portal (`alhamdulilah.ihssanapp.com`) requires TOTP MFA (aal2): `MfaGate` in `AdminConsole.tsx` enrols/challenges, and the API rejects `/v1/admin/*` without an `aal2` token. TOTP must be enabled in Supabase Auth. Direct Supabase RPCs are not yet aal2-gated at DB level.
 
+## Give page, nav and link previews
+- One bottom bar for every page: `features/navigation/app-tab-bar.tsx`, rendered by `app/_layout.tsx` (the Tabs' own bar is disabled; hidden on auth, scan, share, account).
+- `/give` filters: Google-style search bar, category chips, then one row of dropdowns (City, Show & sort) plus an Urgent toggle (`donations/filter-ui.tsx`). Case cards show photo, title, name, city and progress only.
+- Link previews: `apps/mobile/api/case-og.js` returns Open Graph tags for crawlers (WhatsApp, Facebook, Telegram, X…) routed by the first rewrite in `apps/mobile/vercel.json`; it needs `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` set in Vercel (also available to functions). Test with the Facebook Sharing Debugger.
+
 ## Docs to keep current
 When a feature ships, update `docs/implementation-plan.md` (Current Implementation Status), `docs/donations.md` for giving changes, and the relevant section here.

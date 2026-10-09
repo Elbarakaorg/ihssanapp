@@ -48,15 +48,16 @@ export function CaseCard({ item, onPress }: { item: CaseSummary; onPress: () => 
   useScheme();
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`${item.title}. ${item.percent}% funded`} onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
-      <RemoteImage bucket={CASE_BUCKET} path={item.photo_path} placeholderSize={34} style={styles.photo} />
-      <View style={styles.cardBody}>
-        <View style={styles.tags}>
-          {item.category_label ? <Text style={styles.tag}>{item.category_label}</Text> : null}
-          {item.city ? <Text style={styles.tag}>{item.city}</Text> : null}
+      <View>
+        <RemoteImage bucket={CASE_BUCKET} path={item.photo_path} placeholderSize={34} style={styles.photo} />
+        <View pointerEvents="none" style={styles.badges}>
           {item.is_urgent ? <UrgentBadge /> : null}
+          {item.category_label ? <Text style={styles.tag}>{item.category_label}</Text> : null}
         </View>
+      </View>
+      <View style={styles.cardBody}>
         <Text numberOfLines={2} style={styles.title}>{item.title}</Text>
-        <Text numberOfLines={3} style={styles.summary}>{item.summary}</Text>
+        <Text numberOfLines={1} style={styles.by}>{[item.beneficiary_name, item.city].filter(Boolean).join(' · ')}</Text>
         <Progress raised={item.raised_mad} goal={item.goal_mad} />
         {item.status === 'funded' ? <Text style={styles.funded}>Fully funded, alhamdulillah</Text> : null}
       </View>
@@ -98,10 +99,12 @@ const styles = themedStyles(() => StyleSheet.create({
   pillLabel: { color: palette.ink, fontSize: 12, fontWeight: '700' },
   card: { ...wobble, ...glassSurface(), borderWidth: 1, marginTop: 14, overflow: 'hidden' },
   pressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
-  photo: { height: 170, width: '100%' },
+  photo: { aspectRatio: 4 / 3, width: '100%' },
+  badges: { alignItems: 'center', flexDirection: 'row', gap: 6, left: 10, position: 'absolute', top: 10 },
+  by: { color: palette.muted, fontSize: 13 },
   cardBody: { gap: 8, padding: 14 },
   tags: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  tag: { backgroundColor: palette.leaf, borderRadius: 10, color: palette.forest, fontSize: 11, fontWeight: '700', overflow: 'hidden', paddingHorizontal: 8, paddingVertical: 3 },
+  tag: { backgroundColor: 'rgba(253,253,250,0.92)', borderRadius: 10, color: palette.forest, fontSize: 11, fontWeight: '700', overflow: 'hidden', paddingHorizontal: 8, paddingVertical: 3 },
   title: { ...display, color: palette.ink, fontSize: 19, lineHeight: 24 },
   summary: { color: palette.muted, fontSize: 13, lineHeight: 19 },
   funded: { color: palette.forest, fontSize: 12, fontWeight: '700' },

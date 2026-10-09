@@ -47,6 +47,7 @@ export default function TabLayout() {
   return (
     <>
       <Tabs
+        tabBar={() => null}
         screenListeners={{
           tabPress: () => {
             if (Platform.OS !== 'web') void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

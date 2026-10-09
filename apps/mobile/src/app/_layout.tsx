@@ -1,10 +1,12 @@
 import { Stack } from 'expo-router';
+import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { Amiri_400Regular } from '@expo-google-fonts/amiri';
 import { EBGaramond_500Medium, EBGaramond_600SemiBold, useFonts } from '@expo-google-fonts/eb-garamond';
 
+import { AppTabBar } from '@/features/navigation/app-tab-bar';
 import { AuthProvider } from '@/features/auth/auth-provider';
 import { LocaleProvider } from '@/platform/locale/locale-provider';
 import { supabaseAuthRepository } from '@/platform/auth/supabase-auth-repository';
@@ -20,6 +22,8 @@ function AppShell() {
   return (
     <>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: palette.paper } }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="auth/index" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
@@ -31,6 +35,9 @@ function AppShell() {
         <Stack.Screen name="share/profile" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
         <Stack.Screen name="my-patients/[grantId]" options={{ presentation: 'card', animation: 'slide_from_right' }} />
       </Stack>
+      </View>
+      <AppTabBar />
+      </View>
     </>
   );
 }

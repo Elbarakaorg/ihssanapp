@@ -130,7 +130,7 @@ const randomId = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now().toStri
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 /** Lets the donor pick up to the remaining number of receipt photos or screenshots, uploads them and attaches them to the order. */
-export async function pickAndSubmitReceipt(pledgeId: string, remaining: number, note: string, payerName = ''): Promise<number> {
+export async function pickAndSubmitReceipt(pledgeId: string, remaining: number): Promise<number> {
   if (remaining <= 0) throw new Error(`You can attach up to ${RECEIPT_LIMIT} files.`);
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!permission.granted) throw new Error('Photo library permission is needed to choose your receipt.');
@@ -149,13 +149,13 @@ export async function pickAndSubmitReceipt(pledgeId: string, remaining: number, 
     paths.push(path);
   }
   if (!paths.length) return 0;
-  await rpc('submit_pledge_receipt', { p_id: pledgeId, p_token: await getPledgeToken(pledgeId), p_paths: paths, p_note: note.trim() || null, p_payer_name: payerName.trim() || null }, 'Could not attach your receipt.');
+  await rpc('submit_pledge_receipt', { p_id: pledgeId, p_token: await getPledgeToken(pledgeId), p_paths: paths, p_note: null, p_payer_name: null }, 'Could not attach your receipt.');
   return paths.length;
 }
 
 /** For a donor who paid but has no receipt: they must say whose account the money came from. */
-export async function markPledgePaid(pledgeId: string, payerName: string, note: string) {
-  await rpc('mark_pledge_paid', { p_id: pledgeId, p_token: await getPledgeToken(pledgeId), p_payer_name: payerName.trim(), p_note: note.trim() || null }, 'Could not mark this order as paid.');
+export async function markPledgePaid(pledgeId: string, payerName: string) {
+  await rpc('mark_pledge_paid', { p_id: pledgeId, p_token: await getPledgeToken(pledgeId), p_payer_name: payerName.trim(), p_note: null }, 'Could not mark this order as paid.');
 }
 
 // Collectors ----------------------------------------------------------------------------------------------------------

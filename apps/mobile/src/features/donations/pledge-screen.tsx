@@ -1,6 +1,7 @@
 import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
+import { ArrowLeft } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GivingVerseCard } from './giving-verse-card';
 import { ThankYou } from './thank-you';
@@ -9,7 +10,7 @@ import { Loading } from '@/ui/loading';
 import { Page, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { display, palette, themedStyles, useScheme } from '@/ui/palette';
 import { type PledgeView, cancelPledge, getPledge, markPledgePaid, pickAndSubmitReceipt } from './donations-api';
-import { ACCOUNT_RECEIPT_NOTICE, RECEIPT_LIMIT, formatMad, groupAccountNumber, pledgeStatus, timeLeft } from './donations-logic';
+import { RECEIPT_LIMIT, formatMad, groupAccountNumber, pledgeStatus, timeLeft } from './donations-logic';
 import { CopyRow, StatusPill } from './donations-ui';
 
 export default function PledgeScreen() {
@@ -17,8 +18,8 @@ export default function PledgeScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [pledge, setPledge] = useState<PledgeView | null | undefined>(undefined);
-  const [note, setNote] = useState('');
   const [payer, setPayer] = useState('');
+  const [noReceipt, setNoReceipt] = useState(false);
   const [busy, setBusy] = useState(false);
   const [thanks, setThanks] = useState(false);
   const [message, setMessage] = useState<{ kind: 'error' | 'ok'; text: string } | null>(null);
@@ -37,12 +38,19 @@ export default function PledgeScreen() {
   const status = pledgeStatus(pledge.status);
   const left = timeLeft(pledge.expires_at, now);
   const waiting = pledge.status === 'pledged';
+  const hasReceipt = pledge.receipt_count > 0;
+  const receiptMessage = pledge.status === 'confirmed'
+    ? 'Thank you. Your donation is confirmed and now appears on the case.'
+    : pledge.status === 'receipt_submitted'
+      ? 'Thank you. Your receipt has been received. Your donation will appear on the case after a fund collector confirms it.'
+      : status.hint || 'Your receipt has been received.';
+  const caseHref = `/cases/${pledge.case_slug ?? pledge.case_id}` as Href;
 
   const upload = async () => {
     setBusy(true);
     setMessage(null);
     try {
-      const count = await pickAndSubmitReceipt(pledge.id, RECEIPT_LIMIT - pledge.receipt_count, note, payer);
+      const count = await pickAndSubmitReceipt(pledge.id, RECEIPT_LIMIT - pledge.receipt_count);
       if (count) { setMessage({ kind: 'ok', text: 'Receipt received. A fund collector will review it soon.' }); setThanks(true); }
       load();
     } catch (e) {
@@ -57,7 +65,7 @@ export default function PledgeScreen() {
     setBusy(true);
     setMessage(null);
     try {
-      await markPledgePaid(pledge.id, payer, note);
+      await markPledgePaid(pledge.id, payer);
       setMessage({ kind: 'ok', text: 'Thank you. A fund collector will check the transfer against the account name you gave.' });
       setThanks(true);
       load();
@@ -110,20 +118,48 @@ export default function PledgeScreen() {
 
       {waiting || pledge.can_upload ? <GivingVerseCard /> : null}
 
-      {pledge.can_upload ? (
+      {hasReceipt ? (
+        <View style={styles.receiptComplete}>
+          <Message kind={pledge.status === 'rejected' || pledge.status === 'reversed' ? 'info' : 'ok'}>{receiptMessage}</Message>
+          <Button label="Donate again" onPress={() => router.push(caseHref)} />
+        </View>
+      ) : pledge.can_upload ? (
         <>
-          <SectionHeading title="Your receipt" detail={`${pledge.receipt_count} of ${RECEIPT_LIMIT} attached`} />
-          <Message kind="info">{ACCOUNT_RECEIPT_NOTICE}</Message>
-          <Field label="Name of the account you paid from" value={payer} onChangeText={setPayer} maxLength={80} placeholder={pledge.receipt_count ? 'Optional' : 'Required if you have no receipt'} />
-          <Field label="Note for the collector (optional)" value={note} onChangeText={setNote} maxLength={300} multiline />
-          <Button label={pledge.receipt_count ? 'Add another receipt' : 'Upload receipt'} busy={busy} disabled={pledge.receipt_count >= RECEIPT_LIMIT} onPress={() => void upload()} />
-          {pledge.can_mark_paid && pledge.receipt_count === 0 ? <Button tone="secondary" label="I paid but have no receipt" busy={busy} onPress={() => void markPaid()} /> : null}
+          {noReceipt ? (
+            <>
+              <Field label="Name on the account you paid from" value={payer} onChangeText={setPayer} maxLength={80} placeholder="Account holder name" autoCapitalize="words" />
+              <Button label="Confirm donation" busy={busy} onPress={() => void markPaid()} />
+              <Text style={styles.fine}>A fund collector will match your transfer using this account name.</Text>
+              <Pressable accessibilityRole="link" disabled={busy} onPress={() => setNoReceipt(false)} style={styles.textAction}>
+                <Text style={styles.textActionLabel}>Upload a receipt instead</Text>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <Button label={pledge.receipt_count >= RECEIPT_LIMIT ? 'Receipt limit reached' : pledge.receipt_count ? 'Upload another receipt & confirm donation' : 'Upload receipt & confirm donation'} busy={busy} disabled={pledge.receipt_count >= RECEIPT_LIMIT} onPress={() => void upload()} />
+              {pledge.can_mark_paid && pledge.receipt_count === 0 ? (
+                <Pressable accessibilityRole="link" disabled={busy} onPress={() => { setMessage(null); setNoReceipt(true); }} style={styles.textAction}>
+                  <Text style={styles.textActionLabel}>I paid but have no receipt</Text>
+                </Pressable>
+              ) : null}
+              <Text style={styles.fine}>A fund collector will review your receipt. If you no longer have it, enter the name on the account you paid from.</Text>
+            </>
+          )}
         </>
       ) : null}
-      <Text style={styles.hint}>{status.hint}</Text>
+      {!hasReceipt ? <Text style={styles.hint}>{status.hint}</Text> : null}
       {pledge.payer_name ? <Text style={styles.hint}>Paid from the account of: {pledge.payer_name}</Text> : null}
-      {waiting ? <Button tone="secondary" label="Cancel this order" disabled={busy} onPress={() => void cancel()} /> : null}
-      <Button tone="secondary" label="Back to the case" onPress={() => router.push(`/cases/${pledge.case_slug ?? pledge.case_id}` as Href)} />
+      <View style={styles.footerActions}>
+        <Pressable accessibilityLabel="Return to case" accessibilityRole="link" onPress={() => router.push(caseHref)} style={styles.returnLink}>
+          <ArrowLeft color={palette.forest} size={17} />
+          <Text style={styles.textActionLabel}>Return to case</Text>
+        </Pressable>
+        {waiting ? (
+          <Pressable accessibilityRole="link" disabled={busy} onPress={() => void cancel()} style={styles.cancelLink}>
+            <Text style={styles.cancelLabel}>Cancel donation</Text>
+          </Pressable>
+        ) : null}
+      </View>
     </Page>
   );
 }
@@ -137,7 +173,14 @@ const styles = themedStyles(() => StyleSheet.create({
   timer: { color: palette.muted, fontSize: 13, fontWeight: '600' },
   timerOut: { color: palette.coral },
   hint: { color: palette.muted, fontSize: 13, lineHeight: 19, marginTop: 8 },
+  textAction: { alignSelf: 'center', minHeight: 42, justifyContent: 'center', paddingHorizontal: 8 },
+  textActionLabel: { color: palette.forest, fontSize: 13, fontWeight: '600' },
+  footerActions: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginTop: 20, minHeight: 44 },
+  returnLink: { alignItems: 'center', flexDirection: 'row', gap: 5, minHeight: 44, paddingRight: 8 },
+  cancelLink: { alignItems: 'center', justifyContent: 'center', minHeight: 44, paddingLeft: 8 },
+  cancelLabel: { color: palette.coral, fontSize: 13, fontWeight: '600' },
   bank: { gap: 8, marginTop: 8, padding: 16 },
   bankName: { ...display, color: palette.ink, fontSize: 18 },
   fine: { color: palette.muted, fontSize: 12, lineHeight: 18, marginTop: 10 },
+  receiptComplete: { gap: 8, marginTop: 8 },
 }));

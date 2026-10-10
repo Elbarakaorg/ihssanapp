@@ -38,7 +38,15 @@ function InstagramReel({ url }: { url: string }) {
 
 function UploadedVideo({ path }: { path: string }) {
   const url = useMediaUrl('case-videos', path);
-  const player = useVideoPlayer(url ?? null);
+  // Phone browsers load no frame until play; the #t fragment makes them paint the first one.
+  const player = useVideoPlayer(url ? (Platform.OS === 'web' ? `${url}#t=0.001` : url) : null);
+  useEffect(() => {
+    if (Platform.OS === 'web') return undefined;
+    const subscription = player.addListener('statusChange', ({ status }) => {
+      if (status === 'readyToPlay' && player.currentTime === 0) player.currentTime = 0.05;
+    });
+    return () => subscription.remove();
+  }, [player]);
   if (!url) return <View style={styles.video} />;
   return <VideoView contentFit="contain" nativeControls player={player} surfaceType={Platform.OS === 'android' ? 'textureView' : undefined} style={styles.video} />;
 }

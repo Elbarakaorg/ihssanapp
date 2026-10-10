@@ -17,6 +17,7 @@ Ihssan is a Morocco-first health and giving app: patient-entered health tracking
 - [Architecture, delivery plan and current status](docs/implementation-plan.md)
 - [Donations](docs/donations.md)
 - [Admin operating model](docs/admin-operating-model.md)
+- [Email implementation plan](docs/email-implementation-plan.md)
 - [Deployment: Vercel and Fly.io](docs/vercel-deployment.md)
 - [Care directory data sources](docs/care-directory-data-sources.md)
 - [App Store publishing](docs/app-store-publishing.md), [Google OAuth](docs/google-oauth-setup.md), [Resend email](docs/resend-email-setup.md), [Supabase email template](docs/supabase-email-template.md)

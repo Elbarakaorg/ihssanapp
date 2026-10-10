@@ -105,15 +105,52 @@ export async function getPledgeToken(id: string) {
   return (await readStore()).find((item) => item.id === id)?.token ?? null;
 }
 
-export async function createPledge(input: { caseId: string; caseTitle: string; amount: number; displayName: string; anonymous: boolean; comment: string; contact: string }) {
+async function remember(entry: StoredPledge) {
+  const stored = await readStore();
+  await AsyncStorage.setItem(STORE_KEY, JSON.stringify([entry, ...stored.filter((item) => item.id !== entry.id)].slice(0, 30)));
+}
+
+const EMAIL_KEY = 'ihssan.donor-email.v1';
+export const getSavedDonorEmail = async () => (await AsyncStorage.getItem(EMAIL_KEY).catch(() => null)) ?? '';
+
+export async function createPledge(input: { caseId: string; caseTitle: string; amount: number; displayName: string; anonymous: boolean; comment: string; email: string }) {
   const result = await rpc<{ id: string; reference: string; token: string; expires_at: string }>('create_donation_pledge', {
     p_case_id: input.caseId, p_amount: input.amount, p_display_name: input.anonymous ? null : input.displayName.trim() || null,
-    p_is_anonymous: input.anonymous || !input.displayName.trim(), p_comment: input.comment.trim() || null, p_contact: input.contact.trim() || null,
+    p_is_anonymous: input.anonymous || !input.displayName.trim(), p_comment: input.comment.trim() || null, p_contact: null, p_email: input.email.trim(),
   }, 'Could not start your donation order. Please try again.');
-  const stored = await readStore();
-  const next: StoredPledge = { id: result.id, token: result.token, reference: result.reference, caseId: input.caseId, caseTitle: input.caseTitle, amount: input.amount, createdAt: new Date().toISOString() };
-  await AsyncStorage.setItem(STORE_KEY, JSON.stringify([next, ...stored.filter((item) => item.id !== next.id)].slice(0, 30)));
+  await remember({ id: result.id, token: result.token, reference: result.reference, caseId: input.caseId, caseTitle: input.caseTitle, amount: input.amount, createdAt: new Date().toISOString() });
+  await AsyncStorage.setItem(EMAIL_KEY, input.email.trim()).catch(() => undefined);
   return result;
+}
+
+/** An order still waiting for the donor's transfer. */
+export type OpenOrder = { id: string; reference: string; case_id: string; case_title: string; amount_mad: number; expires_at: string };
+
+/** The newest unfinished order for this case that this device still holds the key to. */
+export async function findStoredOpenOrder(caseId: string): Promise<OpenOrder | null> {
+  for (const stored of (await readStore()).filter((item) => item.caseId === caseId)) {
+    const pledge = await getPledge(stored.id).catch(() => null);
+    if (pledge && pledge.status === 'pledged' && new Date(pledge.expires_at).getTime() > Date.now()) {
+      return { id: pledge.id, reference: pledge.reference, case_id: pledge.case_id, case_title: pledge.case_title, amount_mad: pledge.amount_mad, expires_at: pledge.expires_at };
+    }
+  }
+  return null;
+}
+
+/** Finds unfinished orders for an email (any device) and keeps their new keys on this device. */
+export async function recoverOpenOrders(email: string, caseId: string): Promise<OpenOrder[]> {
+  const rows = (await rpc<(OpenOrder & { token: string })[] | null>('find_open_pledges', { p_email: email.trim(), p_case_id: caseId }, 'Could not look up your orders. Please try again.')) ?? [];
+  for (const row of rows) {
+    await remember({ id: row.id, token: row.token, reference: row.reference, caseId: row.case_id, caseTitle: row.case_title, amount: row.amount_mad, createdAt: new Date().toISOString() });
+  }
+  await AsyncStorage.setItem(EMAIL_KEY, email.trim()).catch(() => undefined);
+  return rows.map(({ token: _token, ...order }) => order);
+}
+
+export async function changePledgeAmount(id: string, amount: number) {
+  await rpc('update_pledge_amount', { p_id: id, p_token: await getPledgeToken(id), p_amount: amount }, 'Could not change the amount.');
+  const stored = (await readStore()).find((item) => item.id === id);
+  if (stored) await remember({ ...stored, amount });
 }
 
 export async function getPledge(id: string): Promise<PledgeView | null> {

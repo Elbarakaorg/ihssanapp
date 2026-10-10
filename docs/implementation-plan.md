@@ -45,7 +45,7 @@ _Last updated 2026-10-08. The sections below are the original baseline; where th
 
 ### Not built yet
 
-Arabic/French localization, appointment booking, paid consultations, pharmacy orders, dependent profiles, case updates timeline, donor notifications, CMI payments, clinician review of medicine and article content, device testing of native screens, a production pilot.
+Arabic/French localization, appointment booking, paid consultations, pharmacy orders, dependent profiles, case updates timeline, donor email notifications, account welcome email, CMI payments, clinician review of medicine and article content, device testing of native screens, a production pilot. See `docs/email-implementation-plan.md` for welcome, donor thank-you, and collector-alert delivery design.
 
 ## Product and Risk Boundaries
 

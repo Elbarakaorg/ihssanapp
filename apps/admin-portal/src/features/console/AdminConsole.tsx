@@ -168,7 +168,7 @@ function SignInScreen({ initialError }: { initialError: string }) {
   return (
     <main className="auth-layout">
       <section className="auth-panel">
-        <div className="brand-lockup"><span className="brand-mark">ih</span><span>ihssan</span><span className="brand-divider" /><span className="brand-section">Administration</span></div>
+        <div className="brand-lockup"><img alt="" className="brand-mark" src="/ihssan-mark.png" /><span>ihssan</span><span className="brand-divider" /><span className="brand-section">Administration</span></div>
         <p className="eyebrow">SECURE STAFF ACCESS</p>
         <h1>Sign in to the admin portal</h1>
         <p className="auth-lede">Use your authorized staff account. If you signed up with Google, choose Continue with Google; no separate password is needed. Patient or clinician sign-in alone does not grant admin access.</p>
@@ -235,7 +235,7 @@ function AdminShell({ membership, session }: { membership: AdminMembership; sess
   return (
     <div className="admin-shell">
       <aside className="sidebar">
-        <div className="brand-lockup"><span className="brand-mark">ih</span><span>ihssan</span></div>
+        <div className="brand-lockup"><img alt="" className="brand-mark" src="/ihssan-mark.png" /><span>ihssan</span></div>
         <p className="sidebar-caption">ADMINISTRATION</p>
         <nav className="side-nav">
           {items.map((item, index) => {

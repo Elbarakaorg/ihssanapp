@@ -34,7 +34,7 @@ h2, h3 { font-family: 'EB Garamond', Georgia, serif; }
 .admin-shell { min-height: 100vh; display: grid; grid-template-columns: 248px minmax(0, 1fr); }
 .sidebar { background: rgba(253,253,250,.92); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 100vh; padding: 24px 16px 18px; }
 .brand-lockup { align-items: center; color: var(--ink); display: flex; font-weight: 700; gap: 9px; }
-.brand-mark { align-items: center; background: var(--forest); border-radius: 9px; color: #FDFDFA; display: inline-flex; font-size: 16px; height: 30px; justify-content: center; width: 30px; }
+.brand-mark { display: inline-block; flex: 0 0 30px; height: 30px; object-fit: contain; width: 30px; }
 .brand-divider { background: var(--line); height: 20px; margin: 0 3px; width: 1px; }
 .brand-section { color: var(--muted); font-size: 12px; font-weight: 500; }
 .sidebar-caption { color: #87938c; font-size: 10px; font-weight: 700; margin: 40px 10px 10px; }

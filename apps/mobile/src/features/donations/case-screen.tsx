@@ -1,4 +1,4 @@
-import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
+import { type Href, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { AtSign, Mail, Phone, Share2, Trash2 } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,9 +11,10 @@ import { Loading } from '@/ui/loading';
 import { Page, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { display, palette, themedStyles, useScheme } from '@/ui/palette';
 import { AudioPlayer, Reels } from './case-media';
-import { CASE_BUCKET, type CaseDetail, type Wish, type WallEntry, createPledge, deleteWish, getCase, listWall, listWishes, postWish, shareCase } from './donations-api';
-import { ACCOUNT_RECEIPT_NOTICE, formatMad, parseAmount, suggestedAmounts, validateAmount } from './donations-logic';
+import { CASE_BUCKET, type CaseDetail, type OpenOrder, type Wish, type WallEntry, createPledge, deleteWish, findStoredOpenOrder, getCase, getSavedDonorEmail, listWall, listWishes, postWish, recoverOpenOrders, shareCase } from './donations-api';
+import { ACCOUNT_RECEIPT_NOTICE, formatMad, isValidEmail, parseAmount, suggestedAmounts, validateAmount } from './donations-logic';
 import { Progress, UrgentBadge } from './donations-ui';
+import { OpenOrderCard } from './open-order-card';
 
 function GalleryImage({ path, caption }: { path: string; caption: string | null }) {
   const [url, setUrl] = useState<string | null>(null);
@@ -38,6 +39,7 @@ export default function CaseScreen() {
   const [donating, setDonating] = useState(false);
   const [wallLimit, setWallLimit] = useState(4);
   const [wishLimit, setWishLimit] = useState(4);
+  const [openOrder, setOpenOrder] = useState<OpenOrder | null>(null);
 
   const load = useCallback(() => {
     if (!id) return;
@@ -51,6 +53,11 @@ export default function CaseScreen() {
     }).catch((e) => { setError(e instanceof Error ? e.message : 'Could not load this case.'); setItem(null); });
   }, [id]);
   useEffect(load, [load]);
+
+  const caseId = item?.id;
+  useFocusEffect(useCallback(() => {
+    if (caseId) void findStoredOpenOrder(caseId).then(setOpenOrder).catch(() => undefined);
+  }, [caseId]));
 
   if (item === undefined) return <Page><Loading label="Loading this case" /></Page>;
   if (!item) return <Page><BackLink href="/give" label="Giving" /><Message kind="error">{error || 'This case is not available.'}</Message></Page>;
@@ -87,12 +94,13 @@ export default function CaseScreen() {
         <Progress raised={item.raised_mad} goal={item.goal_mad} donors={item.donor_count} />
         {item.status === 'funded' ? <Message kind="ok">This case is fully funded, alhamdulillah. Thank you to everyone who gave.</Message> : null}
         {item.status === 'closed' ? <Message kind="info">This case is closed and no longer accepts donations.</Message> : null}
-        {open && !donating ? <Button label="Donate to this case" onPress={() => setDonating(true)} /> : null}
+        {open && !donating && !openOrder ? <Button label="Donate to this case" onPress={() => setDonating(true)} /> : null}
         <Button tone="secondary" label="Share this case" onPress={() => void share()} />
         {note ? <Message kind="ok">{note}</Message> : null}
         {item.can_manage ? <Button tone="secondary" label="Manage this case" onPress={() => router.push(`/collect/${item.id}` as Href)} /> : null}
       </View>
 
+      {open && openOrder ? <OpenOrderCard order={openOrder} minDonation={item.min_donation_mad} onChange={setOpenOrder} /> : null}
       {open && donating ? <DonateForm item={item} remaining={remaining} onDone={(pledgeId) => router.push(`/pledge/${pledgeId}` as Href)} onCancel={() => setDonating(false)} /> : null}
 
       <SectionHeading title="Their story" />
@@ -227,25 +235,56 @@ function DonateForm({ item, remaining, onDone, onCancel }: { item: CaseDetail; r
   const [anonymous, setAnonymous] = useState(true);
   const [name, setName] = useState('');
   const [comment, setComment] = useState('');
-  const [contact, setContact] = useState('');
+  const [email, setEmail] = useState('');
+  const [recovered, setRecovered] = useState<OpenOrder[]>([]);
+  const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const amount = parseAmount(amountText);
+  useEffect(() => { void getSavedDonorEmail().then((saved) => setEmail((current) => current || saved)); }, []);
 
   const submit = async () => {
     const problem = validateAmount(amount, item.min_donation_mad);
     if (problem || amount === null) { setError(problem); return; }
+    if (!isValidEmail(email)) { setError('Enter a valid email address. It is never shown publicly.'); return; }
     if (!anonymous && name.trim().length < 2) { setError('Enter the name to show, or choose to stay anonymous.'); return; }
     setBusy(true);
     setError('');
+    setNotice('');
     try {
-      const pledge = await createPledge({ caseId: item.id, caseTitle: item.title, amount, displayName: name, anonymous, comment, contact });
+      const unfinished = await recoverOpenOrders(email, item.id);
+      if (unfinished.length) { setRecovered(unfinished); setBusy(false); return; }
+      const pledge = await createPledge({ caseId: item.id, caseTitle: item.title, amount, displayName: name, anonymous, comment, email });
       onDone(pledge.id);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not start your donation order.');
       setBusy(false);
     }
   };
+
+  if (recovered.length) {
+    return (
+      <>
+        <Message kind="info">We found an unfinished order for this email. Continue it, change its amount, or cancel it to start a new one.</Message>
+        {recovered.map((order) => (
+          <OpenOrderCard
+            key={order.id}
+            order={order}
+            minDonation={item.min_donation_mad}
+            onChange={(next) => {
+              if (next) { setRecovered((list) => list.map((entry) => (entry.id === next.id ? next : entry))); return; }
+              const rest = recovered.filter((entry) => entry.id !== order.id);
+              setRecovered(rest);
+              if (!rest.length) setNotice('Order cancelled. You can start a new donation below.');
+            }}
+          />
+        ))}
+        <Pressable accessibilityRole="link" onPress={() => setRecovered([])} style={styles.useOther}>
+          <Text style={styles.more}>Use a different email</Text>
+        </Pressable>
+      </>
+    );
+  }
 
   return (
     <View style={[uiStyles.card, styles.form]}>
@@ -258,13 +297,15 @@ function DonateForm({ item, remaining, onDone, onCancel }: { item: CaseDetail; r
       <View style={styles.chips}>
         {suggestedAmounts(item.min_donation_mad, remaining).map((value) => <Chip key={value} label={`${value}`} selected={amount === value} onPress={() => setAmountText(String(value))} />)}
       </View>
+      <Field label="Your email" value={email} onChangeText={setEmail} maxLength={254} autoCapitalize="none" autoComplete="email" autoCorrect={false} keyboardType="email-address" textContentType="emailAddress" placeholder="name@example.com" />
+      <Text style={styles.meta}>Required. Never shown publicly. We use it to find your order if you leave this page.</Text>
       <View style={styles.switchRow}>
         <View style={styles.flex}><Text style={styles.switchTitle}>Give anonymously</Text><Text style={styles.meta}>Your name is never shown publicly.</Text></View>
         <Switch accessibilityLabel="Give anonymously" onValueChange={setAnonymous} trackColor={{ true: palette.forest }} value={anonymous} />
       </View>
       {!anonymous ? <Field label="Name to display" value={name} onChangeText={setName} maxLength={60} placeholder="How your name appears" /> : null}
       <Field label="A kind word (optional)" value={comment} onChangeText={setComment} maxLength={300} multiline placeholder="Write a short prayer or message" />
-      <Field label="Phone or email (optional)" value={contact} onChangeText={setContact} maxLength={120} autoCapitalize="none" placeholder="Only seen by the foundation" />
+      {notice ? <Message kind="ok">{notice}</Message> : null}
       {error ? <Message kind="error">{error}</Message> : null}
       <Button label="Continue to bank details" busy={busy} onPress={() => void submit()} />
       <Button tone="secondary" label="Cancel" onPress={onCancel} />
@@ -283,6 +324,7 @@ const styles = themedStyles(() => StyleSheet.create({
   heroText: { bottom: 0, left: 0, padding: 18, position: 'absolute', right: 0 },
   story: { padding: 16 },
   more: { color: palette.forest, fontSize: 13, fontWeight: '700', marginTop: 10, minHeight: 28 },
+  useOther: { alignSelf: 'center' },
   tags: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tag: { backgroundColor: palette.leaf, borderRadius: 10, color: palette.forest, fontSize: 11, fontWeight: '700', overflow: 'hidden', paddingHorizontal: 8, paddingVertical: 3 },
   title: { ...display, color: '#FFFFFF', fontSize: 28, lineHeight: 34, marginTop: 8 },

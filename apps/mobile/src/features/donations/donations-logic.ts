@@ -26,6 +26,8 @@ export function parseAmount(text: string) {
   return value > 0 ? value : null;
 }
 
+export const isValidEmail = (value: string) => value.trim().length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+
 export function validateAmount(value: number | null, minimum: number) {
   if (value === null) return 'Enter the amount in MAD.';
   if (value < minimum) return `The minimum donation is ${minimum} MAD.`;

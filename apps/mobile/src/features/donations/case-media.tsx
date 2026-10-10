@@ -40,7 +40,7 @@ function UploadedVideo({ path }: { path: string }) {
   const url = useMediaUrl('case-videos', path);
   const player = useVideoPlayer(url ?? null);
   if (!url) return <View style={styles.video} />;
-  return <VideoView contentFit="contain" nativeControls player={player} style={styles.video} />;
+  return <VideoView contentFit="contain" nativeControls player={player} surfaceType={Platform.OS === 'android' ? 'textureView' : undefined} style={styles.video} />;
 }
 
 export function Reels({ videos }: { videos: Reel[] }) {

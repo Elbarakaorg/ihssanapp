@@ -5,6 +5,8 @@ Ihssan uses Resend in two places:
 1. **Supabase Auth emails** (signup confirmation, password reset, magic links) via Resend SMTP. Supabase's built-in mailer is heavily rate limited and cannot be customised without custom SMTP.
 2. **The API** (`services/api`) for admin invitation emails, using the Resend HTTP API.
 
+Planned account welcome and donation emails are covered by the [email implementation plan](email-implementation-plan.md). Signup confirmation remains a Supabase Auth message; application notifications must be sent server-side.
+
 ## 1. Verify your sending domain (required)
 
 Resend only sends from a domain you own (the `onboarding@resend.dev` sender can only email your own account address).

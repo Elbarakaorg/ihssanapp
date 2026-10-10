@@ -73,7 +73,7 @@ Support admins see only routes and records allowed by their assigned permissions
 ## Support Staff Lifecycle
 
 1. The platform owner opens `/team`, enters the support person's email before they create an account, and selects only the required permissions. Invitations expire after 30 days and may be revoked before acceptance.
-2. The owner shares account-registration instructions manually; automated invitation email delivery is not configured yet.
+2. The API sends the invitation through Resend when its server configuration is present. If email is not configured or sending fails, the owner shares account-registration instructions manually; the current UI has no resend action.
 3. The person creates or signs into a normal Ihssan account with the invited email and completes Supabase email confirmation. On the next admin-portal sign-in, the API matches the confirmed email to the pending invitation and activates the support membership.
 4. The support user sees only routes and records allowed by their granted permissions. If they are a clinician, they complete clinician credential verification separately before clinical review actions are available.
 5. The owner may change permissions or revoke access. Grants, acceptance, changes, and revocation are audited; revoked memberships remain history and cannot be reactivated. Clinician patient access remains independently controlled by patient-approved grants.

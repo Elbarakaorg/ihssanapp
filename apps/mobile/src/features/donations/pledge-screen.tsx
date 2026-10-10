@@ -33,7 +33,7 @@ export default function PledgeScreen() {
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 30_000); return () => clearInterval(timer); }, []);
 
   if (pledge === undefined) return <Page><Loading label="Loading your order" /></Page>;
-  if (!pledge) return <Page><BackLink href="/give" label="Giving" /><Message kind="error">{message?.text ?? 'This order was not found on this device.'}</Message></Page>;
+  if (!pledge) return <Page><BackLink href="/give" label="Giving" /><Message kind="error">{message?.text ?? 'This order was not found on this device. Open the case and enter your email to find it.'}</Message></Page>;
 
   const status = pledgeStatus(pledge.status);
   const left = timeLeft(pledge.expires_at, now);

@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { PropsWithChildren } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -37,7 +37,7 @@ export function DarkAuthShell({ children, showBack = true }: PropsWithChildren<{
             <PreferenceIcons tone="dark" />
           </View>
           <View style={styles.brandRow}>
-            <View style={styles.brandDot} />
+            <Image accessibilityLabel="Ihssan logo" resizeMode="contain" source={require('../../../assets/images/ihssan2.png')} style={styles.brandLogo} />
             <Text style={styles.brandText}>IHSSAN</Text>
           </View>
           <Text style={styles.preview}>Preview build · use fictional health information</Text>
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
   topBar: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   backButton: { alignItems: 'center', height: 44, justifyContent: 'center', width: 44 },
   brandRow: { alignItems: 'center', flexDirection: 'row', gap: 10, marginTop: 28 },
-  brandDot: { backgroundColor: ink.accent, borderRadius: 4, boxShadow: '0 0 12px rgba(165,189,143,0.7)', height: 8, width: 8 },
+  brandLogo: { height: 36, width: 36 },
   brandText: { ...display, color: ink.text, fontSize: 15, letterSpacing: 4 },
   preview: { color: ink.faint, fontSize: 11, marginBottom: 36, marginTop: 8 },
 });

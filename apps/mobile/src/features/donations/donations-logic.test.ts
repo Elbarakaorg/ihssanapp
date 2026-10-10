@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { caseShareUrl, instagramEmbedUrl, isUuid, collectorInviteUrl, formatMad, groupAccountNumber, parseAmount, percentFunded, pledgeStatus, safeHttpsUrl, suggestedAmounts, timeLeft, validateAmount } from './donations-logic';
+import { caseShareUrl, instagramEmbedUrl, isUuid, isValidEmail, collectorInviteUrl, formatMad, groupAccountNumber, parseAmount, percentFunded, pledgeStatus, safeHttpsUrl, suggestedAmounts, timeLeft, validateAmount } from './donations-logic';
 
 describe('donation logic', () => {
   it('computes progress safely', () => {
@@ -38,6 +38,13 @@ describe('donation logic', () => {
   it('maps statuses', () => {
     expect(pledgeStatus('confirmed').tone).toBe('ok');
     expect(pledgeStatus('weird').label).toBe('weird');
+  });
+  it('validates donor emails', () => {
+    expect(isValidEmail(' donor@example.com ')).toBe(true);
+    expect(isValidEmail('donor@example')).toBe(false);
+    expect(isValidEmail('do nor@example.com')).toBe(false);
+    expect(isValidEmail('')).toBe(false);
+    expect(isValidEmail(`${'a'.repeat(250)}@x.co`)).toBe(false);
   });
   it('only allows https links', () => {
     expect(safeHttpsUrl('https://instagram.com/a')).toContain('https://');

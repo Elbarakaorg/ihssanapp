@@ -1,16 +1,20 @@
 import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GivingVerseCard } from './giving-verse-card';
+import { OrderGuide } from './order-guide';
+import { GuideFab } from './order-guide-fab';
+import { OrderProgress } from './order-progress';
+import { WaitingCard } from './order-waiting-card';
 import { ThankYou } from './thank-you';
 import { BackLink, Button, Field, Message } from '@/features/doctor/ui';
 import { Loading } from '@/ui/loading';
 import { Page, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { display, palette, themedStyles, useScheme } from '@/ui/palette';
 import { type PledgeView, cancelPledge, getPledge, markPledgePaid, pickAndSubmitReceipt } from './donations-api';
-import { RECEIPT_LIMIT, formatMad, groupAccountNumber, pledgeStatus, timeLeft } from './donations-logic';
+import { RECEIPT_LIMIT, formatMad, groupAccountNumber, orderStage, pledgeStatus, timeLeft } from './donations-logic';
 import { CopyRow, StatusPill } from './donations-ui';
 
 export default function PledgeScreen() {
@@ -22,6 +26,7 @@ export default function PledgeScreen() {
   const [noReceipt, setNoReceipt] = useState(false);
   const [busy, setBusy] = useState(false);
   const [thanks, setThanks] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [message, setMessage] = useState<{ kind: 'error' | 'ok'; text: string } | null>(null);
   const [now, setNow] = useState(Date.now());
 
@@ -31,6 +36,15 @@ export default function PledgeScreen() {
   }, [id]);
   useEffect(load, [load]);
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 30_000); return () => clearInterval(timer); }, []);
+
+  const orderId = pledge?.id;
+  const needsTransfer = pledge?.status === 'pledged' && pledge.receipt_count === 0;
+  const guideShown = useRef(false);
+  useEffect(() => {
+    if (!orderId || !needsTransfer || guideShown.current) return;
+    guideShown.current = true;
+    setGuideOpen(true);
+  }, [orderId, needsTransfer]);
 
   if (pledge === undefined) return <Page><Loading label="Loading your order" /></Page>;
   if (!pledge) return <Page><BackLink href="/give" label="Giving" /><Message kind="error">{message?.text ?? 'This order was not found on this device. Open the case and enter your email to find it.'}</Message></Page>;
@@ -45,6 +59,7 @@ export default function PledgeScreen() {
       ? 'Thank you. Your receipt has been received. Your donation will appear on the case after a fund collector confirms it.'
       : status.hint || 'Your receipt has been received.';
   const caseHref = `/cases/${pledge.case_slug ?? pledge.case_id}` as Href;
+  const stage = orderStage(pledge.status);
 
   const upload = async () => {
     setBusy(true);
@@ -82,6 +97,7 @@ export default function PledgeScreen() {
   };
 
   return (
+    <>
     <Page>
       <BackLink href="/give" label="Giving" />
       <View style={styles.summary}>
@@ -94,6 +110,8 @@ export default function PledgeScreen() {
           {waiting ? <Text style={[styles.timer, left.expired && styles.timerOut]}>{left.label}</Text> : null}
         </View>
       </View>
+      {stage !== null ? <OrderProgress stage={stage} /> : null}
+      {needsTransfer ? <WaitingCard phase="transfer" /> : pledge.status === 'receipt_submitted' ? <WaitingCard phase="review" /> : null}
       {pledge.review_note ? <Message kind="info">{pledge.review_note}</Message> : null}
       <ThankYou visible={thanks} onClose={() => setThanks(false)} />
       {message ? <Message kind={message.kind}>{message.text}</Message> : null}
@@ -161,6 +179,9 @@ export default function PledgeScreen() {
         ) : null}
       </View>
     </Page>
+    {needsTransfer ? <GuideFab onPress={() => setGuideOpen(true)} /> : null}
+    <OrderGuide onClose={() => setGuideOpen(false)} visible={guideOpen} />
+    </>
   );
 }
 

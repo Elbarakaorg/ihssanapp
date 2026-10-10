@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { caseShareUrl, instagramEmbedUrl, isUuid, isValidEmail, collectorInviteUrl, formatMad, groupAccountNumber, parseAmount, percentFunded, pledgeStatus, safeHttpsUrl, suggestedAmounts, timeLeft, validateAmount } from './donations-logic';
+import { caseShareUrl, instagramEmbedUrl, isUuid, isValidEmail, orderStage, collectorInviteUrl, formatMad, groupAccountNumber, parseAmount, percentFunded, pledgeStatus, safeHttpsUrl, suggestedAmounts, timeLeft, validateAmount } from './donations-logic';
 
 describe('donation logic', () => {
   it('computes progress safely', () => {
@@ -38,6 +38,13 @@ describe('donation logic', () => {
   it('maps statuses', () => {
     expect(pledgeStatus('confirmed').tone).toBe('ok');
     expect(pledgeStatus('weird').label).toBe('weird');
+  });
+  it('places an order on its way to being counted', () => {
+    expect(orderStage('pledged')).toBe(1);
+    expect(orderStage('receipt_submitted')).toBe(2);
+    expect(orderStage('confirmed')).toBe(3);
+    expect(orderStage('rejected')).toBeNull();
+    expect(orderStage('expired')).toBeNull();
   });
   it('validates donor emails', () => {
     expect(isValidEmail(' donor@example.com ')).toBe(true);

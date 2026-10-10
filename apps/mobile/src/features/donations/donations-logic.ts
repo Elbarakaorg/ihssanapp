@@ -28,6 +28,16 @@ export function parseAmount(text: string) {
 
 export const isValidEmail = (value: string) => value.trim().length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
+export const ORDER_STAGES = ['Order created', 'Pending transfer', 'Confirm', 'Done'] as const;
+
+/** Where a donation is on the way to being counted; null once it ended without being confirmed. */
+export function orderStage(status: string) {
+  if (status === 'pledged') return 1;
+  if (status === 'receipt_submitted') return 2;
+  if (status === 'confirmed') return 3;
+  return null;
+}
+
 export function validateAmount(value: number | null, minimum: number) {
   if (value === null) return 'Enter the amount in MAD.';
   if (value < minimum) return `The minimum donation is ${minimum} MAD.`;

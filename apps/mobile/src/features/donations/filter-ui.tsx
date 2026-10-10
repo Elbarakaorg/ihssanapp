@@ -3,14 +3,17 @@ import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { display, palette, themedStyles, useScheme } from '@/ui/palette';
+import { useLocale } from '@/platform/locale/locale-provider';
+import { donationCopy } from '@/platform/locale/donations';
 
 export function SearchBar({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   useScheme();
+  const { locale } = useLocale();
   return (
     <View style={styles.search}>
       <Search color={palette.muted} size={18} />
-      <TextInput accessibilityLabel="Search cases" autoCapitalize="none" autoCorrect={false} maxLength={80} onChangeText={onChange} placeholder="Search by name, city or story" placeholderTextColor={palette.muted} returnKeyType="search" style={styles.searchInput} value={value} />
-      {value ? <Pressable accessibilityLabel="Clear search" accessibilityRole="button" hitSlop={10} onPress={() => onChange('')}><X color={palette.muted} size={18} /></Pressable> : null}
+      <TextInput accessibilityLabel={donationCopy(locale, 'give.search')} autoCapitalize="none" autoCorrect={false} maxLength={80} onChangeText={onChange} placeholder={donationCopy(locale, 'give.search')} placeholderTextColor={palette.muted} returnKeyType="search" style={[styles.searchInput, locale === 'ar' && styles.rtlText]} value={value} />
+      {value ? <Pressable accessibilityLabel={donationCopy(locale, 'filter.clearSearch')} accessibilityRole="button" hitSlop={10} onPress={() => onChange('')}><X color={palette.muted} size={18} /></Pressable> : null}
     </View>
   );
 }
@@ -21,16 +24,17 @@ export type Group = { title?: string; options: Option[]; value: string; onSelect
 /** A compact dropdown trigger that opens a bottom sheet of options. */
 export function Dropdown({ label, display: shown, active, groups }: { label: string; display: string; active: boolean; groups: Group[] }) {
   useScheme();
+  const { locale } = useLocale();
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Pressable accessibilityHint={`Choose ${label.toLowerCase()}`} accessibilityLabel={`${label}: ${shown}`} accessibilityRole="button" onPress={() => setOpen(true)} style={({ pressed }) => [styles.trigger, active && styles.triggerActive, pressed && styles.pressed]}>
+      <Pressable accessibilityHint={donationCopy(locale, 'filter.choose', { label: label.toLowerCase() })} accessibilityLabel={`${label}: ${shown}`} accessibilityRole="button" onPress={() => setOpen(true)} style={({ pressed }) => [styles.trigger, active && styles.triggerActive, pressed && styles.pressed]}>
         <Text numberOfLines={1} style={[styles.triggerText, active && styles.triggerTextActive]}>{shown}</Text>
         <ChevronDown color={active ? palette.forest : palette.muted} size={14} />
       </Pressable>
       <Modal animationType="fade" onRequestClose={() => setOpen(false)} transparent visible={open}>
-        <Pressable accessibilityLabel="Close" onPress={() => setOpen(false)} style={styles.backdrop}>
-          <Pressable style={styles.sheet}>
+        <Pressable accessibilityLabel={donationCopy(locale, 'filter.close')} onPress={() => setOpen(false)} style={styles.backdrop}>
+          <Pressable style={[styles.sheet, locale === 'ar' && styles.rtl]}>
             <Text style={styles.sheetTitle}>{label}</Text>
             <ScrollView>
               {groups.map((group, index) => (
@@ -40,7 +44,7 @@ export function Dropdown({ label, display: shown, active, groups }: { label: str
                     const selected = group.value === option.value;
                     return (
                       <Pressable key={option.value} accessibilityRole="menuitem" accessibilityState={{ selected }} onPress={() => { group.onSelect(option.value); if (groups.length === 1) setOpen(false); }} style={({ pressed }) => [styles.option, pressed && styles.pressed]}>
-                        <Text style={[styles.optionText, selected && styles.optionSelected]}>{option.label}</Text>
+                        <Text style={[styles.optionText, selected && styles.optionSelected, locale === 'ar' && styles.rtlText]}>{option.label}</Text>
                         {selected ? <Check color={palette.forest} size={16} /> : null}
                       </Pressable>
                     );
@@ -48,7 +52,7 @@ export function Dropdown({ label, display: shown, active, groups }: { label: str
                 </View>
               ))}
             </ScrollView>
-            {groups.length > 1 ? <Pressable accessibilityRole="button" onPress={() => setOpen(false)} style={styles.done}><Text style={styles.doneText}>Done</Text></Pressable> : null}
+            {groups.length > 1 ? <Pressable accessibilityRole="button" onPress={() => setOpen(false)} style={styles.done}><Text style={styles.doneText}>{donationCopy(locale, 'filter.done')}</Text></Pressable> : null}
           </Pressable>
         </Pressable>
       </Modal>
@@ -83,4 +87,6 @@ const styles = themedStyles(() => StyleSheet.create({
   optionSelected: { color: palette.forest, fontWeight: '700' },
   done: { alignItems: 'center', backgroundColor: palette.forest, borderRadius: 14, justifyContent: 'center', marginTop: 12, minHeight: 46 },
   doneText: { color: palette.white, fontSize: 15, fontWeight: '700' },
+  rtl: { direction: 'rtl' },
+  rtlText: { writingDirection: 'rtl', textAlign: 'right' },
 }));

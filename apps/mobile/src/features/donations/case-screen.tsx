@@ -10,9 +10,11 @@ import { imageUrl, socialKinds, type SocialLink } from '@/features/doctor/doctor
 import { Loading } from '@/ui/loading';
 import { Page, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { display, palette, themedStyles, useScheme } from '@/ui/palette';
+import { useLocale } from '@/platform/locale/locale-provider';
+import { donationCopy } from '@/platform/locale/donations';
 import { AudioPlayer, Reels } from './case-media';
 import { CASE_BUCKET, type CaseDetail, type OpenOrder, type Wish, type WallEntry, createPledge, deleteWish, findStoredOpenOrder, getCase, getSavedDonorEmail, listWall, listWishes, postWish, recoverOpenOrders, shareCase } from './donations-api';
-import { ACCOUNT_RECEIPT_NOTICE, formatMad, isValidEmail, parseAmount, suggestedAmounts, validateAmount } from './donations-logic';
+import { formatMad, isValidEmail, parseAmount, suggestedAmounts, validateAmount } from './donations-logic';
 import { Progress, UrgentBadge } from './donations-ui';
 import { OpenOrderCard } from './open-order-card';
 
@@ -29,6 +31,7 @@ function GalleryImage({ path, caption }: { path: string; caption: string | null 
 
 export default function CaseScreen() {
   useScheme();
+  const { locale } = useLocale();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [item, setItem] = useState<CaseDetail | null | undefined>(undefined);
@@ -59,8 +62,8 @@ export default function CaseScreen() {
     if (caseId) void findStoredOpenOrder(caseId).then(setOpenOrder).catch(() => undefined);
   }, [caseId]));
 
-  if (item === undefined) return <Page><Loading label="Loading this case" /></Page>;
-  if (!item) return <Page><BackLink href="/give" label="Giving" /><Message kind="error">{error || 'This case is not available.'}</Message></Page>;
+  if (item === undefined) return <Page direction={locale === 'ar' ? 'rtl' : 'ltr'}><Loading label={donationCopy(locale, 'case.loading')} /></Page>;
+  if (!item) return <Page direction={locale === 'ar' ? 'rtl' : 'ltr'}><BackLink direction={locale === 'ar' ? 'rtl' : 'ltr'} href="/give" label={donationCopy(locale, 'case.giving')} /><Message kind="error">{error || donationCopy(locale, 'case.unavailable')}</Message></Page>;
 
   const open = item.status === 'published';
   const remaining = Math.max(item.goal_mad - item.raised_mad, 0);
@@ -74,8 +77,8 @@ export default function CaseScreen() {
   };
 
   return (
-    <Page>
-      <BackLink href="/give" label="Giving" />
+    <Page direction={locale === 'ar' ? 'rtl' : 'ltr'}>
+      <BackLink direction={locale === 'ar' ? 'rtl' : 'ltr'} href="/give" label={donationCopy(locale, 'case.giving')} />
       <View style={styles.heroWrap}>
         <RemoteImage bucket={CASE_BUCKET} path={item.photo_path} placeholderSize={40} style={styles.hero} />
         <LinearGradient colors={['rgba(16,32,22,0)', 'rgba(16,32,22,0.78)']} locations={[0.35, 1]} pointerEvents="none" style={StyleSheet.absoluteFill} />
@@ -86,32 +89,32 @@ export default function CaseScreen() {
           </View>
           <Text style={styles.title}>{item.title}</Text>
           <Text style={styles.heroMeta}>
-            {[item.beneficiary_name, item.age !== null ? `${item.age} years old` : null, item.city].filter(Boolean).join(' · ')}
+            {[item.beneficiary_name, item.age !== null ? donationCopy(locale, 'case.age', { age: item.age }) : null, item.city].filter(Boolean).join(' · ')}
           </Text>
         </View>
       </View>
       <View style={[uiStyles.card, styles.fundCard]}>
         <Progress raised={item.raised_mad} goal={item.goal_mad} donors={item.donor_count} />
-        {item.status === 'funded' ? <Message kind="ok">This case is fully funded, alhamdulillah. Thank you to everyone who gave.</Message> : null}
-        {item.status === 'closed' ? <Message kind="info">This case is closed and no longer accepts donations.</Message> : null}
-        {open && !donating && !openOrder ? <Button label="Donate to this case" onPress={() => setDonating(true)} /> : null}
-        <Button tone="secondary" label="Share this case" onPress={() => void share()} />
+        {item.status === 'funded' ? <Message kind="ok">{donationCopy(locale, 'case.funded')}</Message> : null}
+        {item.status === 'closed' ? <Message kind="info">{donationCopy(locale, 'case.closed')}</Message> : null}
+        {open && !donating && !openOrder ? <Button label={donationCopy(locale, 'case.donate')} onPress={() => setDonating(true)} /> : null}
+        <Button tone="secondary" label={donationCopy(locale, 'case.share')} onPress={() => void share()} />
         {note ? <Message kind="ok">{note}</Message> : null}
-        {item.can_manage ? <Button tone="secondary" label="Manage this case" onPress={() => router.push(`/collect/${item.id}` as Href)} /> : null}
+        {item.can_manage ? <Button tone="secondary" label={donationCopy(locale, 'case.manage')} onPress={() => router.push(`/collect/${item.id}` as Href)} /> : null}
       </View>
 
       {open && openOrder ? <OpenOrderCard order={openOrder} minDonation={item.min_donation_mad} onChange={setOpenOrder} /> : null}
-      {open && donating ? <DonateForm item={item} remaining={remaining} onDone={(pledgeId) => router.push(`/pledge/${pledgeId}` as Href)} onCancel={() => setDonating(false)} /> : null}
+      {open && donating ? <DonateForm item={item} locale={locale} remaining={remaining} onDone={(pledgeId) => router.push(`/pledge/${pledgeId}` as Href)} onCancel={() => setDonating(false)} /> : null}
 
-      <SectionHeading title="Their story" />
-      <Story text={item.bio || item.summary} />
+      <SectionHeading direction={locale === 'ar' ? 'rtl' : 'ltr'} title={donationCopy(locale, 'case.story')} />
+      <Story locale={locale} text={item.bio || item.summary} />
 
-      {item.audio.length ? <><SectionHeading title="Listen" /><AudioPlayer clips={item.audio} /></> : null}
-      {item.videos.length ? <><SectionHeading title="Watch" /><Reels videos={item.videos} /></> : null}
+      {item.audio.length ? <><SectionHeading direction={locale === 'ar' ? 'rtl' : 'ltr'} title={donationCopy(locale, 'case.listen')} /><AudioPlayer clips={item.audio} /></> : null}
+      {item.videos.length ? <><SectionHeading direction={locale === 'ar' ? 'rtl' : 'ltr'} title={donationCopy(locale, 'case.watch')} /><Reels videos={item.videos} /></> : null}
 
       {item.media.length ? (
         <>
-          <SectionHeading title="Gallery" />
+          <SectionHeading direction={locale === 'ar' ? 'rtl' : 'ltr'} title={donationCopy(locale, 'case.gallery')} />
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.gallery}>
             {item.media.map((photo) => <GalleryImage key={photo.id} path={photo.path} caption={photo.caption} />)}
           </ScrollView>
@@ -120,7 +123,7 @@ export default function CaseScreen() {
 
       {(item.social_links.length > 0 || item.contact && (item.contact.phone || item.contact.email)) ? (
         <>
-          <SectionHeading title="Connect" />
+          <SectionHeading direction={locale === 'ar' ? 'rtl' : 'ltr'} title={donationCopy(locale, 'case.contact')} />
           <View style={styles.contactLinks}>
             {item.social_links.filter((link) => /^https:\/\//i.test(link.url)).map((link) => {
               const label = socialLinkLabel(link);
@@ -145,7 +148,7 @@ export default function CaseScreen() {
         </>
       ) : null}
 
-      <SectionHeading title="Recent donations" detail={wall.length ? undefined : 'Confirmed donations appear here'} />
+      <SectionHeading direction={locale === 'ar' ? 'rtl' : 'ltr'} title={donationCopy(locale, 'case.recentDonations')} detail={wall.length ? undefined : donationCopy(locale, 'case.confirmedAppear')} />
       {wall.slice(0, wallLimit).map((entry, index) => (
         <View key={`${entry.confirmed_at}-${index}`} style={[uiStyles.card, styles.wallRow]}>
           <View style={styles.wallHead}>
@@ -155,14 +158,14 @@ export default function CaseScreen() {
           {entry.comment ? <Text style={styles.wallComment}>{entry.comment}</Text> : null}
         </View>
       ))}
-      {wall.length > wallLimit ? <Pressable accessibilityRole="button" onPress={() => setWallLimit(wall.length)}><Text style={styles.more}>Show all {wall.length} donations</Text></Pressable> : null}
-      <SectionHeading title="Kind words" detail={wishes.length ? undefined : 'Be the first to leave a warm message'} />
+      {wall.length > wallLimit ? <Pressable accessibilityRole="button" onPress={() => setWallLimit(wall.length)}><Text style={styles.more}>{donationCopy(locale, 'case.showDonations', { count: wall.length })}</Text></Pressable> : null}
+      <SectionHeading direction={locale === 'ar' ? 'rtl' : 'ltr'} title={donationCopy(locale, 'case.kindWords')} detail={wishes.length ? undefined : donationCopy(locale, 'case.firstWish')} />
       {wishes.slice(0, wishLimit).map((wish) => (
         <View key={wish.id} style={[uiStyles.card, styles.wallRow]}>
           <View style={styles.wallHead}>
             <Text style={styles.wallName}>{wish.display_name}</Text>
             {item.can_manage ? (
-              <Pressable accessibilityLabel="Delete this message" accessibilityRole="button" hitSlop={8} onPress={() => void removeWish(wish.id)}>
+                <Pressable accessibilityLabel={donationCopy(locale, 'wish.delete')} accessibilityRole="button" hitSlop={8} onPress={() => void removeWish(wish.id)}>
                 <Trash2 color={palette.muted} size={15} />
               </Pressable>
             ) : null}
@@ -170,9 +173,9 @@ export default function CaseScreen() {
           <Text style={styles.wallComment}>{wish.body}</Text>
         </View>
       ))}
-      {wishes.length > wishLimit ? <Pressable accessibilityRole="button" onPress={() => setWishLimit(wishes.length)}><Text style={styles.more}>Show all {wishes.length} messages</Text></Pressable> : null}
-      <WishForm caseId={item.id} onSent={() => void listWishes(item.id).then(setWishes).catch(() => undefined)} />
-      <Text style={styles.fine}>Donations go directly to the family&apos;s bank account. Ihssan never holds the money; a fund collector confirms each transfer before it counts.</Text>
+      {wishes.length > wishLimit ? <Pressable accessibilityRole="button" onPress={() => setWishLimit(wishes.length)}><Text style={styles.more}>{donationCopy(locale, 'case.showWishes', { count: wishes.length })}</Text></Pressable> : null}
+      <WishForm caseId={item.id} locale={locale} onSent={() => void listWishes(item.id).then(setWishes).catch(() => undefined)} />
+      <Text style={[styles.fine, locale === 'ar' && styles.rtlText]}>{donationCopy(locale, 'case.publicNote')}</Text>
     </Page>
   );
 }
@@ -189,39 +192,39 @@ function socialLinkLabel(link: SocialLink) {
   }
 }
 
-function Story({ text }: { text: string }) {
+function Story({ text, locale }: { text: string; locale: 'en' | 'fr' | 'ar' }) {
   useScheme();
   const [open, setOpen] = useState(false);
   const long = text.length > 420;
   return (
     <View style={[uiStyles.card, styles.story]}>
       <Text numberOfLines={long && !open ? 7 : undefined} style={styles.body}>{text}</Text>
-      {long ? <Pressable accessibilityRole="button" onPress={() => setOpen((v) => !v)}><Text style={styles.more}>{open ? 'Show less' : 'Read the full story'}</Text></Pressable> : null}
+      {long ? <Pressable accessibilityRole="button" onPress={() => setOpen((v) => !v)}><Text style={styles.more}>{donationCopy(locale, open ? 'case.readLess' : 'case.readMore')}</Text></Pressable> : null}
     </View>
   );
 }
 
-function WishForm({ caseId, onSent }: { caseId: string; onSent: () => void }) {
+function WishForm({ caseId, onSent, locale }: { caseId: string; onSent: () => void; locale: 'en' | 'fr' | 'ar' }) {
   useScheme();
   const [body, setBody] = useState('');
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const send = async () => {
-    if (body.trim().length < 2) { setError('Write a short message first.'); return; }
+    if (body.trim().length < 2) { setError(donationCopy(locale, 'wish.tooShort')); return; }
     setBusy(true); setError('');
     try {
       await postWish(caseId, body, name, name.trim().length < 2);
       setBody(''); onSent();
-    } catch (e) { setError(e instanceof Error ? e.message : 'Could not send your message.'); } finally { setBusy(false); }
+    } catch (e) { setError(e instanceof Error ? e.message : donationCopy(locale, 'wish.sendError')); } finally { setBusy(false); }
   };
   return (
     <View style={styles.wishForm}>
-      <TextInput accessibilityLabel="Your kind word" maxLength={500} onChangeText={setBody} placeholder="Leave a kind word…" placeholderTextColor={palette.muted} style={styles.wishInput} value={body} />
+      <TextInput accessibilityLabel={donationCopy(locale, 'wish.body')} maxLength={500} onChangeText={setBody} placeholder={donationCopy(locale, 'wish.bodyPlaceholder')} placeholderTextColor={palette.muted} style={[styles.wishInput, locale === 'ar' && styles.rtlText]} value={body} />
       <View style={styles.wishRow}>
-        <TextInput accessibilityLabel="Your name (optional)" maxLength={60} onChangeText={setName} placeholder="Your name (blank = anonymous)" placeholderTextColor={palette.muted} style={[styles.wishInput, styles.flex]} value={name} />
+        <TextInput accessibilityLabel={donationCopy(locale, 'wish.name')} maxLength={60} onChangeText={setName} placeholder={donationCopy(locale, 'wish.namePlaceholder')} placeholderTextColor={palette.muted} style={[styles.wishInput, styles.flex, locale === 'ar' && styles.rtlText]} value={name} />
         <Pressable accessibilityRole="button" disabled={busy} onPress={() => void send()} style={({ pressed }) => [styles.wishSend, pressed && { opacity: 0.85 }]}>
-          <Text style={styles.wishSendLabel}>{busy ? '…' : 'Send'}</Text>
+          <Text style={styles.wishSendLabel}>{busy ? '…' : donationCopy(locale, 'wish.send')}</Text>
         </Pressable>
       </View>
       {error ? <Text style={styles.wishError}>{error}</Text> : null}
@@ -229,8 +232,9 @@ function WishForm({ caseId, onSent }: { caseId: string; onSent: () => void }) {
   );
 }
 
-function DonateForm({ item, remaining, onDone, onCancel }: { item: CaseDetail; remaining: number; onDone: (pledgeId: string) => void; onCancel: () => void }) {
+function DonateForm({ item, remaining, onDone, onCancel, locale }: { item: CaseDetail; remaining: number; onDone: (pledgeId: string) => void; onCancel: () => void; locale: 'en' | 'fr' | 'ar' }) {
   useScheme();
+  const textDirection = locale === 'ar' ? 'rtl' : 'ltr';
   const [amountText, setAmountText] = useState('');
   const [anonymous, setAnonymous] = useState(true);
   const [name, setName] = useState('');
@@ -244,10 +248,10 @@ function DonateForm({ item, remaining, onDone, onCancel }: { item: CaseDetail; r
   useEffect(() => { void getSavedDonorEmail().then((saved) => setEmail((current) => current || saved)); }, []);
 
   const submit = async () => {
-    const problem = validateAmount(amount, item.min_donation_mad);
+    const problem = validateAmount(amount, item.min_donation_mad, locale);
     if (problem || amount === null) { setError(problem); return; }
-    if (!isValidEmail(email)) { setError('Enter a valid email address. It is never shown publicly.'); return; }
-    if (!anonymous && name.trim().length < 2) { setError('Enter the name to show, or choose to stay anonymous.'); return; }
+    if (!isValidEmail(email)) { setError(donationCopy(locale, 'donate.emailInvalid')); return; }
+    if (!anonymous && name.trim().length < 2) { setError(donationCopy(locale, 'donate.nameRequired')); return; }
     setBusy(true);
     setError('');
     setNotice('');
@@ -257,7 +261,7 @@ function DonateForm({ item, remaining, onDone, onCancel }: { item: CaseDetail; r
       const pledge = await createPledge({ caseId: item.id, caseTitle: item.title, amount, displayName: name, anonymous, comment, email });
       onDone(pledge.id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not start your donation order.');
+      setError(e instanceof Error ? e.message : donationCopy(locale, 'donate.startError'));
       setBusy(false);
     }
   };
@@ -265,7 +269,7 @@ function DonateForm({ item, remaining, onDone, onCancel }: { item: CaseDetail; r
   if (recovered.length) {
     return (
       <>
-        <Message kind="info">We found an unfinished order for this email. Continue it, change its amount, or cancel it to start a new one.</Message>
+        <Message kind="info">{donationCopy(locale, 'order.found')}</Message>
         {recovered.map((order) => (
           <OpenOrderCard
             key={order.id}
@@ -275,12 +279,12 @@ function DonateForm({ item, remaining, onDone, onCancel }: { item: CaseDetail; r
               if (next) { setRecovered((list) => list.map((entry) => (entry.id === next.id ? next : entry))); return; }
               const rest = recovered.filter((entry) => entry.id !== order.id);
               setRecovered(rest);
-              if (!rest.length) setNotice('Order cancelled. You can start a new donation below.');
+              if (!rest.length) setNotice(donationCopy(locale, 'order.cancelled'));
             }}
           />
         ))}
         <Pressable accessibilityRole="link" onPress={() => setRecovered([])} style={styles.useOther}>
-          <Text style={styles.more}>Use a different email</Text>
+          <Text style={styles.more}>{donationCopy(locale, 'order.otherEmail')}</Text>
         </Pressable>
       </>
     );
@@ -288,30 +292,30 @@ function DonateForm({ item, remaining, onDone, onCancel }: { item: CaseDetail; r
 
   return (
     <View style={[uiStyles.card, styles.form]}>
-      <Text style={styles.formTitle}>Your donation</Text>
-      <Text style={styles.fieldTitle}>Amount</Text>
+      <Text style={[styles.formTitle, locale === 'ar' && styles.rtlText]}>{donationCopy(locale, 'donate.title')}</Text>
+      <Text style={[styles.fieldTitle, locale === 'ar' && styles.rtlText]}>{donationCopy(locale, 'donate.amount')}</Text>
       <View style={styles.amountBox}>
-        <TextInput accessibilityLabel="Amount in MAD" keyboardType="number-pad" maxLength={9} onChangeText={setAmountText} placeholder={`${item.min_donation_mad}`} placeholderTextColor={palette.muted} style={styles.amountInput} value={amountText} />
+        <TextInput accessibilityLabel={donationCopy(locale, 'pledge.amountInput')} keyboardType="number-pad" maxLength={9} onChangeText={setAmountText} placeholder={`${item.min_donation_mad}`} placeholderTextColor={palette.muted} style={styles.amountInput} value={amountText} />
         <Text style={styles.currency}>MAD</Text>
       </View>
       <View style={styles.chips}>
         {suggestedAmounts(item.min_donation_mad, remaining).map((value) => <Chip key={value} label={`${value}`} selected={amount === value} onPress={() => setAmountText(String(value))} />)}
       </View>
-      <Field label="Your email" value={email} onChangeText={setEmail} maxLength={254} autoCapitalize="none" autoComplete="email" autoCorrect={false} keyboardType="email-address" textContentType="emailAddress" placeholder="name@example.com" />
-      <Text style={styles.meta}>Required. Never shown publicly. We use it to find your order if you leave this page.</Text>
+      <Field label={donationCopy(locale, 'donate.email')} direction={textDirection} inputDirection="ltr" value={email} onChangeText={setEmail} maxLength={254} autoCapitalize="none" autoComplete="email" autoCorrect={false} keyboardType="email-address" textContentType="emailAddress" placeholder={donationCopy(locale, 'donate.emailPlaceholder')} />
+      <Text style={[styles.meta, locale === 'ar' && styles.rtlText]}>{donationCopy(locale, 'donate.emailPrivate')}</Text>
       <View style={styles.switchRow}>
-        <View style={styles.flex}><Text style={styles.switchTitle}>Give anonymously</Text><Text style={styles.meta}>Your name is never shown publicly.</Text></View>
-        <Switch accessibilityLabel="Give anonymously" onValueChange={setAnonymous} trackColor={{ true: palette.forest }} value={anonymous} />
+        <View style={styles.flex}><Text style={[styles.switchTitle, locale === 'ar' && styles.rtlText]}>{donationCopy(locale, 'donate.anonymous')}</Text><Text style={[styles.meta, locale === 'ar' && styles.rtlText]}>{donationCopy(locale, 'donate.namePrivate')}</Text></View>
+        <Switch accessibilityLabel={donationCopy(locale, 'donate.anonymous')} onValueChange={setAnonymous} trackColor={{ true: palette.forest }} value={anonymous} />
       </View>
-      {!anonymous ? <Field label="Name to display" value={name} onChangeText={setName} maxLength={60} placeholder="How your name appears" /> : null}
-      <Field label="A kind word (optional)" value={comment} onChangeText={setComment} maxLength={300} multiline placeholder="Write a short prayer or message" />
+      {!anonymous ? <Field label={donationCopy(locale, 'donate.displayName')} direction={textDirection} value={name} onChangeText={setName} maxLength={60} placeholder={donationCopy(locale, 'donate.displayNamePlaceholder')} /> : null}
+      <Field label={donationCopy(locale, 'donate.kindWord')} direction={textDirection} value={comment} onChangeText={setComment} maxLength={300} multiline placeholder={donationCopy(locale, 'donate.kindWordPlaceholder')} />
       {notice ? <Message kind="ok">{notice}</Message> : null}
       {error ? <Message kind="error">{error}</Message> : null}
-      <Button label="Continue to bank details" busy={busy} onPress={() => void submit()} />
-      <Button tone="secondary" label="Cancel" onPress={onCancel} />
+      <Button label={donationCopy(locale, 'donate.continue')} busy={busy} onPress={() => void submit()} />
+      <Button tone="secondary" label={donationCopy(locale, 'donate.cancel')} onPress={onCancel} />
       <View style={styles.notes}>
-        <Text style={styles.noteText}>Next you get the bank details and 48 hours to send your transfer and upload the receipt.</Text>
-        <Text style={styles.noteText}>{ACCOUNT_RECEIPT_NOTICE}</Text>
+        <Text style={[styles.noteText, locale === 'ar' && styles.rtlText]}>{donationCopy(locale, 'donate.next')}</Text>
+        <Text style={[styles.noteText, locale === 'ar' && styles.rtlText]}>{donationCopy(locale, 'pledge.receiptNotice')}</Text>
       </View>
     </View>
   );
@@ -364,4 +368,5 @@ const styles = themedStyles(() => StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
   switchRow: { alignItems: 'center', flexDirection: 'row', gap: 12, marginTop: 16 },
   switchTitle: { color: palette.ink, fontSize: 14, fontWeight: '600' },
+  rtlText: { writingDirection: 'rtl', textAlign: 'right' },
 }));

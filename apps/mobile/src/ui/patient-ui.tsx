@@ -7,13 +7,13 @@ import Svg, { Path, Text as SvgText } from 'react-native-svg';
 
 import { display, palette, radii, spacing, themedStyles, useScheme, wobble } from './palette';
 
-export function Page({ children }: PropsWithChildren) {
+export function Page({ children, direction }: PropsWithChildren<{ direction?: 'ltr' | 'rtl' }>) {
   useScheme();
   return (
-    <SafeAreaView style={[styles.safeArea, paperBackground()]} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.safeArea, paperBackground(), direction ? { direction } : null]} edges={['top', 'left', 'right']}>
       {Platform.OS === 'web' ? null : <LinearGradient colors={[palette.washSage, 'transparent', palette.washClay]} locations={[0, 0.45, 1]} pointerEvents="none" style={StyleSheet.absoluteFill} />}
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, direction ? { direction } : null]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         {children}
@@ -32,14 +32,14 @@ export function PreviewNotice() {
   );
 }
 
-export function PageHeading({ eyebrow, title, children }: { eyebrow: string; title: string; children?: ReactNode }) {
+export function PageHeading({ eyebrow, title, children, direction }: { eyebrow: string; title: string; children?: ReactNode; direction?: 'ltr' | 'rtl' }) {
   useScheme();
   return (
     <View style={styles.heading}>
-      <Text style={styles.eyebrow}>{eyebrow}</Text>
-      <Text style={styles.title}>{title}</Text>
+      <Text style={[styles.eyebrow, direction === 'rtl' && styles.rtlText]}>{eyebrow}</Text>
+      <Text style={[styles.title, direction === 'rtl' && styles.rtlText]}>{title}</Text>
       <Ornament />
-      {children ? <Text style={styles.description}>{children}</Text> : null}
+      {children ? <Text style={[styles.description, direction === 'rtl' && styles.rtlText]}>{children}</Text> : null}
     </View>
   );
 }
@@ -56,12 +56,12 @@ export function Ornament({ width = 168 }: { width?: number }) {
   );
 }
 
-export function SectionHeading({ title, detail }: { title: string; detail?: string }) {
+export function SectionHeading({ title, detail, direction }: { title: string; detail?: string; direction?: 'ltr' | 'rtl' }) {
   useScheme();
   return (
     <View style={styles.sectionHeading}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {detail ? <Text style={styles.sectionDetail}>{detail}</Text> : null}
+      <Text style={[styles.sectionTitle, direction === 'rtl' && styles.rtlText]}>{title}</Text>
+      {detail ? <Text style={[styles.sectionDetail, direction === 'rtl' && styles.rtlText]}>{detail}</Text> : null}
     </View>
   );
 }
@@ -206,6 +206,7 @@ const styles = themedStyles(() => StyleSheet.create({
     color: palette.muted,
     fontSize: 13,
   },
+  rtlText: { writingDirection: 'rtl', textAlign: 'right' },
   brandRow: {
     alignItems: 'center',
     flexDirection: 'row',

@@ -8,8 +8,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { display, palette, themedStyles, useScheme } from '@/ui/palette';
+import { useLocale } from '@/platform/locale/locale-provider';
+import { donationCopy } from '@/platform/locale/donations';
 import { GuideDemo } from './order-guide-demos';
-import { GUIDE_STEPS, type GuideStep, splitEmphasis } from './order-guide-steps';
+import { getGuideSteps, type GuideStep, splitEmphasis } from './order-guide-steps';
 
 const EASE_SHEET = Easing.bezier(0.32, 0.72, 0, 1);
 const CLAMP = Extrapolation.CLAMP;
@@ -18,7 +20,7 @@ const DOT = 7;
 const GAP = 9;
 const PILL = 22;
 
-function GuidePage({ step, index, count, scrollX, pageW, active, reduced }: { step: GuideStep; index: number; count: number; scrollX: SharedValue<number>; pageW: number; active: boolean; reduced: boolean }) {
+function GuidePage({ step, index, count, scrollX, pageW, active, reduced, locale }: { step: GuideStep; index: number; count: number; scrollX: SharedValue<number>; pageW: number; active: boolean; reduced: boolean; locale: 'en' | 'fr' | 'ar' }) {
   useScheme();
   const demo = useAnimatedStyle(() => {
     if (reduced) return {};
@@ -36,15 +38,15 @@ function GuidePage({ step, index, count, scrollX, pageW, active, reduced }: { st
   return (
     <View style={[styles.page, { width: pageW }]}>
       <Animated.View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={demo}>
-        <GuideDemo active={active} step={step.key} width={pageW - PAGE_PAD * 2} />
+        <GuideDemo active={active} locale={locale} step={step.key} width={pageW - PAGE_PAD * 2} />
       </Animated.View>
       <Animated.View style={[styles.copy, copy]}>
         <View style={styles.stepRow}>
           <View style={styles.badge}><Text style={styles.badgeText}>{index + 1}</Text></View>
-          <Text style={styles.stepOf}>Step {index + 1} of {count}</Text>
+          <Text style={[styles.stepOf, locale === 'ar' && styles.rtl]}>{donationCopy(locale, 'guide.stepOf', { step: index + 1, count })}</Text>
         </View>
-        <Text style={styles.title}>{step.title}</Text>
-        <Text style={styles.body}>
+        <Text style={[styles.title, locale === 'ar' && styles.rtl]}>{step.title}</Text>
+        <Text style={[styles.body, locale === 'ar' && styles.rtl]}>
           {splitEmphasis(step.body).map((part, i) => <Text key={i} style={part.strong ? styles.strong : undefined}>{part.text}</Text>)}
         </Text>
       </Animated.View>
@@ -52,13 +54,13 @@ function GuidePage({ step, index, count, scrollX, pageW, active, reduced }: { st
   );
 }
 
-function Stepper({ scrollX, pageW, onSelect }: { scrollX: SharedValue<number>; pageW: number; onSelect: (index: number) => void }) {
+function Stepper({ scrollX, pageW, onSelect, locale }: { scrollX: SharedValue<number>; pageW: number; onSelect: (index: number) => void; locale: 'en' | 'fr' | 'ar' }) {
   useScheme();
   const pill = useAnimatedStyle(() => ({ transform: [{ translateX: (scrollX.get() / pageW) * (DOT + GAP) - (PILL - DOT) / 2 }] }));
   return (
     <View style={styles.dots}>
-      {GUIDE_STEPS.map((step, index) => (
-        <Pressable key={step.key} accessibilityLabel={`Go to step ${index + 1}`} accessibilityRole="button" hitSlop={10} onPress={() => onSelect(index)} style={styles.dot} />
+      {getGuideSteps(locale).map((step, index) => (
+        <Pressable key={step.key} accessibilityLabel={donationCopy(locale, 'guide.stepAccessibility', { step: index + 1 })} accessibilityRole="button" hitSlop={10} onPress={() => onSelect(index)} style={styles.dot} />
       ))}
       <Animated.View pointerEvents="none" style={[styles.pill, pill]} />
     </View>
@@ -68,6 +70,8 @@ function Stepper({ scrollX, pageW, onSelect }: { scrollX: SharedValue<number>; p
 /** A bottom sheet that explains how to complete a donation; drag the header down to dismiss. */
 export function OrderGuide({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   useScheme();
+  const { locale } = useLocale();
+  const guideSteps = getGuideSteps(locale);
   const reduced = useReducedMotion();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
@@ -79,7 +83,7 @@ export function OrderGuide({ visible, onClose }: { visible: boolean; onClose: ()
   const scrollX = useSharedValue(0);
   const scroller = useRef<Animated.ScrollView>(null);
   const wasVisible = useRef(false);
-  const last = GUIDE_STEPS.length - 1;
+  const last = guideSteps.length - 1;
 
   useEffect(() => {
     if (visible) {
@@ -124,28 +128,28 @@ export function OrderGuide({ visible, onClose }: { visible: boolean; onClose: ()
     <Modal animationType="none" onRequestClose={onClose} statusBarTranslucent transparent visible>
       <GestureHandlerRootView style={styles.root}>
         <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, backdropStyle]}>
-          <Pressable accessibilityLabel="Close guide" onPress={onClose} style={StyleSheet.absoluteFill} />
+          <Pressable accessibilityLabel={donationCopy(locale, 'guide.close')} onPress={onClose} style={StyleSheet.absoluteFill} />
         </Animated.View>
-        <Animated.View accessibilityViewIsModal style={[styles.sheet, { height: sheetH, width: sheetW }, sheetStyle]}>
+        <Animated.View accessibilityViewIsModal style={[styles.sheet, locale === 'ar' && styles.rtl, { height: sheetH, width: sheetW }, sheetStyle]}>
           <GestureDetector gesture={pan}>
             <View style={styles.header}>
               <View style={styles.handle} />
               <View style={styles.titleRow}>
-                <Text style={styles.sheetTitle}>How donating works</Text>
-                <Pressable accessibilityLabel="Close guide" accessibilityRole="button" hitSlop={8} onPress={onClose} style={styles.close}><X color={palette.ink} size={18} /></Pressable>
+                  <Text style={[styles.sheetTitle, locale === 'ar' && styles.rtl]}>{donationCopy(locale, 'guide.title')}</Text>
+                  <Pressable accessibilityLabel={donationCopy(locale, 'guide.close')} accessibilityRole="button" hitSlop={8} onPress={onClose} style={styles.close}><X color={palette.ink} size={18} /></Pressable>
               </View>
             </View>
           </GestureDetector>
           <Animated.ScrollView bounces={false} horizontal onScroll={onScroll} pagingEnabled ref={scroller} scrollEventThrottle={16} showsHorizontalScrollIndicator={false} style={styles.pager}>
-            {GUIDE_STEPS.map((step, index) => (
-              <GuidePage key={step.key} active={page === index} count={GUIDE_STEPS.length} index={index} pageW={sheetW} reduced={reduced} scrollX={scrollX} step={step} />
+            {guideSteps.map((step, index) => (
+              <GuidePage key={step.key} active={page === index} count={guideSteps.length} index={index} locale={locale} pageW={sheetW} reduced={reduced} scrollX={scrollX} step={step} />
             ))}
           </Animated.ScrollView>
           <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 14) }]}>
-            <Pressable accessibilityRole="button" disabled={page === 0} onPress={() => go(page - 1)} style={[styles.back, page === 0 && styles.hidden]}><Text style={styles.backText}>Back</Text></Pressable>
-            <Stepper onSelect={go} pageW={sheetW} scrollX={scrollX} />
+            <Pressable accessibilityRole="button" disabled={page === 0} onPress={() => go(page - 1)} style={[styles.back, page === 0 && styles.hidden]}><Text style={[styles.backText, locale === 'ar' && styles.rtl]}>{donationCopy(locale, 'guide.back')}</Text></Pressable>
+            <Stepper locale={locale} onSelect={go} pageW={sheetW} scrollX={scrollX} />
             <Pressable accessibilityRole="button" onPress={() => (page === last ? onClose() : go(page + 1))} style={({ pressed }) => [styles.next, pressed && styles.pressed]}>
-              <Text style={styles.nextText}>{page === last ? 'Got it' : 'Next'}</Text>
+              <Text style={[styles.nextText, locale === 'ar' && styles.rtl]}>{donationCopy(locale, page === last ? 'guide.done' : 'guide.next')}</Text>
             </Pressable>
           </View>
         </Animated.View>
@@ -183,4 +187,5 @@ const styles = themedStyles(() => StyleSheet.create({
   next: { alignItems: 'center', backgroundColor: palette.forest, borderRadius: 22, justifyContent: 'center', minHeight: 44, minWidth: 96, paddingHorizontal: 22 },
   nextText: { color: palette.white, fontSize: 15, fontWeight: '800' },
   pressed: { opacity: 0.9, transform: [{ scale: 0.97 }] },
+  rtl: { direction: 'rtl', writingDirection: 'rtl', textAlign: 'right' },
 }));

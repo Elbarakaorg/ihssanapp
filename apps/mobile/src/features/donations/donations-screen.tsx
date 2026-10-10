@@ -15,14 +15,16 @@ import { formatMad } from './donations-logic';
 import { CaseCard } from './donations-ui';
 import { Dropdown, SearchBar, ToggleChip } from './filter-ui';
 
+import { useLocale } from '@/platform/locale/locale-provider';
+import { donationCopy } from '@/platform/locale/donations';
 const PAGE = 12;
-const SORTS: [CaseSort, string][] = [['newest', 'Newest'], ['urgent', 'Most urgent'], ['nearly_funded', 'Nearly funded'], ['least_funded', 'Needs most help'], ['most_funded', 'Most raised']];
-const STATUS_LABEL: Record<string, string> = { active: 'Open for donations', funded: 'Fully funded', all: 'All cases' };
-const STEPS = ['Choose a verified case and start a donation order.', 'Send your transfer to the family’s bank account within 48 hours.', 'Come back and upload your receipt.', 'A fund collector confirms it, and the progress bar moves.'];
-
+const SORTS: [CaseSort, 'give.newest' | 'give.urgentSort' | 'give.nearlyFunded' | 'give.needsHelp' | 'give.mostRaised'][] = [['newest', 'give.newest'], ['urgent', 'give.urgentSort'], ['nearly_funded', 'give.nearlyFunded'], ['least_funded', 'give.needsHelp'], ['most_funded', 'give.mostRaised']];
+const STATUS_KEYS = { active: 'give.open', funded: 'give.funded', all: 'give.allCases' } as const;
+const STEP_KEYS = ['give.step1', 'give.step2', 'give.step3', 'give.step4'] as const;
 export default function DonationsScreen() {
   useScheme();
   const router = useRouter();
+  const { locale } = useLocale();
   const { session } = useAuth();
   const [filters, setFilters] = useState<CaseFilters>(defaultFilters);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -75,69 +77,69 @@ export default function DonationsScreen() {
   const filtered = filters.category !== '' || filters.city !== '' || filters.urgent || filters.search !== '' || filters.status !== 'active';
 
   return (
-    <Page>
-      <Pressable accessibilityLabel="My donation history" accessibilityRole="button" hitSlop={8} onPress={() => router.push('/my-donations' as Href)} style={({ pressed }) => [styles.historyButton, pressed && styles.pressed]}>
+    <Page direction={locale === 'ar' ? 'rtl' : 'ltr'}>
+      <Pressable accessibilityLabel={donationCopy(locale, 'give.history')} accessibilityRole="button" hitSlop={8} onPress={() => router.push('/my-donations' as Href)} style={({ pressed }) => [styles.historyButton, pressed && styles.pressed]}>
         <History color={palette.forest} size={20} />
         {hasOrders ? <View style={styles.historyDot} /> : null}
       </Pressable>
-      <PageHeading eyebrow="Ihssan Giving" title="Give with purpose">
-        Every case is reviewed. Gifts go straight to the family&apos;s own bank account.
+      <PageHeading direction={locale === 'ar' ? 'rtl' : 'ltr'} eyebrow={donationCopy(locale, 'give.eyebrow')} title={donationCopy(locale, 'give.title')}>
+        {donationCopy(locale, 'give.intro')}
       </PageHeading>
 
       {collects > 0 ? (
         <Pressable accessibilityRole="button" onPress={() => router.push('/collect' as Href)} style={({ pressed }) => [uiStyles.card, styles.collect, pressed && styles.pressed]}>
           <ShieldCheck color={palette.forest} size={20} />
-          <View style={styles.flex}><Text style={styles.collectTitle}>Fund collector dashboard</Text><Text style={styles.muted}>Review receipts and confirm donations.</Text></View>
+          <View style={styles.flex}><Text style={styles.collectTitle}>{donationCopy(locale, 'give.collector')}</Text><Text style={styles.muted}>{donationCopy(locale, 'give.collectorNote')}</Text></View>
         </Pressable>
       ) : null}
 
       <SearchBar value={filters.search} onChange={(search) => set({ search })} />
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.categoryRow}>
-        <Chip label="All" selected={filters.category === ''} onPress={() => set({ category: '' })} />
-        {categories.map((c) => <Chip key={c.slug} label={c.label_en} selected={filters.category === c.slug} onPress={() => set({ category: filters.category === c.slug ? '' : c.slug })} />)}
+        <Chip label={donationCopy(locale, 'give.all')} selected={filters.category === ''} onPress={() => set({ category: '' })} />
+        {categories.map((category) => <Chip key={category.slug} label={category[`label_${locale}`]} selected={filters.category === category.slug} onPress={() => set({ category: filters.category === category.slug ? '' : category.slug })} />)}
       </ScrollView>
 
       <View style={styles.filterRow}>
         <Dropdown
-          label="City"
-          display={filters.city || 'City'}
+          label={donationCopy(locale, 'give.city')}
+          display={filters.city || donationCopy(locale, 'give.city')}
           active={filters.city !== ''}
-          groups={[{ options: [{ value: '', label: 'Everywhere' }, ...cities.map((c) => ({ value: c.city, label: `${c.city} (${c.total})` }))], value: filters.city, onSelect: (city) => set({ city }) }]}
+          groups={[{ options: [{ value: '', label: donationCopy(locale, 'give.everywhere') }, ...cities.map((city) => ({ value: city.city, label: `${city.city} (${city.total})` }))], value: filters.city, onSelect: (city) => set({ city }) }]}
         />
         <Dropdown
-          label="Show & sort"
-          display={filters.status === 'active' && filters.sort === 'newest' ? 'Show' : STATUS_LABEL[filters.status]}
+          label={donationCopy(locale, 'give.showSort')}
+          display={filters.status === 'active' && filters.sort === 'newest' ? donationCopy(locale, 'give.show') : donationCopy(locale, STATUS_KEYS[filters.status])}
           active={filters.status !== 'active' || filters.sort !== 'newest'}
           groups={[
-            { title: 'Show', options: Object.entries(STATUS_LABEL).map(([value, label]) => ({ value, label })), value: filters.status, onSelect: (status) => set({ status: status as CaseFilters['status'] }) },
-            { title: 'Sort by', options: SORTS.map(([value, label]) => ({ value, label })), value: filters.sort, onSelect: (sort) => set({ sort: sort as CaseSort }) },
+            { title: donationCopy(locale, 'give.show'), options: Object.entries(STATUS_KEYS).map(([value, key]) => ({ value, label: donationCopy(locale, key) })), value: filters.status, onSelect: (status) => set({ status: status as CaseFilters['status'] }) },
+            { title: donationCopy(locale, 'give.sortBy'), options: SORTS.map(([value, key]) => ({ value, label: donationCopy(locale, key) })), value: filters.sort, onSelect: (sort) => set({ sort: sort as CaseSort }) },
           ]}
         />
-        <ToggleChip label="Urgent" selected={filters.urgent} onPress={() => set({ urgent: !filters.urgent })} />
+        <ToggleChip label={donationCopy(locale, 'give.urgent')} selected={filters.urgent} onPress={() => set({ urgent: !filters.urgent })} />
       </View>
-      {filtered ? <Pressable accessibilityRole="button" onPress={() => { setCases(null); setFilters(defaultFilters); }}><Text style={styles.reset}>Clear filters</Text></Pressable> : null}
+      {filtered ? <Pressable accessibilityRole="button" onPress={() => { setCases(null); setFilters(defaultFilters); }}><Text style={styles.reset}>{donationCopy(locale, 'give.clearFilters')}</Text></Pressable> : null}
 
       {error ? <Message kind="error">{error}</Message> : null}
-      {cases === null ? <Loading inline label="Finding cases" state="searching" /> : null}
+      {cases === null ? <Loading inline label={donationCopy(locale, 'give.finding')} state="searching" /> : null}
       {cases?.length === 0 && !error ? (
         <View style={styles.empty}>
           <HandHeart color={palette.forest} size={28} strokeWidth={1.6} />
-          <Text style={styles.emptyTitle}>{filtered ? 'No cases match these filters' : 'Verified cases will appear here'}</Text>
-          <Text style={styles.muted}>{filtered ? 'Try another category or city.' : 'There are no published cases yet. Please check back soon.'}</Text>
+          <Text style={styles.emptyTitle}>{donationCopy(locale, filtered ? 'give.noMatch' : 'give.noCases')}</Text>
+          <Text style={styles.muted}>{donationCopy(locale, filtered ? 'give.tryFilter' : 'give.noCasesNote')}</Text>
         </View>
       ) : null}
-      {cases?.map((item) => <CaseCard key={item.id} item={item} onPress={() => router.push(`/cases/${item.id}` as Href)} />)}
+      {cases?.map((item) => <CaseCard categories={categories} key={item.id} item={item} onPress={() => router.push(`/cases/${item.id}` as Href)} />)}
       {more ? (
         <Pressable accessibilityRole="button" disabled={loadingMore} onPress={() => void loadMore()} style={styles.moreButton}>
-          <Text style={styles.moreLabel}>{loadingMore ? 'Loading…' : 'Show more cases'}</Text>
+          <Text style={styles.moreLabel}>{donationCopy(locale, loadingMore ? 'give.loadingMore' : 'give.loadMore')}</Text>
         </Pressable>
       ) : null}
 
-      <SectionHeading title="How giving works" />
+      <SectionHeading direction={locale === 'ar' ? 'rtl' : 'ltr'} title={donationCopy(locale, 'give.how')} />
       <View style={[uiStyles.card, styles.how]}>
-        {STEPS.map((step, index) => (
-          <View key={step} style={styles.step}><Text style={styles.stepNo}>{index + 1}</Text><Text style={[styles.muted, styles.flex]}>{step}</Text></View>
+        {STEP_KEYS.map((key, index) => (
+          <View key={key} style={styles.step}><Text style={styles.stepNo}>{index + 1}</Text><Text style={[styles.muted, styles.flex]}>{donationCopy(locale, key)}</Text></View>
         ))}
       </View>
     </Page>

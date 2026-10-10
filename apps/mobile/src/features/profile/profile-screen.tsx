@@ -4,12 +4,15 @@ import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/auth-provider';
+import { InstallAndNotifyCard } from '@/features/notifications/install-card';
 import { getCurrentUserProfile } from '@/features/profile/profile-repository';
+import { useLocale, type AppLocale } from '@/platform/locale/locale-provider';
+import { donationCopy } from '@/platform/locale/donations';
 import { Page, PageHeading, PreviewNotice, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
 
 const settings = [
-  { title: 'Language', detail: 'English · preview', icon: Globe2 },
+  { title: 'Language', detail: '', icon: Globe2 },
   { title: 'Account and sign-in', detail: 'Manage your account details and sign-in', icon: UserRound },
   { title: 'Data and privacy', detail: 'Review consent and sharing controls', icon: LockKeyhole },
 ];
@@ -18,6 +21,7 @@ export default function ProfileScreen() {
   useScheme();
   const router = useRouter();
   const { isReady, session, signOut } = useAuth();
+  const { locale, setLocale } = useLocale();
   const [profileName, setProfileName] = useState('');
   const [profileType, setProfileType] = useState('Patient');
 
@@ -84,17 +88,32 @@ export default function ProfileScreen() {
       <View style={styles.settingsList}>
         {settings.map((item) => {
           const Icon = item.icon;
-          return (
-            <View key={item.title} style={[uiStyles.card, styles.settingRow]}>
+          const isLanguage = item.title === 'Language';
+          const localeKey: Record<AppLocale, 'language.english' | 'language.french' | 'language.arabic'> = { en: 'language.english', fr: 'language.french', ar: 'language.arabic' };
+          const content = (
+            <>
               <View style={uiStyles.iconTile}><Icon color={palette.forest} size={18} strokeWidth={1.8} /></View>
               <View style={styles.settingCopy}>
-                <Text style={styles.settingTitle}>{item.title}</Text>
-                <Text style={styles.settingDetail}>{item.detail}</Text>
+                <Text style={styles.settingTitle}>{isLanguage ? donationCopy(locale, 'language.title') : item.title}</Text>
+                <Text style={styles.settingDetail}>{isLanguage ? donationCopy(locale, 'language.current', { name: donationCopy(locale, localeKey[locale]) }) : item.detail}</Text>
               </View>
-            </View>
+            </>
+          );
+          if (isLanguage) {
+            const next: AppLocale = locale === 'en' ? 'fr' : locale === 'fr' ? 'ar' : 'en';
+            return (
+              <Pressable key={item.title} accessibilityLabel={donationCopy(locale, 'language.current', { name: donationCopy(locale, localeKey[locale]) })} accessibilityHint={donationCopy(locale, 'language.switchTo', { name: donationCopy(locale, localeKey[next]) })} accessibilityRole="button" onPress={() => setLocale(next)} style={[uiStyles.card, styles.settingRow]}>
+                {content}
+              </Pressable>
+            );
+          }
+          return (
+            <View key={item.title} style={[uiStyles.card, styles.settingRow]}>{content}</View>
           );
         })}
       </View>
+
+      <InstallAndNotifyCard />
 
       <View style={styles.privacyNote}>
         <ShieldCheck color={palette.forest} size={18} />

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { donationCopy } from '../../platform/locale/donations';
 import { caseShareUrl, instagramEmbedUrl, isUuid, isValidEmail, orderStage, collectorInviteUrl, formatMad, groupAccountNumber, parseAmount, percentFunded, pledgeStatus, safeHttpsUrl, suggestedAmounts, timeLeft, validateAmount } from './donations-logic';
 
 describe('donation logic', () => {
@@ -52,6 +53,25 @@ describe('donation logic', () => {
     expect(isValidEmail('do nor@example.com')).toBe(false);
     expect(isValidEmail('')).toBe(false);
     expect(isValidEmail(`${'a'.repeat(250)}@x.co`)).toBe(false);
+  });
+  it('provides translated donation guidance and interpolates without altering supplied case text', () => {
+    expect(donationCopy('en', 'guide.copy.title')).toBe('Copy the bank details');
+    expect(donationCopy('fr', 'guide.copy.title')).toBe('Copiez les coordonnées bancaires');
+    expect(donationCopy('ar', 'guide.copy.title')).toBe('انسخ بيانات التحويل');
+    expect(donationCopy('fr', 'case.age', { age: 42 })).toBe('42 ans');
+    expect(donationCopy('ar', 'progress.accessibility', { stage: 'اكتمل' })).toBe('تقدم التبرع: اكتمل');
+    const caseStory = 'Amina’s original story — do not translate.';
+    expect(donationCopy('fr', 'case.showWishes', { count: caseStory })).toBe(`Afficher les ${caseStory} messages`);
+  });
+  it('localizes collector actions without translating donor notes or profile captions', () => {
+    expect(donationCopy('fr', 'collect.confirmReceived')).toBe('Confirmer la réception');
+    expect(donationCopy('ar', 'collect.commentsTitle')).toBe('تعليقات بانتظار الموافقة');
+    expect(donationCopy('ar', 'collect.commentsTwo')).toBe('تعليقان بانتظار الموافقة');
+    expect(donationCopy('ar', 'collect.commentsFew', { count: 5 })).toBe('5 تعليقات بانتظار الموافقة');
+    const donorNote = 'رسالة كتبها المتبرع بنفسه';
+    const profileCaption = 'Un texte original saisi par la famille';
+    expect(donationCopy('fr', 'collect.donorNote', { note: donorNote })).toBe(`Note du donateur : ${donorNote}`);
+    expect(donationCopy('ar', 'manage.removeReel', { caption: profileCaption })).toBe(`إزالة المقطع: ${profileCaption}`);
   });
   it('only allows https links', () => {
     expect(safeHttpsUrl('https://instagram.com/a')).toContain('https://');

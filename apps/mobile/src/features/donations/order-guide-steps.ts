@@ -1,3 +1,6 @@
+import { donationCopy } from '../../platform/locale/donations';
+import type { AppLocale } from '../../platform/locale/locale-provider';
+
 export type GuideStepKey = 'copy' | 'send' | 'save' | 'upload' | 'name' | 'counted';
 export type GuideStep = { key: GuideStepKey; title: string; body: string };
 
@@ -10,6 +13,14 @@ export const GUIDE_STEPS: GuideStep[] = [
   { key: 'name', title: 'No receipt? Use the account name', body: 'Tap **I paid but have no receipt**, type the **name on the account** you paid from, then tap **Confirm**.' },
   { key: 'counted', title: 'Your donation is counted', body: 'A fund collector checks the transfer. Once **confirmed**, your gift shows on the case and the **progress bar moves**.' },
 ];
+
+export function getGuideSteps(locale: AppLocale): GuideStep[] {
+  return GUIDE_STEPS.map(({ key }) => ({
+    key,
+    title: donationCopy(locale, `guide.${key}.title`),
+    body: donationCopy(locale, `guide.${key}.body`),
+  }));
+}
 
 export function splitEmphasis(text: string) {
   return text.split('**').map((part, index) => ({ text: part, strong: index % 2 === 1 })).filter((part) => part.text);

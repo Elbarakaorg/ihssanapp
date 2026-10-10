@@ -8,6 +8,7 @@ import { DataAccessError, type AdminMembership, type AuthIdentity, type DataAcce
 import { NotConfiguredError, RateLimitError, type CareService } from './care-service.js';
 import { CvExtractionError, type CvExtractor } from './cv-extract.js';
 import type { SupportInvitationMailer } from './invitation-mailer.js';
+import type { PushSender } from './push-sender.js';
 
 type Variables = {
   identity: AuthIdentity;
@@ -52,7 +53,7 @@ const searchQuerySchema = z.object({
   lang: languageSchema,
 });
 
-export function createApi(dataAccess: DataAccess, allowedOrigins: string[] = [], invitationMailer: SupportInvitationMailer | null = null, careService: CareService | null = null, cvExtractor: CvExtractor | null = null) {
+export function createApi(dataAccess: DataAccess, allowedOrigins: string[] = [], invitationMailer: SupportInvitationMailer | null = null, careService: CareService | null = null, cvExtractor: CvExtractor | null = null, pushSender: PushSender | null = null) {
   const app = new Hono<{ Variables: Variables }>();
   const origins = new Set(allowedOrigins);
 
@@ -87,6 +88,31 @@ export function createApi(dataAccess: DataAccess, allowedOrigins: string[] = [],
       return context.json({ error: 'Session is invalid or expired.' }, 401);
     }
     await next();
+  });
+
+  const pushTests = new Map<string, number[]>();
+  const pushTestCopy = {
+    en: { title: 'Ihssan', body: 'Notifications are on for this device.' },
+    fr: { title: 'Ihssan', body: 'Les notifications sont activées sur cet appareil.' },
+    ar: { title: 'إحسان', body: 'الإشعارات مفعّلة على هذا الجهاز.' },
+  } as const;
+  app.post('/v1/push/test', async (context) => {
+    if (!pushSender) return context.json({ error: 'Notifications are not configured yet.' }, 503);
+    const identity = context.get('identity');
+    const now = Date.now();
+    const recent = (pushTests.get(identity.id) ?? []).filter((time) => now - time < 60_000);
+    if (recent.length >= 3) return context.json({ error: 'Please wait a minute before sending another test.' }, 429);
+    pushTests.set(identity.id, [...recent, now]);
+
+    try {
+      const profile = await dataAccess.getProfile(context.get('accessToken'), identity.id);
+      const lang = profile?.preferred_locale && profile.preferred_locale in pushTestCopy ? profile.preferred_locale as keyof typeof pushTestCopy : 'en';
+      const result = await pushSender.sendToSelf(context.get('accessToken'), identity.id, { ...pushTestCopy[lang], lang, url: '/', tag: 'push-test' });
+      if (result.sent === 0) return context.json({ error: 'No device is subscribed. Turn notifications on again.' }, 404);
+      return context.json({ sent: result.sent });
+    } catch {
+      return context.json({ error: 'Could not send a test notification.' }, 502);
+    }
   });
 
   const cvUses = new Map<string, number[]>();

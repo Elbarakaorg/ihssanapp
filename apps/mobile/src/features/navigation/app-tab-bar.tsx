@@ -6,15 +6,17 @@ import { Keyboard, Platform, Pressable, StyleSheet, Text, View } from 'react-nat
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RightDrawer } from '@/features/navigation/right-drawer';
+import { useLocale } from '@/platform/locale/locale-provider';
+import { donationCopy } from '@/platform/locale/donations';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
 
-type Item = { key: string; label: string; href: Href; Icon: LucideIcon; match: (path: string) => boolean };
+type Item = { key: 'home' | 'health' | 'discover' | 'give'; labelKey: 'nav.home' | 'nav.health' | 'nav.discover' | 'nav.give'; href: Href; Icon: LucideIcon; match: (path: string) => boolean };
 
 const ITEMS: Item[] = [
-  { key: 'home', label: 'Home', href: '/' as Href, Icon: House, match: (p) => p === '/' || p === '/index' },
-  { key: 'health', label: 'Health', href: '/health' as Href, Icon: Activity, match: (p) => /^\/(health|medicines|treatments|metrics|measurement|activity|appointments|my-patients)/.test(p) },
-  { key: 'discover', label: 'Discover', href: '/discover' as Href, Icon: Compass, match: (p) => /^\/(discover|doctors|doctor-profile|articles|blogs|practice-locations|verses)/.test(p) },
-  { key: 'give', label: 'Give', href: '/give' as Href, Icon: HeartHandshake, match: (p) => /^\/(give|cases|pledge|collect|my-donations)/.test(p) },
+  { key: 'home', labelKey: 'nav.home', href: '/' as Href, Icon: House, match: (p) => p === '/' || p === '/index' },
+  { key: 'health', labelKey: 'nav.health', href: '/health' as Href, Icon: Activity, match: (p) => /^\/(health|medicines|treatments|metrics|measurement|activity|appointments|my-patients)/.test(p) },
+  { key: 'discover', labelKey: 'nav.discover', href: '/discover' as Href, Icon: Compass, match: (p) => /^\/(discover|doctors|doctor-profile|articles|blogs|practice-locations|verses)/.test(p) },
+  { key: 'give', labelKey: 'nav.give', href: '/give' as Href, Icon: HeartHandshake, match: (p) => /^\/(give|cases|pledge|collect|my-donations)/.test(p) },
 ];
 
 // Full-screen flows where a persistent bar would get in the way.
@@ -23,6 +25,7 @@ const HIDDEN = /^\/(auth|scan|share|account)(\/|$)/;
 /** The one bottom bar for the whole app, rendered by the root layout so it shows on every page. */
 export function AppTabBar() {
   useScheme();
+  const { locale } = useLocale();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const path = usePathname();
@@ -41,8 +44,9 @@ export function AppTabBar() {
 
   return (
     <>
-      <View style={[styles.bar, { height: 58 + insets.bottom, paddingBottom: insets.bottom }]}>
-        {ITEMS.map(({ key, label, href, Icon, match }) => {
+        <View style={[styles.bar, locale === 'ar' && styles.rtl, { height: 58 + insets.bottom, paddingBottom: insets.bottom }]}>
+        {ITEMS.map(({ key, labelKey, href, Icon, match }) => {
+          const label = donationCopy(locale, labelKey);
           const active = match(path);
           return (
             <Pressable key={key} accessibilityLabel={label} accessibilityRole="tab" accessibilityState={{ selected: active }} onPress={() => { tap(); router.navigate(href); }} style={({ pressed }) => [styles.item, pressed && styles.pressed]}>
@@ -51,9 +55,9 @@ export function AppTabBar() {
             </Pressable>
           );
         })}
-        <Pressable accessibilityLabel="Menu" accessibilityRole="button" onPress={() => { tap(); setMenuOpen(true); }} style={({ pressed }) => [styles.item, pressed && styles.pressed]}>
+        <Pressable accessibilityLabel={donationCopy(locale, 'nav.menu')} accessibilityRole="button" onPress={() => { tap(); setMenuOpen(true); }} style={({ pressed }) => [styles.item, pressed && styles.pressed]}>
           <Menu color={menuOpen ? palette.forest : palette.muted} size={20} strokeWidth={1.8} />
-          <Text style={[styles.label, menuOpen && styles.labelActive]}>Menu</Text>
+          <Text style={[styles.label, menuOpen && styles.labelActive]}>{donationCopy(locale, 'nav.menu')}</Text>
         </Pressable>
       </View>
       <RightDrawer onClose={() => setMenuOpen(false)} visible={menuOpen} />
@@ -73,4 +77,5 @@ const styles = themedStyles(() => StyleSheet.create({
   pressed: { opacity: 0.7 },
   label: { color: palette.muted, fontSize: 10, fontWeight: '600' },
   labelActive: { color: palette.forest },
+  rtl: { direction: 'rtl' },
 }));

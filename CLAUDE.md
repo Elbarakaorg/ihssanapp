@@ -50,5 +50,8 @@ Migration `202610110001` (apply after 202610070001, 080001, 080002, 090001, 1000
 - `/give` filters: Google-style search bar, category chips, then one row of dropdowns (City, Show & sort) plus an Urgent toggle (`donations/filter-ui.tsx`). Case cards show photo, title, name, city and progress only.
 - Link previews: `apps/mobile/api/case-og.js` returns Open Graph tags for crawlers (WhatsApp, Facebook, Telegram, X…) routed by the first rewrite in `apps/mobile/vercel.json`; it needs `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` set in Vercel (also available to functions). Test with the Facebook Sharing Debugger.
 
+## Installable web app and push
+Android Chrome can install the site to the home screen (manifest + `public/sw.js`, no fetch handler) and receive Web Push. Profile card: `features/notifications/install-card.tsx`; browser logic `web-push.ts`; table `push_subscriptions` + RPCs `save_push_subscription`/`delete_push_subscription` (migration `202610170001`); API `services/api/src/push-sender.ts` (`web-push`, per-user rows via RLS) and `POST /v1/push/test`. Setup: `npx web-push generate-vapid-keys`; `fly secrets set VAPID_PUBLIC_KEY=… VAPID_PRIVATE_KEY=… VAPID_SUBJECT=mailto:…`; set `EXPO_PUBLIC_VAPID_PUBLIC_KEY` (public key only) in Vercel and `.env.local`. iOS only gets push when installed (16.4+). Sending to other users (donation confirmed, dose reminders) needs a trusted server path (service-role key or a scheduled job); not built.
+
 ## Docs to keep current
 When a feature ships, update `docs/implementation-plan.md` (Current Implementation Status), `docs/donations.md` for giving changes, and the relevant section here.

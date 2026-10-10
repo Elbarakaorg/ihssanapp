@@ -34,6 +34,7 @@ _Last updated 2026-10-08. The sections below are the original baseline; where th
 | Care directory | Mapbox GL map (WebView/iframe), `care_providers` locations, admin picker, CSV import, duty pharmacies; verified doctor practice locations appear automatically | `features/discovery`, migration `202610100001` |
 | Donations | Direct bank-transfer model with receipt confirmation; see `docs/donations.md` | `features/donations` |
 | Content | Built-in articles/blogs merged with DB `blog_articles` (not clinician-reviewed); Verses of healing | `features/content`, `features/spirit` |
+| Installable web app and push | PWA: `public/manifest.webmanifest`, `public/sw.js` (push-only worker), icons; Profile card to add to home screen and turn on notifications; subscriptions in `push_subscriptions` (migration `202610170001`); API `POST /v1/push/test`. Event-driven sends (donation confirmed, dose reminders) not built. Needs VAPID keys, see CLAUDE.md | `features/notifications`, `services/api/src/push-sender.ts` |
 | Visual language | Wabi-sabi paper palette, EB Garamond headings, frosted-glass cards, bento layout on home and the admin overview | `ui/palette.ts`, `ui/patient-ui.tsx` |
 
 ### Deliberate deviations from the baseline
@@ -41,11 +42,11 @@ _Last updated 2026-10-08. The sections below are the original baseline; where th
 - **Donations do not go through the foundation or CMI.** Donors transfer directly to the patient's own bank account using an order (reference `IH-XXXXXXX`, 48 h), then upload a receipt. An admin or a per-case fund collector confirms receipt; only confirmed amounts move the progress bar. There is no card checkout, ledger, refund or payout flow. This needs Moroccan legal review before launch.
 - **Maps:** Mapbox, not Google Maps. Hirassa and Google Places are optional API adapters.
 - **API scope:** the API serves admin, AI, email and directory adapters; much patient data still goes through Supabase RPCs and row-level security. Direct Supabase admin RPCs are not yet aal2-gated at the database level.
-- **Localization:** the UI is English only; Arabic appears only in verses.
+- **Localization:** the locale preference supports English, French, and Arabic. Give browsing, donor and collector donation workflows (orders, receipts, case management and invitations), donation history and guide, primary navigation, and the profile language control are localized; other app areas remain English. Case stories, titles, donor comments, notes, captions, and other user-submitted content are displayed unchanged. Arabic right-to-left layout is scoped to localized donation screens rather than forced app-wide.
 
 ### Not built yet
 
-Arabic/French localization, appointment booking, paid consultations, pharmacy orders, dependent profiles, case updates timeline, donor email notifications, account welcome email, CMI payments, clinician review of medicine and article content, device testing of native screens, a production pilot. See `docs/email-implementation-plan.md` for welcome, donor thank-you, and collector-alert delivery design.
+Remaining Arabic/French localization outside the donation/navigation slice, appointment booking, paid consultations, pharmacy orders, dependent profiles, case updates timeline, donor email notifications, account welcome email, CMI payments, clinician review of medicine and article content, device testing of native screens, a production pilot. Clinical labels and education content need professional translation and clinical review. The account sign-in screens linked from collector invitations also remain English. See `docs/email-implementation-plan.md` for welcome, donor thank-you, and collector-alert delivery design.
 
 ## Product and Risk Boundaries
 

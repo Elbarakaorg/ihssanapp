@@ -1,10 +1,14 @@
+import type { AppLocale } from '../../platform/locale/locale-provider';
+import { donationCopy, type DonationCopyKey } from '../../platform/locale/donations';
+
 export const MAX_DONATION_MAD = 1_000_000;
 export const RECEIPT_LIMIT = 3;
 
 export type PledgeStatus = 'pledged' | 'receipt_submitted' | 'confirmed' | 'rejected' | 'expired' | 'cancelled' | 'reversed';
 
-export function formatMad(value: number) {
-  return `${Math.round(value).toLocaleString('en-US')} MAD`;
+export function formatMad(value: number, locale: AppLocale = 'en') {
+  const numberLocale = locale === 'fr' ? 'fr-FR' : locale === 'ar' ? 'ar-MA' : 'en-US';
+  return `${Math.round(value).toLocaleString(numberLocale)} MAD`;
 }
 
 export function percentFunded(raised: number, goal: number) {
@@ -38,19 +42,21 @@ export function orderStage(status: string) {
   return null;
 }
 
-export function validateAmount(value: number | null, minimum: number) {
-  if (value === null) return 'Enter the amount in MAD.';
-  if (value < minimum) return `The minimum donation is ${minimum} MAD.`;
-  if (value > MAX_DONATION_MAD) return 'Please contact us for donations above 1,000,000 MAD.';
+export function validateAmount(value: number | null, minimum: number, locale: AppLocale = 'en') {
+  if (value === null) return donationCopy(locale, 'amount.enter');
+  if (value < minimum) return donationCopy(locale, 'amount.minimum', { amount: formatMad(minimum, locale) });
+  if (value > MAX_DONATION_MAD) return donationCopy(locale, 'amount.maximum');
   return '';
 }
 
-export function timeLeft(expiresAt: string, now = Date.now()) {
+export function timeLeft(expiresAt: string, now = Date.now(), locale: AppLocale = 'en') {
   const ms = new Date(expiresAt).getTime() - now;
-  if (!(ms > 0)) return { expired: true, label: 'Expired' };
+  if (!(ms > 0)) return { expired: true, label: donationCopy(locale, 'status.expired') };
   const hours = Math.floor(ms / 3_600_000);
   const minutes = Math.floor((ms % 3_600_000) / 60_000);
-  return { expired: false, label: hours > 0 ? `${hours}h ${String(minutes).padStart(2, '0')}m left` : `${Math.max(minutes, 1)} min left` };
+  return { expired: false, label: hours > 0
+    ? donationCopy(locale, 'time.hours', { hours, minutes: String(minutes).padStart(2, '0') })
+    : donationCopy(locale, 'time.minutes', { minutes: Math.max(minutes, 1) }) };
 }
 
 const STATUS: Record<PledgeStatus, { label: string; tone: 'wait' | 'ok' | 'bad' | 'info'; hint: string }> = {
@@ -63,8 +69,14 @@ const STATUS: Record<PledgeStatus, { label: string; tone: 'wait' | 'ok' | 'bad' 
   reversed: { label: 'Reversed', tone: 'bad', hint: 'This donation was reversed by the foundation. See the note below.' },
 };
 
-export function pledgeStatus(status: string) {
-  return STATUS[status as PledgeStatus] ?? { label: status, tone: 'info' as const, hint: '' };
+export function pledgeStatus(status: string, locale: AppLocale = 'en') {
+  const info = STATUS[status as PledgeStatus];
+  if (!info) return { label: status, tone: 'info' as const, hint: '' };
+  return {
+    ...info,
+    label: donationCopy(locale, `status.${status}` as DonationCopyKey),
+    hint: donationCopy(locale, `status.${status}Hint` as DonationCopyKey),
+  };
 }
 
 export function safeHttpsUrl(value: string | null | undefined) {

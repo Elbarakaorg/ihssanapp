@@ -1,16 +1,16 @@
 import { type Href, useRouter } from 'expo-router';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, ArrowRight } from 'lucide-react-native';
 import { type ReactNode, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, type TextInputProps, View } from 'react-native';
 
 import { display, palette, themedStyles, useScheme, wobble, glassSurface } from '@/ui/palette';
 
-export function BackLink({ label, href }: { label: string; href: Href }) {
+export function BackLink({ label, href, direction = 'ltr' }: { label: string; href: Href; direction?: 'ltr' | 'rtl' }) {
   useScheme();
   const router = useRouter();
   return (
-    <Pressable accessibilityRole="button" onPress={() => (router.canGoBack() ? router.back() : router.replace(href))} style={styles.back}>
-      <ArrowLeft color={palette.ink} size={18} /><Text style={styles.backLabel}>{label}</Text>
+    <Pressable accessibilityRole="button" onPress={() => (router.canGoBack() ? router.back() : router.replace(href))} style={[styles.back, direction === 'rtl' && styles.rtlRow]}>
+      {direction === 'rtl' ? <ArrowRight color={palette.ink} size={18} /> : <ArrowLeft color={palette.ink} size={18} />}<Text style={[styles.backLabel, direction === 'rtl' && styles.rtlText]}>{label}</Text>
     </Pressable>
   );
 }
@@ -26,13 +26,13 @@ export function Button({ label, onPress, busy, disabled, tone = 'primary' }: { l
   );
 }
 
-export function Field({ label, ...props }: TextInputProps & { label: string }) {
+export function Field({ label, direction = 'ltr', inputDirection = direction, ...props }: TextInputProps & { label: string; direction?: 'ltr' | 'rtl'; inputDirection?: 'ltr' | 'rtl' }) {
   useScheme();
   const [focused, setFocused] = useState(false);
   return (
     <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <TextInput accessibilityLabel={label} placeholderTextColor={palette.muted} {...props} onBlur={(e) => { setFocused(false); props.onBlur?.(e); }} onFocus={(e) => { setFocused(true); props.onFocus?.(e); }} value={props.value ?? ''} style={[styles.input, props.multiline && styles.multiline, focused && styles.inputFocused]} />
+      <Text style={[styles.fieldLabel, direction === 'rtl' && styles.rtlLabel]}>{label}</Text>
+      <TextInput accessibilityLabel={label} placeholderTextColor={palette.muted} {...props} onBlur={(e) => { setFocused(false); props.onBlur?.(e); }} onFocus={(e) => { setFocused(true); props.onFocus?.(e); }} textAlign={props.textAlign ?? (inputDirection === 'rtl' ? 'right' : 'left')} value={props.value ?? ''} style={[styles.input, inputDirection === 'rtl' && styles.rtlInput, props.multiline && styles.multiline, focused && styles.inputFocused]} />
     </View>
   );
 }
@@ -71,6 +71,8 @@ export const doctorStyles = themedStyles(() => StyleSheet.create({
 const styles = themedStyles(() => StyleSheet.create({
   back: { alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', gap: 8, marginBottom: 16, minHeight: 42 },
   backLabel: { ...display, color: palette.ink, fontSize: 15 },
+  rtlRow: { direction: 'rtl' },
+  rtlText: { writingDirection: 'rtl', textAlign: 'right' },
   button: { ...wobble, alignItems: 'center', backgroundColor: palette.forest, justifyContent: 'center', marginTop: 12, minHeight: 48, paddingHorizontal: 16 },
   buttonSecondary: { backgroundColor: 'transparent', borderColor: palette.line, borderWidth: 1 },
   buttonDanger: { backgroundColor: 'transparent', borderColor: '#A4502F', borderWidth: 1 },
@@ -81,6 +83,8 @@ const styles = themedStyles(() => StyleSheet.create({
   pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
   field: { marginTop: 14 },
   fieldLabel: { color: palette.ink, fontSize: 13, fontWeight: '600', marginBottom: 6 },
+  rtlLabel: { writingDirection: 'rtl', textAlign: 'right' },
+  rtlInput: { writingDirection: 'rtl' },
   input: { ...wobble, backgroundColor: palette.white, borderColor: palette.line, borderWidth: 1, color: palette.ink, fontSize: 15, minHeight: 48, paddingHorizontal: 14 },
   inputFocused: { backgroundColor: palette.white, borderColor: palette.forest, borderWidth: 1.5 },
   multiline: { minHeight: 96, paddingTop: 12, textAlignVertical: 'top' },

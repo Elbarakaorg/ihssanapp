@@ -5,14 +5,17 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { RemoteImage } from '@/features/doctor/doctor-image';
 import { display, palette, themedStyles, useScheme, wobble, glassSurface } from '@/ui/palette';
-import { CASE_BUCKET, type CaseSummary } from './donations-api';
+import { useLocale } from '@/platform/locale/locale-provider';
+import { donationCopy } from '@/platform/locale/donations';
+import { CASE_BUCKET, type CaseSummary, type Category } from './donations-api';
 import { formatMad, percentFunded, pledgeStatus } from './donations-logic';
 
 export function ProgressBar({ raised, goal }: { raised: number; goal: number }) {
   useScheme();
+  const { locale } = useLocale();
   const percent = percentFunded(raised, goal);
   return (
-    <View accessibilityLabel={`${percent}% funded`} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: percent }} style={styles.track}>
+    <View accessibilityLabel={donationCopy(locale, 'give.fundedPercent', { percent })} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: percent }} style={styles.track}>
       <View style={[styles.fill, { width: `${Math.max(percent, raised > 0 ? 2 : 0)}%` }]} />
     </View>
   );
@@ -20,46 +23,50 @@ export function ProgressBar({ raised, goal }: { raised: number; goal: number }) 
 
 export function Progress({ raised, goal, donors }: { raised: number; goal: number; donors?: number }) {
   useScheme();
+  const { locale } = useLocale();
   return (
     <View style={styles.progress}>
       <ProgressBar raised={raised} goal={goal} />
       <View style={styles.amounts}>
-        <Text style={styles.raised}>{formatMad(raised)} <Text style={styles.of}>of {formatMad(goal)}</Text></Text>
+        <Text style={styles.raised}>{formatMad(raised, locale)} <Text style={styles.of}>{locale === 'fr' ? 'sur' : locale === 'ar' ? 'من' : 'of'} {formatMad(goal, locale)}</Text></Text>
         <Text style={styles.percent}>{percentFunded(raised, goal)}%</Text>
       </View>
-      {donors !== undefined ? <Text style={styles.of}>{donors === 1 ? '1 donation' : `${donors} donations`}</Text> : null}
+      {donors !== undefined ? <Text style={styles.of}>{donationCopy(locale, donors === 1 ? 'give.donationSingular' : 'give.donationPlural', { count: donors })}</Text> : null}
     </View>
   );
 }
 
 export function UrgentBadge() {
   useScheme();
-  return <View style={styles.urgent}><Flame color={palette.coral} size={12} /><Text style={styles.urgentLabel}>Urgent</Text></View>;
+  const { locale } = useLocale();
+  return <View style={styles.urgent}><Flame color={palette.coral} size={12} /><Text style={styles.urgentLabel}>{donationCopy(locale, 'give.urgentCase')}</Text></View>;
 }
 
 export function StatusPill({ status }: { status: string }) {
   useScheme();
-  const info = pledgeStatus(status);
+  const { locale } = useLocale();
+  const info = pledgeStatus(status, locale);
   const tone = info.tone === 'ok' ? styles.pillOk : info.tone === 'bad' ? styles.pillBad : info.tone === 'wait' ? styles.pillWait : styles.pillInfo;
   return <View style={[styles.pill, tone]}><Text style={styles.pillLabel}>{info.label}</Text></View>;
 }
 
-export function CaseCard({ item, onPress }: { item: CaseSummary; onPress: () => void }) {
+export function CaseCard({ item, categories, onPress }: { item: CaseSummary; categories: Category[]; onPress: () => void }) {
   useScheme();
+  const { locale } = useLocale();
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`${item.title}. ${item.percent}% funded`} onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={`${item.title}. ${donationCopy(locale, 'give.fundedPercent', { percent: item.percent })}`} onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       <View>
         <RemoteImage bucket={CASE_BUCKET} path={item.photo_path} placeholderSize={34} style={styles.photo} />
         <View pointerEvents="none" style={styles.badges}>
           {item.is_urgent ? <UrgentBadge /> : null}
-          {item.category_label ? <Text style={styles.tag}>{item.category_label}</Text> : null}
+            {item.category_label ? <Text style={styles.tag}>{categories?.find((category) => category.slug === item.category)?.[`label_${locale}`] ?? item.category_label}</Text> : null}
         </View>
       </View>
       <View style={styles.cardBody}>
         <Text numberOfLines={2} style={styles.title}>{item.title}</Text>
         <Text numberOfLines={1} style={styles.by}>{[item.beneficiary_name, item.city].filter(Boolean).join(' · ')}</Text>
         <Progress raised={item.raised_mad} goal={item.goal_mad} />
-        {item.status === 'funded' ? <Text style={styles.funded}>Fully funded, alhamdulillah</Text> : null}
+        {item.status === 'funded' ? <Text style={styles.funded}>{donationCopy(locale, 'give.fullyFunded')}</Text> : null}
       </View>
     </Pressable>
   );
@@ -67,10 +74,11 @@ export function CaseCard({ item, onPress }: { item: CaseSummary; onPress: () => 
 
 export function CopyRow({ label, value, display: shown }: { label: string; value: string; display?: string }) {
   useScheme();
+  const { locale } = useLocale();
   const [copied, setCopied] = useState(false);
   return (
     <Pressable
-      accessibilityLabel={`Copy ${label}`}
+      accessibilityLabel={donationCopy(locale, 'bank.copy', { label })}
       accessibilityRole="button"
       onPress={() => { void Clipboard.setStringAsync(value).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); }); }}
       style={({ pressed }) => [styles.copyRow, pressed && styles.pressed]}
@@ -79,7 +87,7 @@ export function CopyRow({ label, value, display: shown }: { label: string; value
         <Text style={styles.copyLabel}>{label}</Text>
         <Text selectable style={styles.copyValue}>{shown ?? value}</Text>
       </View>
-      {copied ? <Check color={palette.forest} size={18} /> : <Copy color={palette.muted} size={18} />}
+      {copied ? <><Text style={styles.copied}>{donationCopy(locale, 'bank.copied')}</Text><Check color={palette.forest} size={18} /></> : <Copy color={palette.muted} size={18} />}
     </Pressable>
   );
 }
@@ -111,5 +119,6 @@ const styles = themedStyles(() => StyleSheet.create({
   copyRow: { ...wobble, alignItems: 'center', backgroundColor: palette.paper, borderColor: palette.line, borderWidth: 1, flexDirection: 'row', gap: 10, marginTop: 8, minHeight: 52, padding: 12 },
   copyText: { flex: 1, gap: 2 },
   copyLabel: { color: palette.muted, fontSize: 11, fontWeight: '600', letterSpacing: 0.4 },
+  copied: { color: palette.forest, fontSize: 11, fontWeight: '700' },
   copyValue: { color: palette.ink, fontSize: 15, fontWeight: '600' },
 }));

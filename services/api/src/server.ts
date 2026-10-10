@@ -9,6 +9,7 @@ import { createHirassaClient } from './guard.js';
 import { createOpenAiCvExtractor } from './cv-extract.js';
 import { createGooglePlacesClient } from './places.js';
 import { createResendInvitationMailer } from './invitation-mailer.js';
+import { createWebPushSender } from './push-sender.js';
 import { createSupabaseDataAccess } from './supabase-data-access.js';
 
 const apiEnvPath = resolve(process.cwd(), '.env.local');
@@ -46,6 +47,7 @@ const careService = createCareService({
     : null,
 });
 const app = createApi(createSupabaseDataAccess(supabaseUrl, publishableKey), allowedOrigins, invitationMailer, careService,
-  createOpenAiCvExtractor({ apiKey: process.env.OPENAI_API_KEY, model: process.env.AI_MODEL }));
+  createOpenAiCvExtractor({ apiKey: process.env.OPENAI_API_KEY, model: process.env.AI_MODEL }),
+  createWebPushSender({ supabaseUrl, publishableKey, vapidPublicKey: process.env.VAPID_PUBLIC_KEY, vapidPrivateKey: process.env.VAPID_PRIVATE_KEY, subject: process.env.VAPID_SUBJECT }));
 
 serve({ fetch: app.fetch, hostname: '0.0.0.0', port });

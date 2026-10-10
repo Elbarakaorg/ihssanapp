@@ -4,6 +4,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, Extrapolation, interpolate, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withSpring, withTiming, type SharedValue } from 'react-native-reanimated';
 
 import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { useLocale } from '@/platform/locale/locale-provider';
+import { donationCopy } from '@/platform/locale/donations';
 import { ORDER_STAGES } from './donations-logic';
 
 const DOT = 22;
@@ -40,6 +42,8 @@ function Dot({ index, progress, ring }: { index: number; progress: SharedValue<n
 /** Four dots, no numbers: created, pending transfer, confirm, done. */
 export function OrderProgress({ stage }: { stage: number }) {
   useScheme();
+  const { locale } = useLocale();
+  const labels = [donationCopy(locale, 'progress.created'), donationCopy(locale, 'progress.transfer'), donationCopy(locale, 'progress.confirm'), donationCopy(locale, 'progress.done')];
   const reduced = useReducedMotion();
   const progress = useSharedValue(reduced ? stage : 0);
   const ring = useSharedValue(0);
@@ -58,10 +62,10 @@ export function OrderProgress({ stage }: { stage: number }) {
   const fill = useAnimatedStyle(() => ({ transform: [{ scaleX: interpolate(progress.get(), [0, ORDER_STAGES.length - 1], [0, 1], CLAMP) }] }));
 
   return (
-    <View accessibilityLabel={`Donation progress: ${ORDER_STAGES[stage]}`} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: ORDER_STAGES.length - 1, now: stage }} style={styles.wrap}>
+    <View accessibilityLabel={donationCopy(locale, 'progress.accessibility', { stage: labels[stage] })} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: ORDER_STAGES.length - 1, now: stage }} style={[styles.wrap, locale === 'ar' && styles.rtl]}>
       <View style={styles.track}><Animated.View style={[styles.fill, fill]} /></View>
       <View style={styles.row}>
-        {ORDER_STAGES.map((label, index) => (
+        {labels.map((label, index) => (
           <View key={label} style={styles.column}>
             <Dot index={index} progress={progress} ring={ring} />
             <Text style={[styles.label, index === stage && styles.labelActive]}>{label}</Text>
@@ -85,4 +89,5 @@ const styles = themedStyles(() => StyleSheet.create({
   pulse: { backgroundColor: palette.forest, borderRadius: DOT / 2, height: DOT, position: 'absolute', width: DOT },
   label: { color: palette.muted, fontSize: 11, fontWeight: '600', textAlign: 'center' },
   labelActive: { color: palette.forest, fontWeight: '800' },
+  rtl: { direction: 'rtl' },
 }));

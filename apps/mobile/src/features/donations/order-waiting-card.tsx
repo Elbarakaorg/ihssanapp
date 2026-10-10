@@ -1,22 +1,22 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { display, palette, themedStyles, useScheme } from '@/ui/palette';
+import { useLocale } from '@/platform/locale/locale-provider';
+import { donationCopy } from '@/platform/locale/donations';
 import { ThinkingOrb } from '@/ui/thinking-orb';
 
 /** Shows that the order is waiting on someone: first the donor's transfer, then the collector's check. */
 export function WaitingCard({ phase }: { phase: 'transfer' | 'review' }) {
   useScheme();
+  const { locale } = useLocale();
   const transfer = phase === 'transfer';
+  const title = donationCopy(locale, transfer ? 'waiting.transferTitle' : 'waiting.reviewTitle');
   return (
-    <View accessibilityLabel={transfer ? 'Waiting for your transfer' : 'Waiting for confirmation'} accessibilityLiveRegion="polite" accessibilityRole="progressbar" style={styles.card}>
-      <ThinkingOrb label={transfer ? 'Waiting for your transfer' : 'Waiting for confirmation'} size={64} state={transfer ? 'breathing' : 'working'} />
+    <View accessibilityLabel={title} accessibilityLiveRegion="polite" accessibilityRole="progressbar" style={[styles.card, locale === 'ar' && styles.rtl]}>
+      <ThinkingOrb label={title} size={64} state={transfer ? 'breathing' : 'working'} />
       <View style={styles.copy}>
-        <Text style={styles.title}>{transfer ? 'Waiting for your transfer' : 'Waiting for confirmation'}</Text>
-        <Text style={styles.body}>
-          {transfer
-            ? 'Send the transfer from your bank app, then confirm it below. We will count your donation once it is checked.'
-            : 'Thank you. A fund collector is checking your transfer. You do not need to do anything else.'}
-        </Text>
+        <Text style={[styles.title, locale === 'ar' && styles.rtlText]}>{title}</Text>
+        <Text style={[styles.body, locale === 'ar' && styles.rtlText]}>{donationCopy(locale, transfer ? 'waiting.transferBody' : 'waiting.reviewBody')}</Text>
       </View>
     </View>
   );
@@ -27,4 +27,6 @@ const styles = themedStyles(() => StyleSheet.create({
   copy: { flex: 1, gap: 4 },
   title: { ...display, color: palette.ink, fontSize: 17 },
   body: { color: palette.muted, fontSize: 13, lineHeight: 19 },
+  rtl: { direction: 'rtl' },
+  rtlText: { writingDirection: 'rtl', textAlign: 'right' },
 }));

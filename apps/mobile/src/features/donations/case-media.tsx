@@ -8,6 +8,8 @@ import { WebView } from 'react-native-webview';
 import { imageUrl } from '@/features/doctor/doctor-api';
 import { Button, Message } from '@/features/doctor/ui';
 import { display, palette, themedStyles, useScheme } from '@/ui/palette';
+import { useLocale } from '@/platform/locale/locale-provider';
+import { donationCopy } from '@/platform/locale/donations';
 import { addCaseAudioFromUri, type CaseDetail } from './donations-api';
 import { instagramEmbedUrl } from './donations-logic';
 
@@ -21,12 +23,12 @@ function useMediaUrl(bucket: string, path: string | null) {
   return url;
 }
 
-function InstagramReel({ url }: { url: string }) {
+function InstagramReel({ url, locale }: { url: string; locale: 'en' | 'fr' | 'ar' }) {
   const embed = instagramEmbedUrl(url);
   if (!embed) return null;
   if (Platform.OS === 'web') {
     return (
-      <iframe allowFullScreen loading="lazy" referrerPolicy="no-referrer" src={embed} style={{ border: 0, borderRadius: 14, height: '100%', width: '100%' }} title="Instagram reel" />
+      <iframe allowFullScreen loading="lazy" referrerPolicy="no-referrer" src={embed} style={{ border: 0, borderRadius: 14, height: '100%', width: '100%' }} title={donationCopy(locale, 'media.instagramReel')} />
     );
   }
   return (
@@ -53,6 +55,7 @@ function UploadedVideo({ path }: { path: string }) {
 
 export function Reels({ videos }: { videos: Reel[] }) {
   useScheme();
+  const { locale } = useLocale();
   const { width } = useWindowDimensions();
   const cardWidth = Math.min(Math.round(width * 0.72), 280);
   return (
@@ -60,7 +63,7 @@ export function Reels({ videos }: { videos: Reel[] }) {
       {videos.map((video) => (
         <View key={video.id} style={{ width: cardWidth }}>
           <View style={styles.reelCard}>
-            {video.kind === 'instagram' && video.url ? <InstagramReel url={video.url} /> : video.path ? <UploadedVideo path={video.path} /> : null}
+            {video.kind === 'instagram' && video.url ? <InstagramReel locale={locale} url={video.url} /> : video.path ? <UploadedVideo path={video.path} /> : null}
           </View>
           {video.caption ? <Text numberOfLines={2} style={styles.caption}>{video.caption}</Text> : null}
         </View>
@@ -74,18 +77,18 @@ function formatTime(seconds: number) {
   return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
 }
 
-function AudioClip({ path, title }: { path: string; title: string | null }) {
+function AudioClip({ path, title, locale }: { path: string; title: string | null; locale: 'en' | 'fr' | 'ar' }) {
   const url = useMediaUrl('case-audio', path);
   const player = useAudioPlayer(url ?? null);
   const status = useAudioPlayerStatus(player);
   const toggle = () => { if (status.playing) player.pause(); else { if (status.didJustFinish || (status.duration > 0 && status.currentTime >= status.duration)) void player.seekTo(0); player.play(); } };
   return (
     <View style={styles.audio}>
-      <Pressable accessibilityLabel={status.playing ? 'Pause' : 'Play'} accessibilityRole="button" disabled={!url} onPress={toggle} style={styles.playButton}>
+      <Pressable accessibilityLabel={donationCopy(locale, status.playing ? 'media.pause' : 'media.play')} accessibilityRole="button" disabled={!url} onPress={toggle} style={styles.playButton}>
         {status.playing ? <Pause color={palette.white} size={18} /> : <Play color={palette.white} size={18} />}
       </Pressable>
       <View style={styles.flex}>
-        <Text style={styles.audioTitle} numberOfLines={1}>{title || 'Voice message'}</Text>
+        <Text style={styles.audioTitle} numberOfLines={1}>{title || donationCopy(locale, 'media.voiceMessage')}</Text>
         <Text style={styles.caption}>{formatTime(status.currentTime)} / {formatTime(status.duration)}</Text>
       </View>
     </View>
@@ -95,13 +98,15 @@ function AudioClip({ path, title }: { path: string; title: string | null }) {
 /** Renders nothing when there are no recordings. */
 export function AudioPlayer({ clips }: { clips: CaseDetail['audio'] }) {
   useScheme();
+  const { locale } = useLocale();
   if (!clips.length) return null;
-  return <View style={styles.stack}>{clips.map((clip) => <AudioClip key={clip.id} path={clip.path} title={clip.title} />)}</View>;
+  return <View style={styles.stack}>{clips.map((clip) => <AudioClip key={clip.id} locale={locale} path={clip.path} title={clip.title} />)}</View>;
 }
 
 /** Records a voice message and uploads it to the case. */
 export function AudioRecorder({ caseId, onAdded }: { caseId: string; onAdded: () => void }) {
   useScheme();
+  const { locale } = useLocale();
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const [recording, setRecording] = useState(false);
   const [title, setTitle] = useState('');
@@ -112,13 +117,13 @@ export function AudioRecorder({ caseId, onAdded }: { caseId: string; onAdded: ()
     setMessage(null);
     try {
       const permission = await AudioModule.requestRecordingPermissionsAsync();
-      if (!permission.granted) { setMessage({ kind: 'error', text: 'Microphone permission is needed to record.' }); return; }
+      if (!permission.granted) { setMessage({ kind: 'error', text: donationCopy(locale, 'media.permission') }); return; }
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
       await recorder.prepareToRecordAsync();
       recorder.record();
       setRecording(true);
     } catch {
-      setMessage({ kind: 'error', text: 'Could not start recording on this device.' });
+      setMessage({ kind: 'error', text: donationCopy(locale, 'media.startError') });
     }
   };
 
@@ -129,15 +134,15 @@ export function AudioRecorder({ caseId, onAdded }: { caseId: string; onAdded: ()
       setRecording(false);
       await setAudioModeAsync({ allowsRecording: false });
       const uri = recorder.uri;
-      if (!uri) throw new Error('Nothing was recorded.');
+      if (!uri) { setMessage({ kind: 'error', text: donationCopy(locale, 'media.nothingRecorded') }); return; }
       const seconds = recorder.getStatus().durationMillis / 1000;
       await addCaseAudioFromUri(caseId, uri, Platform.OS === 'web' ? 'audio/webm' : 'audio/mp4', title, seconds);
       setTitle('');
-      setMessage({ kind: 'ok', text: 'Recording added to the profile.' });
+      setMessage({ kind: 'ok', text: donationCopy(locale, 'media.recordingAdded') });
       onAdded();
     } catch (e) {
       setRecording(false);
-      setMessage({ kind: 'error', text: e instanceof Error ? e.message : 'Could not save this recording.' });
+      setMessage({ kind: 'error', text: e instanceof Error ? e.message : donationCopy(locale, 'media.saveError') });
     } finally {
       setBusy(false);
     }
@@ -146,10 +151,10 @@ export function AudioRecorder({ caseId, onAdded }: { caseId: string; onAdded: ()
   return (
     <View style={styles.stack}>
       {message ? <Message kind={message.kind}>{message.text}</Message> : null}
-      <Text style={styles.hint}>Record a short message (up to 10 MB). It appears on the case page once saved.</Text>
+      <Text style={styles.hint}>{donationCopy(locale, 'media.recordingHint')}</Text>
       <Button
         busy={busy}
-        label={recording ? 'Stop and save' : 'Record a voice message'}
+        label={donationCopy(locale, recording ? 'media.stopSave' : 'media.record')}
         onPress={() => void (recording ? stop() : start())}
       />
     </View>

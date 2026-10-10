@@ -7,6 +7,8 @@ import { RemoteImage } from '@/features/doctor/doctor-image';
 import { Loading } from '@/ui/loading';
 import { Ornament, Page, PageHeading, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { useLocale } from '@/platform/locale/locale-provider';
+import { donationCopy } from '@/platform/locale/donations';
 import { AudioPlayer, AudioRecorder, Reels } from './case-media';
 import {
   CASE_BUCKET, type CaseDetail, addCaseVideoLink, deleteCaseAudio, deleteCasePhoto, deleteCaseVideo, getCase, pickAndAddCasePhoto, pickAndAddCaseVideo, updateCaseProfile,
@@ -17,6 +19,7 @@ type Msg = { kind: 'error' | 'ok'; text: string } | null;
 /** Lets a collector or the beneficiary edit the public profile of their case. */
 export function CaseManage() {
   useScheme();
+  const { locale } = useLocale();
   const { caseId } = useLocalSearchParams<{ caseId: string }>();
   const [item, setItem] = useState<CaseDetail | null | undefined>(undefined);
   const [msg, setMsg] = useState<Msg>(null);
@@ -32,61 +35,61 @@ export function CaseManage() {
     getCase(caseId).then((c) => {
       setItem(c);
       if (c) { setTitle(c.title); setBio(c.bio ?? c.summary ?? ''); setCity(c.city ?? ''); }
-    }).catch((e) => { setMsg({ kind: 'error', text: e instanceof Error ? e.message : 'Could not load.' }); setItem(null); });
-  }, [caseId]);
+    }).catch((e) => { setMsg({ kind: 'error', text: e instanceof Error ? e.message : donationCopy(locale, 'collect.loadError') }); setItem(null); });
+  }, [caseId, locale]);
   useEffect(load, [load]);
 
   const run = async (work: () => Promise<unknown>, done: string) => {
     setBusy(true); setMsg(null);
-    try { await work(); setMsg({ kind: 'ok', text: done }); load(); } catch (e) { setMsg({ kind: 'error', text: e instanceof Error ? e.message : 'Something went wrong.' }); } finally { setBusy(false); }
+    try { await work(); setMsg({ kind: 'ok', text: done }); load(); } catch (e) { setMsg({ kind: 'error', text: e instanceof Error ? e.message : donationCopy(locale, 'collect.saveError') }); } finally { setBusy(false); }
   };
 
-  if (item === undefined) return <Page><Loading label="Loading" /></Page>;
-  if (!item || !caseId) return <Page><BackLink href={'/collect' as Href} label="Your cases" /><Message kind="error">{msg?.text ?? 'This case is not available.'}</Message></Page>;
-  if (!item.can_manage) return <Page><BackLink href={'/collect' as Href} label="Your cases" /><Message kind="error">You cannot edit this case.</Message></Page>;
+  if (item === undefined) return <Page direction={locale === 'ar' ? 'rtl' : 'ltr'}><Loading label={donationCopy(locale, 'manage.loading')} /></Page>;
+  if (!item || !caseId) return <Page direction={locale === 'ar' ? 'rtl' : 'ltr'}><BackLink direction={locale === 'ar' ? 'rtl' : 'ltr'} href={'/collect' as Href} label={donationCopy(locale, 'manage.yourCases')} /><Message kind="error">{msg?.text ?? donationCopy(locale, 'manage.unavailable')}</Message></Page>;
+  if (!item.can_manage) return <Page direction={locale === 'ar' ? 'rtl' : 'ltr'}><BackLink direction={locale === 'ar' ? 'rtl' : 'ltr'} href={'/collect' as Href} label={donationCopy(locale, 'manage.yourCases')} /><Message kind="error">{donationCopy(locale, 'manage.noPermission')}</Message></Page>;
 
   return (
-    <Page>
-      <BackLink href={`/collect/${caseId}` as Href} label="Back" />
-      <PageHeading eyebrow="Public profile" title="Edit the case page">Changes show on the public page straight away. Please keep the story truthful and respectful.</PageHeading>
+    <Page direction={locale === 'ar' ? 'rtl' : 'ltr'}>
+      <BackLink direction={locale === 'ar' ? 'rtl' : 'ltr'} href={`/collect/${caseId}` as Href} label={donationCopy(locale, 'manage.back')} />
+      <PageHeading direction={locale === 'ar' ? 'rtl' : 'ltr'} eyebrow={donationCopy(locale, 'manage.eyebrow')} title={donationCopy(locale, 'manage.title')}>{donationCopy(locale, 'manage.description')}</PageHeading>
       {msg ? <Message kind={msg.kind}>{msg.text}</Message> : null}
       <Ornament />
 
-      <SectionHeading title="Story" />
-      <Field label="Title" value={title} onChangeText={setTitle} maxLength={120} />
-      <Field label="City" value={city} onChangeText={setCity} maxLength={80} />
-      <Field label="Story (20 to 4000 characters)" value={bio} onChangeText={setBio} maxLength={4000} multiline numberOfLines={8} />
-      <Button label="Save story" busy={busy} onPress={() => void run(() => updateCaseProfile(caseId, { title: title.trim(), city: city.trim(), bio: bio.trim() }), 'Saved.')} />
+      <SectionHeading direction={locale === 'ar' ? 'rtl' : 'ltr'} title={donationCopy(locale, 'manage.storySection')} />
+      <Field direction={locale === 'ar' ? 'rtl' : 'ltr'} label={donationCopy(locale, 'manage.titleField')} value={title} onChangeText={setTitle} maxLength={120} />
+      <Field direction={locale === 'ar' ? 'rtl' : 'ltr'} label={donationCopy(locale, 'manage.cityField')} value={city} onChangeText={setCity} maxLength={80} />
+      <Field direction={locale === 'ar' ? 'rtl' : 'ltr'} label={donationCopy(locale, 'manage.storyField')} value={bio} onChangeText={setBio} maxLength={4000} multiline numberOfLines={8} />
+      <Button label={donationCopy(locale, 'manage.saveStory')} busy={busy} onPress={() => void run(() => updateCaseProfile(caseId, { title: title.trim(), city: city.trim(), bio: bio.trim() }), donationCopy(locale, 'manage.saved'))} />
 
-      <SectionHeading title="Featured photo" />
+      <SectionHeading direction={locale === 'ar' ? 'rtl' : 'ltr'} title={donationCopy(locale, 'manage.featuredPhoto')} />
       <RemoteImage bucket={CASE_BUCKET} path={item.photo_path} placeholderSize={32} style={styles.featured} />
-      <Button tone="secondary" label={item.photo_path ? 'Change featured photo' : 'Choose featured photo'} disabled={busy} onPress={() => void run(() => pickAndAddCasePhoto(caseId, '', true), 'Featured photo updated.')} />
+      <Button tone="secondary" label={donationCopy(locale, item.photo_path ? 'manage.changeFeatured' : 'manage.chooseFeatured')} disabled={busy} onPress={() => void run(() => pickAndAddCasePhoto(caseId, '', true), donationCopy(locale, 'manage.featuredUpdated'))} />
 
-      <SectionHeading title="Gallery" />
+      <SectionHeading direction={locale === 'ar' ? 'rtl' : 'ltr'} title={donationCopy(locale, 'manage.gallery')} />
       <View style={styles.grid}>
         {item.media.map((photo) => (
           <View key={photo.id} style={styles.cell}>
             <GalleryThumb path={photo.path} />
-            <Button tone="danger" label="Remove" disabled={busy} onPress={() => void run(() => deleteCasePhoto(photo.id), 'Photo removed.')} />
+            <Button tone="danger" label={donationCopy(locale, 'manage.remove')} disabled={busy} onPress={() => void run(() => deleteCasePhoto(photo.id), donationCopy(locale, 'manage.photoRemoved'))} />
           </View>
         ))}
       </View>
-      <Button tone="secondary" label="Add a photo" disabled={busy} onPress={() => void run(() => pickAndAddCasePhoto(caseId, '', false), 'Photo added.')} />
+      <Button tone="secondary" label={donationCopy(locale, 'manage.addPhoto')} disabled={busy} onPress={() => void run(() => pickAndAddCasePhoto(caseId, '', false), donationCopy(locale, 'manage.photoAdded'))} />
 
-      <SectionHeading title="Instagram reels and videos" />
-      <Text style={styles.hint}>Paste a public Instagram reel or post link. Embeds only play for public accounts that allow embedding; otherwise upload the video (MP4, MOV or WebM, up to 50 MB).</Text>
+      <SectionHeading direction={locale === 'ar' ? 'rtl' : 'ltr'} title={donationCopy(locale, 'manage.videos')} />
+      <Text style={styles.hint}>{donationCopy(locale, 'manage.videoInstructions')}</Text>
       <Reels videos={item.videos} />
-      {item.videos.map((video) => <Button key={video.id} tone="danger" label={`Remove ${video.kind === 'instagram' ? 'reel' : 'video'}${video.caption ? `: ${video.caption}` : ''}`} disabled={busy} onPress={() => void run(() => deleteCaseVideo(video.id), 'Removed.')} />)}
+      {item.videos.map((video) => <Button key={video.id} tone="danger" label={donationCopy(locale, video.kind === 'instagram' ? (video.caption ? 'manage.removeReel' : 'manage.removeReelNoCaption') : (video.caption ? 'manage.removeVideo' : 'manage.removeVideoNoCaption'), video.caption ? { caption: video.caption } : undefined)} disabled={busy} onPress={() => void run(() => deleteCaseVideo(video.id), donationCopy(locale, 'manage.removed'))} />)}
       <View style={[uiStyles.card, styles.card]}>
-        <Field label="Instagram link" value={reelUrl} onChangeText={setReelUrl} autoCapitalize="none" keyboardType="url" placeholder="https://www.instagram.com/reel/…" />
-        <Field label="Caption (optional)" value={caption} onChangeText={setCaption} maxLength={200} />
-        <Button label="Add Instagram link" busy={busy} onPress={() => void run(async () => { await addCaseVideoLink(caseId, reelUrl, caption); setReelUrl(''); setCaption(''); }, 'Reel added.')} />
-        <Button tone="secondary" label="Upload a video instead" disabled={busy} onPress={() => void run(() => pickAndAddCaseVideo(caseId, caption), 'Video added.')} />
+        <Field direction={locale === 'ar' ? 'rtl' : 'ltr'} inputDirection="ltr" label={donationCopy(locale, 'manage.instagramLink')} value={reelUrl} onChangeText={setReelUrl} autoCapitalize="none" keyboardType="url" placeholder="https://www.instagram.com/reel/…" />
+        <Field direction={locale === 'ar' ? 'rtl' : 'ltr'} label={donationCopy(locale, 'manage.captionOptional')} value={caption} onChangeText={setCaption} maxLength={200} />
+        <Button label={donationCopy(locale, 'manage.addInstagram')} busy={busy} onPress={() => void run(async () => { await addCaseVideoLink(caseId, reelUrl, caption); setReelUrl(''); setCaption(''); }, donationCopy(locale, 'manage.reelAdded'))} />
+        <Button tone="secondary" label={donationCopy(locale, 'manage.uploadVideo')} disabled={busy} onPress={() => void run(() => pickAndAddCaseVideo(caseId, caption), donationCopy(locale, 'manage.videoAdded'))} />
       </View>
 
-      <SectionHeading title="Audio messages" />
+      <SectionHeading direction={locale === 'ar' ? 'rtl' : 'ltr'} title={donationCopy(locale, 'manage.audio')} />
       <AudioPlayer clips={item.audio} />
-      {item.audio.map((clip) => <Button key={clip.id} tone="danger" label={`Remove ${clip.title || 'voice message'}`} disabled={busy} onPress={() => void run(() => deleteCaseAudio(clip.id), 'Removed.')} />)}
+      {item.audio.map((clip) => <Button key={clip.id} tone="danger" label={donationCopy(locale, clip.title ? 'manage.removeAudio' : 'manage.removeAudioUntitled', clip.title ? { title: clip.title } : undefined)} disabled={busy} onPress={() => void run(() => deleteCaseAudio(clip.id), donationCopy(locale, 'manage.removed'))} />)}
       <AudioRecorder caseId={caseId} onAdded={load} />
     </Page>
   );

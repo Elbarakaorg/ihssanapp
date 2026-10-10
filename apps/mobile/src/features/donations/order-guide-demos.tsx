@@ -4,6 +4,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, Extrapolation, cancelAnimation, interpolate, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming, type SharedValue } from 'react-native-reanimated';
 
 import { display, palette, themedStyles, useScheme } from '@/ui/palette';
+import type { AppLocale } from '@/platform/locale/locale-provider';
+import { donationCopy } from '@/platform/locale/donations';
 import type { GuideStepKey } from './order-guide-steps';
 
 export const DEMO_HEIGHT = 212;
@@ -121,18 +123,18 @@ function CopyRow({ t, top, label, value, tapAt = NEVER }: { t: SharedValue<numbe
   );
 }
 
-function CopyDemo({ t, width }: Clock) {
+function CopyDemo({ t, width, locale }: Clock & { locale: AppLocale }) {
   const toast = useAnimatedStyle(() => {
     const o = Math.max(pulse(t.get(), 0.22, 0.34), pulse(t.get(), 0.56, 0.68));
     return { opacity: o, transform: [{ translateY: (1 - o) * 8 }] };
   });
   return (
     <>
-      <CopyRow t={t} top={10} label="Account number" value="2307 8000 0000 0001" tapAt={0.22} />
-      <CopyRow t={t} top={62} label="Amount" value="200 MAD" />
-      <CopyRow t={t} top={114} label="Transfer reference" value="IH-K7P2Q9X" tapAt={0.56} />
+      <CopyRow t={t} top={10} label={donationCopy(locale, 'demo.account')} value="2307 8000 0000 0001" tapAt={0.22} />
+      <CopyRow t={t} top={62} label={donationCopy(locale, 'demo.amount')} value="200 MAD" />
+      <CopyRow t={t} top={114} label={donationCopy(locale, 'demo.reference')} value="IH-K7P2Q9X" tapAt={0.56} />
       <Animated.View pointerEvents="none" style={[styles.toast, { left: width / 2 - 48 }, toast]}>
-        <Check color={palette.white} size={13} strokeWidth={3} /><Text style={styles.toastText}>Copied</Text>
+        <Check color={palette.white} size={13} strokeWidth={3} /><Text style={styles.toastText}>{donationCopy(locale, 'demo.copied')}</Text>
       </Animated.View>
       <Cursor t={t} width={width} taps={[0.22, 0.56]} stops={[{ at: 0, x: 1.05, y: 205 }, { at: 0.18, x: 0.68, y: 33 }, { at: 0.26, x: 0.68, y: 33 }, { at: 0.5, x: 0.68, y: 137 }, { at: 0.6, x: 0.68, y: 137 }, { at: 0.84, x: 1.05, y: 205 }]} />
     </>
@@ -151,18 +153,18 @@ function BankField({ t, top, label, text, from, to }: { t: SharedValue<number>; 
   );
 }
 
-function SendDemo({ t, width }: Clock) {
+function SendDemo({ t, width, locale }: Clock & { locale: AppLocale }) {
   const sent = useAnimatedStyle(() => ({ opacity: ramp(t.get(), 0.72, 0.76) }));
   const send = useAnimatedStyle(() => ({ opacity: 1 - ramp(t.get(), 0.72, 0.76) }));
   return (
     <>
-      <View style={styles.bankBar}><Landmark color={palette.muted} size={14} /><Text style={styles.bankBarText}>Your bank app · New transfer</Text></View>
-      <BankField t={t} top={40} label="To account" text="2307 8000 0000 0001" from={0.12} to={0.28} />
-      <BankField t={t} top={84} label="Amount" text="200 MAD" from={0.33} to={0.4} />
-      <BankField t={t} top={128} label="Message" text="IH-K7P2Q9X" from={0.46} to={0.58} />
+      <View style={styles.bankBar}><Landmark color={palette.muted} size={14} /><Text style={styles.bankBarText}>{donationCopy(locale, 'demo.bankApp')}</Text></View>
+      <BankField t={t} top={40} label={donationCopy(locale, 'demo.toAccount')} text="2307 8000 0000 0001" from={0.12} to={0.28} />
+      <BankField t={t} top={84} label={donationCopy(locale, 'demo.amount')} text="200 MAD" from={0.33} to={0.4} />
+      <BankField t={t} top={128} label={donationCopy(locale, 'demo.message')} text="IH-K7P2Q9X" from={0.46} to={0.58} />
       <View style={styles.sendButton}>
-        <Animated.Text style={[styles.sendLabel, send]}>Send</Animated.Text>
-        <Animated.View style={[styles.sentRow, sent]}><Check color={palette.white} size={15} strokeWidth={3} /><Text style={styles.sendLabel}>Sent</Text></Animated.View>
+        <Animated.Text style={[styles.sendLabel, send]}>{donationCopy(locale, 'demo.send')}</Animated.Text>
+        <Animated.View style={[styles.sentRow, sent]}><Check color={palette.white} size={15} strokeWidth={3} /><Text style={styles.sendLabel}>{donationCopy(locale, 'demo.sent')}</Text></Animated.View>
       </View>
       <Cursor t={t} width={width} taps={[0.1, 0.3, 0.43, 0.72]} stops={[{ at: 0, x: 1.05, y: 205 }, { at: 0.07, x: 0.55, y: 58 }, { at: 0.12, x: 0.55, y: 58 }, { at: 0.27, x: 0.55, y: 102 }, { at: 0.33, x: 0.55, y: 102 }, { at: 0.4, x: 0.55, y: 146 }, { at: 0.46, x: 0.55, y: 146 }, { at: 0.68, x: 0.5, y: 189 }, { at: 0.76, x: 0.5, y: 189 }, { at: 0.9, x: 1.05, y: 208 }]} />
     </>
@@ -170,7 +172,7 @@ function SendDemo({ t, width }: Clock) {
 }
 
 // 3. Save ---------------------------------------------------------------------------------------------------------------
-function SaveDemo({ t, width }: Clock) {
+function SaveDemo({ t, width, locale }: Clock & { locale: AppLocale }) {
   const dx = width / 2 - 38;
   const screen = useAnimatedStyle(() => ({ opacity: 1 - 0.72 * ramp(t.get(), 0.4, 0.55) }));
   const flash = useAnimatedStyle(() => ({ opacity: pulse(t.get(), 0.34, 0.37, 0.05) * 0.92 }));
@@ -183,7 +185,7 @@ function SaveDemo({ t, width }: Clock) {
     <>
       <Animated.View style={[styles.saveScreen, screen]}>
         <View style={styles.bigCheck}><Check color={palette.white} size={28} strokeWidth={3} /></View>
-        <Text style={styles.saveTitle}>Transfer sent</Text>
+        <Text style={styles.saveTitle}>{donationCopy(locale, 'demo.transferSent')}</Text>
         <Text style={styles.saveMeta}>200 MAD · IH-K7P2Q9X</Text>
       </Animated.View>
       <Animated.View pointerEvents="none" style={[styles.thumb, { left: width / 2 - 38 }, thumb]}>
@@ -191,13 +193,13 @@ function SaveDemo({ t, width }: Clock) {
         <View style={styles.thumbLine} /><View style={[styles.thumbLine, styles.thumbShort]} />
       </Animated.View>
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.flash, flash]} />
-      <Animated.View pointerEvents="none" style={[styles.savedChip, saved]}><Camera color={palette.forest} size={14} /><Text style={styles.savedText}>Screenshot saved</Text></Animated.View>
+      <Animated.View pointerEvents="none" style={[styles.savedChip, saved]}><Camera color={palette.forest} size={14} /><Text style={styles.savedText}>{donationCopy(locale, 'demo.screenshotSaved')}</Text></Animated.View>
     </>
   );
 }
 
 // 4. Upload -------------------------------------------------------------------------------------------------------------
-function UploadDemo({ t, width }: Clock) {
+function UploadDemo({ t, width, locale }: Clock & { locale: AppLocale }) {
   const label = useAnimatedStyle(() => ({ opacity: 1 - ramp(t.get(), 0.7, 0.73) }));
   const uploading = useAnimatedStyle(() => ({ opacity: pulse(t.get(), 0.7, 0.79, 0.03) }));
   const button = useAnimatedStyle(() => ({ opacity: 1 - ramp(t.get(), 0.82, 0.86) }));
@@ -207,13 +209,13 @@ function UploadDemo({ t, width }: Clock) {
   return (
     <>
       <Animated.View style={[styles.uploadButton, button]}>
-        <Animated.Text numberOfLines={1} style={[styles.uploadLabel, label]}>Upload receipt &amp; confirm donation</Animated.Text>
-        <Animated.Text style={[styles.uploadLabel, styles.layer, uploading]}>Uploading…</Animated.Text>
+        <Animated.Text numberOfLines={1} style={[styles.uploadLabel, label]}>{donationCopy(locale, 'demo.uploadConfirm')}</Animated.Text>
+        <Animated.Text style={[styles.uploadLabel, styles.layer, uploading]}>{donationCopy(locale, 'demo.uploading')}</Animated.Text>
       </Animated.View>
-      <Animated.View style={[styles.uploadBanner, banner]}><Check color={palette.forest} size={17} strokeWidth={3} /><Text style={styles.bannerText}>Receipt received</Text></Animated.View>
-      <Text style={styles.linkHint}>I paid but have no receipt</Text>
+      <Animated.View style={[styles.uploadBanner, banner]}><Check color={palette.forest} size={17} strokeWidth={3} /><Text style={styles.bannerText}>{donationCopy(locale, 'demo.receiptReceived')}</Text></Animated.View>
+      <Text style={styles.linkHint}>{donationCopy(locale, 'demo.noReceipt')}</Text>
       <Animated.View style={[styles.pickerSheet, sheet]}>
-        <Text style={styles.sheetTitle}>Choose your receipt</Text>
+        <Text style={styles.sheetTitle}>{donationCopy(locale, 'demo.chooseReceipt')}</Text>
         <View style={styles.tiles}>
           {[0, 1, 2].map((index) => (
             <View key={index} style={styles.tile}>
@@ -229,25 +231,25 @@ function UploadDemo({ t, width }: Clock) {
 }
 
 // 5. Account name -------------------------------------------------------------------------------------------------------
-function NameDemo({ t, width }: Clock) {
+function NameDemo({ t, width, locale }: Clock & { locale: AppLocale }) {
   const pill = useAnimatedStyle(() => ({ opacity: ramp(t.get(), 0.7, 0.76), transform: [{ translateY: (1 - ramp(t.get(), 0.7, 0.76)) * 8 }] }));
   const revealed = (v: number) => { 'worklet'; return ramp(v, 0.2, 0.3); };
   return (
     <>
-      <Text style={styles.noReceiptLink}>I paid but have no receipt</Text>
+      <Text style={styles.noReceiptLink}>{donationCopy(locale, 'demo.noReceipt')}</Text>
       <Fade t={t} show={revealed} style={styles.nameBlock}>
-        <Text style={styles.label}>Name on the account you paid from</Text>
+        <Text style={styles.label}>{donationCopy(locale, 'demo.accountName')}</Text>
         <View style={styles.input}><Typed from={0.32} t={t} text="Amina El Fassi" textStyle={styles.inputText} to={0.5} /></View>
       </Fade>
-      <Fade t={t} show={revealed} style={styles.confirmButton}><Text style={styles.uploadLabel}>Confirm donation</Text></Fade>
-      <Animated.View style={[styles.pillRow, pill]}><View style={styles.reviewPill}><Text style={styles.reviewText}>Awaiting review</Text></View></Animated.View>
+      <Fade t={t} show={revealed} style={styles.confirmButton}><Text style={styles.uploadLabel}>{donationCopy(locale, 'demo.confirm')}</Text></Fade>
+      <Animated.View style={[styles.pillRow, pill]}><View style={styles.reviewPill}><Text style={styles.reviewText}>{donationCopy(locale, 'demo.awaitingReview')}</Text></View></Animated.View>
       <Cursor t={t} width={width} taps={[0.14, 0.64]} stops={[{ at: 0, x: 1.05, y: 205 }, { at: 0.08, x: 0.5, y: 24 }, { at: 0.18, x: 0.5, y: 24 }, { at: 0.26, x: 0.5, y: 84 }, { at: 0.5, x: 0.5, y: 84 }, { at: 0.6, x: 0.5, y: 134 }, { at: 0.68, x: 0.5, y: 134 }, { at: 0.84, x: 1.05, y: 205 }]} />
     </>
   );
 }
 
 // 6. Counted ------------------------------------------------------------------------------------------------------------
-function CountedDemo({ t, width }: Clock) {
+function CountedDemo({ t, width, locale }: Clock & { locale: AppLocale }) {
   const trackWidth = width - PAD * 2;
   const review = useAnimatedStyle(() => ({ opacity: 1 - ramp(t.get(), 0.34, 0.38) }));
   const confirmed = useAnimatedStyle(() => ({ opacity: ramp(t.get(), 0.34, 0.38) }));
@@ -260,10 +262,10 @@ function CountedDemo({ t, width }: Clock) {
   return (
     <>
       <View style={styles.caseRow}>
-        <Text numberOfLines={1} style={styles.caseTitle}>Amina&apos;s treatment</Text>
+        <Text numberOfLines={1} style={styles.caseTitle}>{donationCopy(locale, 'demo.caseTitle')}</Text>
         <View style={styles.pillStack}>
-          <Animated.View style={[styles.statusPill, styles.pillWait, review]}><Text style={styles.reviewText}>Awaiting review</Text></Animated.View>
-          <Animated.View style={[styles.statusPill, styles.pillOk, confirmed]}><Check color={palette.forest} size={12} strokeWidth={3} /><Text style={styles.reviewText}>Confirmed</Text></Animated.View>
+          <Animated.View style={[styles.statusPill, styles.pillWait, review]}><Text style={styles.reviewText}>{donationCopy(locale, 'demo.awaitingReview')}</Text></Animated.View>
+          <Animated.View style={[styles.statusPill, styles.pillOk, confirmed]}><Check color={palette.forest} size={12} strokeWidth={3} /><Text style={styles.reviewText}>{donationCopy(locale, 'demo.confirmed')}</Text></Animated.View>
         </View>
       </View>
       <View style={[styles.track, { width: trackWidth }]}><Animated.View style={[styles.fill, fill]} /></View>
@@ -272,20 +274,20 @@ function CountedDemo({ t, width }: Clock) {
           <Animated.Text style={[styles.raised, before]}>1,240 MAD</Animated.Text>
           <Animated.Text style={[styles.raised, styles.layer, after]}>1,440 MAD</Animated.Text>
         </View>
-        <Text style={styles.goal}>of 2,000 MAD</Text>
+        <Text style={styles.goal}>{donationCopy(locale, 'demo.goal', { amount: 2000 })}</Text>
       </View>
       <Animated.View pointerEvents="none" style={[styles.plusChip, { left: PAD + trackWidth * 0.72 - 46 }, plus]}><Text style={styles.plusText}>+200 MAD</Text></Animated.View>
       <Animated.View style={[styles.heart, { left: width / 2 - 20 }, heart]}><Heart color={palette.white} fill={palette.white} size={20} /></Animated.View>
-      <Animated.Text style={[styles.thanks, thanks]}>Jazakum Allah khayran</Animated.Text>
+      <Animated.Text style={[styles.thanks, thanks]}>{donationCopy(locale, 'demo.thanks')}</Animated.Text>
     </>
   );
 }
 
-export function GuideDemo({ step, active, width }: { step: GuideStepKey; active: boolean; width: number }) {
+export function GuideDemo({ step, active, width, locale }: { step: GuideStepKey; active: boolean; width: number; locale: AppLocale }) {
   useScheme();
   const t = useLoop(active);
   const Body = { copy: CopyDemo, send: SendDemo, save: SaveDemo, upload: UploadDemo, name: NameDemo, counted: CountedDemo }[step];
-  return <Demo t={t} width={width}><Body t={t} width={width} /></Demo>;
+  return <Demo t={t} width={width}><Body t={t} width={width} locale={locale} /></Demo>;
 }
 
 const styles = themedStyles(() => StyleSheet.create({

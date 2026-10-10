@@ -1,5 +1,5 @@
 import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, ArrowRight } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -13,12 +13,15 @@ import { BackLink, Button, Field, Message } from '@/features/doctor/ui';
 import { Loading } from '@/ui/loading';
 import { Page, SectionHeading, uiStyles } from '@/ui/patient-ui';
 import { display, palette, themedStyles, useScheme } from '@/ui/palette';
+import { useLocale } from '@/platform/locale/locale-provider';
+import { donationCopy } from '@/platform/locale/donations';
 import { type PledgeView, cancelPledge, getPledge, markPledgePaid, pickAndSubmitReceipt } from './donations-api';
 import { RECEIPT_LIMIT, formatMad, groupAccountNumber, orderStage, pledgeStatus, timeLeft } from './donations-logic';
 import { CopyRow, StatusPill } from './donations-ui';
 
 export default function PledgeScreen() {
   useScheme();
+  const { locale } = useLocale();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [pledge, setPledge] = useState<PledgeView | null | undefined>(undefined);
@@ -46,18 +49,18 @@ export default function PledgeScreen() {
     setGuideOpen(true);
   }, [orderId, needsTransfer]);
 
-  if (pledge === undefined) return <Page><Loading label="Loading your order" /></Page>;
-  if (!pledge) return <Page><BackLink href="/give" label="Giving" /><Message kind="error">{message?.text ?? 'This order was not found on this device. Open the case and enter your email to find it.'}</Message></Page>;
+  if (pledge === undefined) return <Page direction={locale === 'ar' ? 'rtl' : 'ltr'}><Loading label={donationCopy(locale, 'pledge.loading')} /></Page>;
+  if (!pledge) return <Page direction={locale === 'ar' ? 'rtl' : 'ltr'}><BackLink direction={locale === 'ar' ? 'rtl' : 'ltr'} href="/give" label={donationCopy(locale, 'case.giving')} /><Message kind="error">{message?.text ?? donationCopy(locale, 'pledge.notFound')}</Message></Page>;
 
-  const status = pledgeStatus(pledge.status);
-  const left = timeLeft(pledge.expires_at, now);
+  const status = pledgeStatus(pledge.status, locale);
+  const left = timeLeft(pledge.expires_at, now, locale);
   const waiting = pledge.status === 'pledged';
   const hasReceipt = pledge.receipt_count > 0;
   const receiptMessage = pledge.status === 'confirmed'
-    ? 'Thank you. Your donation is confirmed and now appears on the case.'
+    ? donationCopy(locale, 'pledge.receiptConfirmed')
     : pledge.status === 'receipt_submitted'
-      ? 'Thank you. Your receipt has been received. Your donation will appear on the case after a fund collector confirms it.'
-      : status.hint || 'Your receipt has been received.';
+      ? donationCopy(locale, 'pledge.receiptPending')
+      : status.hint || donationCopy(locale, 'pledge.reviewFallback');
   const caseHref = `/cases/${pledge.case_slug ?? pledge.case_id}` as Href;
   const stage = orderStage(pledge.status);
 
@@ -66,26 +69,26 @@ export default function PledgeScreen() {
     setMessage(null);
     try {
       const count = await pickAndSubmitReceipt(pledge.id, RECEIPT_LIMIT - pledge.receipt_count);
-      if (count) { setMessage({ kind: 'ok', text: 'Receipt received. A fund collector will review it soon.' }); setThanks(true); }
+      if (count) { setMessage({ kind: 'ok', text: donationCopy(locale, 'pledge.uploadingReview') }); setThanks(true); }
       load();
     } catch (e) {
-      setMessage({ kind: 'error', text: e instanceof Error ? e.message : 'Could not upload your receipt.' });
+      setMessage({ kind: 'error', text: e instanceof Error ? e.message : donationCopy(locale, 'pledge.uploadError') });
     } finally {
       setBusy(false);
     }
   };
 
   const markPaid = async () => {
-    if (payer.trim().length < 2) { setMessage({ kind: 'error', text: 'Write the name of the account you paid from, so we can match your transfer.' }); return; }
+    if (payer.trim().length < 2) { setMessage({ kind: 'error', text: donationCopy(locale, 'pledge.payerRequired') }); return; }
     setBusy(true);
     setMessage(null);
     try {
       await markPledgePaid(pledge.id, payer);
-      setMessage({ kind: 'ok', text: 'Thank you. A fund collector will check the transfer against the account name you gave.' });
+      setMessage({ kind: 'ok', text: donationCopy(locale, 'pledge.noReceiptThanks') });
       setThanks(true);
       load();
     } catch (e) {
-      setMessage({ kind: 'error', text: e instanceof Error ? e.message : 'Could not mark this order as paid.' });
+      setMessage({ kind: 'error', text: e instanceof Error ? e.message : donationCopy(locale, 'pledge.markPaidError') });
     } finally {
       setBusy(false);
     }
@@ -93,17 +96,17 @@ export default function PledgeScreen() {
 
   const cancel = async () => {
     setBusy(true);
-    try { await cancelPledge(pledge.id); load(); } catch (e) { setMessage({ kind: 'error', text: e instanceof Error ? e.message : 'Could not cancel.' }); } finally { setBusy(false); }
+    try { await cancelPledge(pledge.id); load(); } catch (e) { setMessage({ kind: 'error', text: e instanceof Error ? e.message : donationCopy(locale, 'pledge.cancelError') }); } finally { setBusy(false); }
   };
 
   return (
     <>
-    <Page>
-      <BackLink href="/give" label="Giving" />
-      <View style={styles.summary}>
+    <Page direction={locale === 'ar' ? 'rtl' : 'ltr'}>
+      <BackLink direction={locale === 'ar' ? 'rtl' : 'ltr'} href="/give" label={donationCopy(locale, 'case.giving')} />
+      <View style={[styles.summary, locale === 'ar' && styles.rtl]}>
         <View style={styles.flex}>
-          <Text style={styles.amount}>{formatMad(pledge.amount_mad)}</Text>
-          <Text numberOfLines={1} style={styles.caseName}>{pledge.case_title} · {pledge.reference}</Text>
+          <Text style={[styles.amount, locale === 'ar' && styles.rtlText]}>{formatMad(pledge.amount_mad, locale)}</Text>
+          <Text numberOfLines={1} style={[styles.caseName, locale === 'ar' && styles.rtlText]}>{pledge.case_title} · {pledge.reference}</Text>
         </View>
         <View style={styles.summaryRight}>
           <StatusPill status={pledge.status} />
@@ -118,19 +121,19 @@ export default function PledgeScreen() {
 
       {pledge.banks.length ? (
         <>
-          <SectionHeading title="Send your transfer to" />
+          <SectionHeading direction={locale === 'ar' ? 'rtl' : 'ltr'} title={donationCopy(locale, 'pledge.sendTransfer')} />
           {pledge.banks.map((bank) => (
             <View key={bank.id} style={[uiStyles.card, styles.bank]}>
               <Text style={styles.bankName}>{bank.bank_name}</Text>
-              <CopyRow label="Account holder" value={bank.account_holder} />
-              {bank.rib ? <CopyRow label="RIB (24 digits)" value={bank.rib} display={groupAccountNumber(bank.rib)} /> : null}
-              {bank.account_number ? <CopyRow label="Account number" value={bank.account_number} display={groupAccountNumber(bank.account_number)} /> : null}
-              <CopyRow label="Amount" value={String(pledge.amount_mad)} display={formatMad(pledge.amount_mad)} />
-              <CopyRow label="Transfer reference" value={pledge.reference} />
+              <CopyRow label={donationCopy(locale, 'bank.holder')} value={bank.account_holder} />
+              {bank.rib ? <CopyRow label={donationCopy(locale, 'bank.rib')} value={bank.rib} display={groupAccountNumber(bank.rib)} /> : null}
+              {bank.account_number ? <CopyRow label={donationCopy(locale, 'bank.account')} value={bank.account_number} display={groupAccountNumber(bank.account_number)} /> : null}
+              <CopyRow label={donationCopy(locale, 'donate.amount')} value={String(pledge.amount_mad)} display={formatMad(pledge.amount_mad, locale)} />
+              <CopyRow label={donationCopy(locale, 'bank.reference')} value={pledge.reference} />
               {bank.note ? <Text style={styles.hint}>{bank.note}</Text> : null}
             </View>
           ))}
-          <Text style={styles.fine}>Add the reference to your transfer message if your bank allows it. Only send the exact amount you entered; keep the receipt.</Text>
+          <Text style={[styles.fine, locale === 'ar' && styles.rtlText]}>{donationCopy(locale, 'pledge.referenceHint')}</Text>
         </>
       ) : null}
 
@@ -139,42 +142,42 @@ export default function PledgeScreen() {
       {hasReceipt ? (
         <View style={styles.receiptComplete}>
           <Message kind={pledge.status === 'rejected' || pledge.status === 'reversed' ? 'info' : 'ok'}>{receiptMessage}</Message>
-          <Button label="Donate again" onPress={() => router.push(caseHref)} />
+          <Button label={donationCopy(locale, 'pledge.donateAgain')} onPress={() => router.push(caseHref)} />
         </View>
       ) : pledge.can_upload ? (
         <>
           {noReceipt ? (
             <>
-              <Field label="Name on the account you paid from" value={payer} onChangeText={setPayer} maxLength={80} placeholder="Account holder name" autoCapitalize="words" />
-              <Button label="Confirm donation" busy={busy} onPress={() => void markPaid()} />
-              <Text style={styles.fine}>A fund collector will match your transfer using this account name.</Text>
+              <Field label={donationCopy(locale, 'pledge.accountName')} direction={locale === 'ar' ? 'rtl' : 'ltr'} value={payer} onChangeText={setPayer} maxLength={80} placeholder={donationCopy(locale, 'pledge.accountNamePlaceholder')} autoCapitalize="words" />
+              <Button label={donationCopy(locale, 'pledge.confirmDonation')} busy={busy} onPress={() => void markPaid()} />
+              <Text style={[styles.fine, locale === 'ar' && styles.rtlText]}>{donationCopy(locale, 'pledge.collectorMatch')}</Text>
               <Pressable accessibilityRole="link" disabled={busy} onPress={() => setNoReceipt(false)} style={styles.textAction}>
-                <Text style={styles.textActionLabel}>Upload a receipt instead</Text>
+                <Text style={styles.textActionLabel}>{donationCopy(locale, 'pledge.uploadInstead')}</Text>
               </Pressable>
             </>
           ) : (
             <>
-              <Button label={pledge.receipt_count >= RECEIPT_LIMIT ? 'Receipt limit reached' : pledge.receipt_count ? 'Upload another receipt & confirm donation' : 'Upload receipt & confirm donation'} busy={busy} disabled={pledge.receipt_count >= RECEIPT_LIMIT} onPress={() => void upload()} />
+              <Button label={pledge.receipt_count >= RECEIPT_LIMIT ? donationCopy(locale, 'pledge.receiptLimit') : pledge.receipt_count ? donationCopy(locale, 'pledge.uploadAgain') : donationCopy(locale, 'pledge.uploadConfirm')} busy={busy} disabled={pledge.receipt_count >= RECEIPT_LIMIT} onPress={() => void upload()} />
               {pledge.can_mark_paid && pledge.receipt_count === 0 ? (
                 <Pressable accessibilityRole="link" disabled={busy} onPress={() => { setMessage(null); setNoReceipt(true); }} style={styles.textAction}>
-                  <Text style={styles.textActionLabel}>I paid but have no receipt</Text>
+                  <Text style={styles.textActionLabel}>{donationCopy(locale, 'pledge.noReceipt')}</Text>
                 </Pressable>
               ) : null}
-              <Text style={styles.fine}>A fund collector will review your receipt. If you no longer have it, enter the name on the account you paid from.</Text>
+              <Text style={[styles.fine, locale === 'ar' && styles.rtlText]}>{donationCopy(locale, 'pledge.reviewReceipt')}</Text>
             </>
           )}
         </>
       ) : null}
       {!hasReceipt ? <Text style={styles.hint}>{status.hint}</Text> : null}
-      {pledge.payer_name ? <Text style={styles.hint}>Paid from the account of: {pledge.payer_name}</Text> : null}
-      <View style={styles.footerActions}>
-        <Pressable accessibilityLabel="Return to case" accessibilityRole="link" onPress={() => router.push(caseHref)} style={styles.returnLink}>
-          <ArrowLeft color={palette.forest} size={17} />
-          <Text style={styles.textActionLabel}>Return to case</Text>
+      {pledge.payer_name ? <Text style={[styles.hint, locale === 'ar' && styles.rtlText]}>{donationCopy(locale, 'pledge.paidFrom', { name: pledge.payer_name })}</Text> : null}
+      <View style={[styles.footerActions, locale === 'ar' && styles.rtl]}>
+        <Pressable accessibilityLabel={donationCopy(locale, 'pledge.returnCaseLabel')} accessibilityRole="link" onPress={() => router.push(caseHref)} style={styles.returnLink}>
+          {locale === 'ar' ? <ArrowRight color={palette.forest} size={17} /> : <ArrowLeft color={palette.forest} size={17} />}
+          <Text style={styles.textActionLabel}>{donationCopy(locale, 'pledge.returnCase')}</Text>
         </Pressable>
         {waiting ? (
           <Pressable accessibilityRole="link" disabled={busy} onPress={() => void cancel()} style={styles.cancelLink}>
-            <Text style={styles.cancelLabel}>Cancel donation</Text>
+            <Text style={styles.cancelLabel}>{donationCopy(locale, 'pledge.cancelDonation')}</Text>
           </Pressable>
         ) : null}
       </View>
@@ -204,4 +207,6 @@ const styles = themedStyles(() => StyleSheet.create({
   bankName: { ...display, color: palette.ink, fontSize: 18 },
   fine: { color: palette.muted, fontSize: 12, lineHeight: 18, marginTop: 10 },
   receiptComplete: { gap: 8, marginTop: 8 },
+  rtlText: { writingDirection: 'rtl', textAlign: 'right' },
+  rtl: { direction: 'rtl' },
 }));

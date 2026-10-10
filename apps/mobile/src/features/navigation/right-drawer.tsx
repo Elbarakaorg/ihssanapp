@@ -6,26 +6,28 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/features/auth/auth-provider';
 import { getCurrentUserProfile } from '@/features/profile/profile-repository';
+import { useLocale } from '@/platform/locale/locale-provider';
+import { donationCopy, type DonationCopyKey } from '@/platform/locale/donations';
 import { palette, themedStyles, useScheme } from '@/ui/palette';
 
-type NavItem = { label: string; href: Href; icon: LucideIcon; clinicianOnly?: boolean; signedInOnly?: boolean };
+type NavItem = { labelKey: DonationCopyKey; href: Href; icon: LucideIcon; clinicianOnly?: boolean; signedInOnly?: boolean };
 
 const navItems: NavItem[] = [
-  { href: '/', icon: House, label: 'Home' },
-  { href: '/health', icon: Activity, label: 'Health tracking' },
-  { href: '/discover', icon: Compass, label: 'Discover care' },
-  { href: '/give', icon: HeartHandshake, label: 'Give' },
-  { href: '/collect' as Href, icon: HeartHandshake, label: 'My giving cases', signedInOnly: true },
-  { href: '/profile', icon: UserRound, label: 'Medical profile' },
-  { href: '/doctors', icon: Stethoscope, label: 'Find a doctor' },
-  { href: '/appointments', icon: CalendarCheck, label: 'Appointments' },
-  { href: '/doctor-profile', icon: UserRound, label: 'Doctor profile', clinicianOnly: true },
-  { href: '/schedule', icon: CalendarClock, label: 'My schedule', clinicianOnly: true },
-  { href: '/my-patients', icon: UsersRound, label: 'My patients', clinicianOnly: true },
-  { href: '/practice-locations', icon: MapPinned, label: 'My practice locations', clinicianOnly: true },
-  { href: '/activity', icon: Footprints, label: 'Steps & activity' },
-  { href: '/articles', icon: BookOpenText, label: 'Articles' },
-  { href: '/blogs', icon: Newspaper, label: 'Blogs' },
+  { href: '/', icon: House, labelKey: 'nav.home' },
+  { href: '/health', icon: Activity, labelKey: 'nav.healthTracking' },
+  { href: '/discover', icon: Compass, labelKey: 'nav.discoverCare' },
+  { href: '/give', icon: HeartHandshake, labelKey: 'nav.give' },
+  { href: '/collect' as Href, icon: HeartHandshake, labelKey: 'nav.myGivingCases', signedInOnly: true },
+  { href: '/profile', icon: UserRound, labelKey: 'nav.medicalProfile' },
+  { href: '/doctors', icon: Stethoscope, labelKey: 'nav.findDoctor' },
+  { href: '/appointments', icon: CalendarCheck, labelKey: 'nav.appointments' },
+  { href: '/doctor-profile', icon: UserRound, labelKey: 'nav.doctorProfile', clinicianOnly: true },
+  { href: '/schedule', icon: CalendarClock, labelKey: 'nav.mySchedule', clinicianOnly: true },
+  { href: '/my-patients', icon: UsersRound, labelKey: 'nav.myPatients', clinicianOnly: true },
+  { href: '/practice-locations', icon: MapPinned, labelKey: 'nav.practiceLocations', clinicianOnly: true },
+  { href: '/activity', icon: Footprints, labelKey: 'nav.activity' },
+  { href: '/articles', icon: BookOpenText, labelKey: 'nav.articles' },
+  { href: '/blogs', icon: Newspaper, labelKey: 'nav.blogs' },
 ];
 
 
@@ -35,6 +37,7 @@ export function RightDrawer({ visible, onClose }: { visible: boolean; onClose: (
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { session, signOut } = useAuth();
+  const { locale } = useLocale();
   const [profileName, setProfileName] = useState('');
   const [profileType, setProfileType] = useState<'patient' | 'clinician'>('patient');
   const [mounted, setMounted] = useState(visible);
@@ -87,7 +90,7 @@ export function RightDrawer({ visible, onClose }: { visible: boolean; onClose: (
 
   const shareApp = async () => {
     try {
-      await Share.share({ message: 'Track your health with Ihssan — a clearer view of your health record.' });
+      await Share.share({ message: donationCopy(locale, 'nav.trackShare') });
     } catch {
       // sharing was dismissed or unavailable on this device; nothing to recover
     }
@@ -101,7 +104,7 @@ export function RightDrawer({ visible, onClose }: { visible: boolean; onClose: (
       <Animated.View style={[styles.panel, { paddingBottom: insets.bottom + 20, paddingTop: insets.top + 14, transform: [{ translateX }], width: panelWidth }]}>
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={styles.headerRow}>
-            <Text style={styles.title}>Menu</Text>
+            <Text style={styles.title}>{donationCopy(locale, 'nav.menu')}</Text>
             <Pressable accessibilityLabel="Close menu" accessibilityRole="button" onPress={onClose} style={styles.closeButton}>
               <X color={palette.ink} size={20} />
             </Pressable>
@@ -110,20 +113,20 @@ export function RightDrawer({ visible, onClose }: { visible: boolean; onClose: (
           <Pressable accessibilityRole="button" onPress={() => go(session ? '/account' : '/auth')} style={styles.accountCard}>
             <View style={styles.avatar}><UserRound color={palette.forest} size={22} /></View>
             <View style={styles.accountCopy}>
-              <Text style={styles.accountName}>{session ? (profileName || 'Your account') : 'Sign in to Ihssan'}</Text>
-              <Text numberOfLines={1} style={styles.accountMeta}>{session ? session.identity.email : 'Access your health record'}</Text>
+              <Text style={styles.accountName}>{session ? (profileName || donationCopy(locale, 'nav.yourAccount')) : donationCopy(locale, 'nav.signInToIhssan')}</Text>
+              <Text numberOfLines={1} style={styles.accountMeta}>{session ? session.identity.email : donationCopy(locale, 'nav.healthRecord')}</Text>
             </View>
             <ChevronRight color={palette.muted} size={18} />
           </Pressable>
 
-          <Text style={styles.sectionLabel}>Navigate</Text>
+          <Text style={styles.sectionLabel}>{donationCopy(locale, 'nav.navigate')}</Text>
           <View style={styles.navList}>
             {navItems.filter((item) => (!item.clinicianOnly || profileType === 'clinician') && (!item.signedInOnly || !!session)).map((item) => {
               const Icon = item.icon;
               return (
-                <Pressable accessibilityRole="button" key={item.label} onPress={() => go(item.href)} style={styles.navRow}>
+                <Pressable accessibilityRole="button" key={item.labelKey} onPress={() => go(item.href)} style={styles.navRow}>
                   <Icon color={palette.forest} size={18} strokeWidth={1.9} />
-                  <Text style={styles.navLabel}>{item.label}</Text>
+                  <Text style={styles.navLabel}>{donationCopy(locale, item.labelKey)}</Text>
                 </Pressable>
               );
             })}
@@ -131,18 +134,18 @@ export function RightDrawer({ visible, onClose }: { visible: boolean; onClose: (
 
           <Pressable accessibilityRole="button" onPress={() => void shareApp()} style={styles.actionRow}>
             <Share2 color={palette.forest} size={18} strokeWidth={1.9} />
-            <Text style={styles.actionLabel}>Share with friends</Text>
+            <Text style={styles.actionLabel}>{donationCopy(locale, 'nav.shareFriends')}</Text>
           </Pressable>
 
           {session ? (
             <Pressable accessibilityRole="button" onPress={() => { onClose(); void signOut(); }} style={[styles.actionRow, styles.signOutRow]}>
               <LogOut color={palette.coral} size={18} strokeWidth={1.9} />
-              <Text style={[styles.actionLabel, styles.signOutLabel]}>Sign out</Text>
+              <Text style={[styles.actionLabel, styles.signOutLabel]}>{donationCopy(locale, 'nav.signOut')}</Text>
             </Pressable>
           ) : (
             <Pressable accessibilityRole="button" onPress={() => go('/auth')} style={styles.actionRow}>
               <LogIn color={palette.forest} size={18} strokeWidth={1.9} />
-              <Text style={styles.actionLabel}>Sign in</Text>
+              <Text style={styles.actionLabel}>{donationCopy(locale, 'nav.signIn')}</Text>
             </Pressable>
           )}
         </ScrollView>

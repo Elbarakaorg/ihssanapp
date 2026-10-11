@@ -7,6 +7,7 @@ import { Amiri_400Regular } from '@expo-google-fonts/amiri';
 import { EBGaramond_500Medium, EBGaramond_600SemiBold, useFonts } from '@expo-google-fonts/eb-garamond';
 
 import { AppTabBar } from '@/features/navigation/app-tab-bar';
+import { InstallBanner } from '@/features/notifications/install-banner';
 import { AuthProvider } from '@/features/auth/auth-provider';
 import { LocaleProvider } from '@/platform/locale/locale-provider';
 import { supabaseAuthRepository } from '@/platform/auth/supabase-auth-repository';
@@ -36,6 +37,7 @@ function AppShell() {
         <Stack.Screen name="my-patients/[grantId]" options={{ presentation: 'card', animation: 'slide_from_right' }} />
       </Stack>
       </View>
+      <InstallBanner />
       <AppTabBar />
       </View>
     </>

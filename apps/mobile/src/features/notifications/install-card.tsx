@@ -7,7 +7,7 @@ import { canPromptInstall, disablePush, enablePush, getPushStatus, isInstalledAp
 import type { PushStatus } from '@/features/notifications/web-push-logic';
 import { useLocale } from '@/platform/locale/locale-provider';
 import { donationCopy } from '@/platform/locale/donations';
-import { palette, themedStyles, useScheme, wobble, glassSurface } from '@/ui/palette';
+import { palette, rtlLayout, themedStyles, useScheme, wobble, glassSurface } from '@/ui/palette';
 
 /** Web only: lets someone on Android Chrome install the site to the home screen and receive push notifications. */
 export function InstallAndNotifyCard() {
@@ -66,6 +66,6 @@ const styles = themedStyles(() => StyleSheet.create({
   title: { color: palette.ink, fontSize: 15, fontWeight: '600' },
   meta: { color: palette.muted, fontSize: 12, lineHeight: 18 },
   divider: { backgroundColor: palette.line, height: 1, marginVertical: 6 },
-  rtl: { direction: 'rtl' },
+  rtl: { ...rtlLayout },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
 }));

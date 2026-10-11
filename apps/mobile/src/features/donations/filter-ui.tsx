@@ -2,7 +2,7 @@ import { Check, ChevronDown, Flame, Search, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { display, palette, themedStyles, useScheme } from '@/ui/palette';
+import { display, palette, rtlLayout, themedStyles, useScheme } from '@/ui/palette';
 import { useLocale } from '@/platform/locale/locale-provider';
 import { donationCopy } from '@/platform/locale/donations';
 
@@ -87,6 +87,6 @@ const styles = themedStyles(() => StyleSheet.create({
   optionSelected: { color: palette.forest, fontWeight: '700' },
   done: { alignItems: 'center', backgroundColor: palette.forest, borderRadius: 14, justifyContent: 'center', marginTop: 12, minHeight: 46 },
   doneText: { color: palette.white, fontSize: 15, fontWeight: '700' },
-  rtl: { direction: 'rtl' },
+  rtl: { ...rtlLayout },
   rtlText: { writingDirection: 'rtl', textAlign: 'right' },
 }));

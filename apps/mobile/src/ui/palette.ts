@@ -126,6 +126,9 @@ export const radii = {
 export const display = { fontFamily: 'EBGaramond_600SemiBold' } as const;
 export const displayRegular = { fontFamily: 'EBGaramond_500Medium' } as const;
 
+/** Right-to-left layout; react-native-web rejects `direction` and wants `writingDirection`, native only has `direction`. */
+export const rtlLayout = (typeof document !== 'undefined' ? { writingDirection: 'rtl' } : { direction: 'rtl' }) as { direction: 'rtl' };
+
 /** Hand-cut, slightly uneven corners (wabi-sabi). */
 export const wobble = {
   borderTopLeftRadius: 16,

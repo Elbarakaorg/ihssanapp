@@ -7,7 +7,7 @@ import { useAuth } from '@/features/auth/auth-provider';
 import { BackLink, Button, Chip, Field, Message } from '@/features/doctor/ui';
 import { Loading } from '@/ui/loading';
 import { Ornament, Page, PageHeading, SectionHeading, uiStyles } from '@/ui/patient-ui';
-import { display, palette, themedStyles, useScheme } from '@/ui/palette';
+import { display, palette, rtlLayout, themedStyles, useScheme } from '@/ui/palette';
 import { type AppLocale, useLocale } from '@/platform/locale/locale-provider';
 import { donationCopy } from '@/platform/locale/donations';
 import { type CaseComment, addExternalDonation, type CollectorCase, type ReviewPledge, acceptCollectorInvite, bulkReviewComments, listCasePledges, listCaseComments, listCollectorCases, receiptUrl, reviewPledge } from './donations-api';
@@ -273,7 +273,7 @@ const styles = themedStyles(() => StyleSheet.create({
   row: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   badge: { color: palette.coral, fontSize: 13, fontWeight: '700' },
   tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-  rtl: { direction: 'rtl' },
+  rtl: { ...rtlLayout },
   receipts: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   receiptWrap: { gap: 4 },
   viewLink: { color: palette.forest, fontSize: 12, fontWeight: '700' },

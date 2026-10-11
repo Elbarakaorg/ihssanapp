@@ -5,15 +5,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Svg, { Path, Text as SvgText } from 'react-native-svg';
 
-import { display, palette, radii, spacing, themedStyles, useScheme, wobble } from './palette';
+import { display, palette, radii, rtlLayout, spacing, themedStyles, useScheme, wobble } from './palette';
 
 export function Page({ children, direction }: PropsWithChildren<{ direction?: 'ltr' | 'rtl' }>) {
   useScheme();
   return (
-    <SafeAreaView style={[styles.safeArea, paperBackground(), direction ? { direction } : null]} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.safeArea, paperBackground(), direction === 'rtl' ? rtlLayout : null]} edges={['top', 'left', 'right']}>
       {Platform.OS === 'web' ? null : <LinearGradient colors={[palette.washSage, 'transparent', palette.washClay]} locations={[0, 0.45, 1]} pointerEvents="none" style={StyleSheet.absoluteFill} />}
       <ScrollView
-        contentContainerStyle={[styles.content, direction ? { direction } : null]}
+        contentContainerStyle={[styles.content, direction === 'rtl' ? rtlLayout : null]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         {children}

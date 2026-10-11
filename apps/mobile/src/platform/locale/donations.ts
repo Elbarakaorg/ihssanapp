@@ -120,7 +120,7 @@ const pwaEn = {
   'pwa.installManual': 'In Chrome, open the menu (⋮) and choose “Add to Home screen” or “Install app”.', 'pwa.installed': 'Ihssan is installed on this device.',
   'pwa.notifyTitle': 'Notifications', 'pwa.notifyBody': 'Get updates from Ihssan on this device, even when the app is closed.', 'pwa.notifySignIn': 'Sign in to turn on notifications.',
   'pwa.notifyDenied': 'Notifications are blocked for Ihssan. Allow them in your browser or phone settings.', 'pwa.notifyUnsupported': 'Notifications are not available in this browser. Try Chrome on Android.',
-  'pwa.notifyError': 'Could not change notifications. Please try again.', 'pwa.test': 'Send a test notification', 'pwa.testSent': 'Test sent. It should appear in a moment.',
+  'pwa.notifyError': 'Could not change notifications. Please try again.', 'pwa.test': 'Send a test notification', 'pwa.testSent': 'Test sent. It should appear in a moment.', 'pwa.later': 'Not now',
 } as const;
 
 const pwaFr: Record<keyof typeof pwaEn, string> = {
@@ -128,7 +128,7 @@ const pwaFr: Record<keyof typeof pwaEn, string> = {
   'pwa.installManual': 'Dans Chrome, ouvrez le menu (⋮) puis choisissez « Ajouter à l’écran d’accueil » ou « Installer l’application ».', 'pwa.installed': 'Ihssan est installé sur cet appareil.',
   'pwa.notifyTitle': 'Notifications', 'pwa.notifyBody': 'Recevez les nouvelles d’Ihssan sur cet appareil, même lorsque l’application est fermée.', 'pwa.notifySignIn': 'Connectez-vous pour activer les notifications.',
   'pwa.notifyDenied': 'Les notifications sont bloquées pour Ihssan. Autorisez-les dans les réglages du navigateur ou du téléphone.', 'pwa.notifyUnsupported': 'Les notifications ne sont pas disponibles dans ce navigateur. Essayez Chrome sur Android.',
-  'pwa.notifyError': 'Impossible de modifier les notifications. Veuillez réessayer.', 'pwa.test': 'Envoyer une notification de test', 'pwa.testSent': 'Test envoyé. Il devrait apparaître dans un instant.',
+  'pwa.notifyError': 'Impossible de modifier les notifications. Veuillez réessayer.', 'pwa.test': 'Envoyer une notification de test', 'pwa.testSent': 'Test envoyé. Il devrait apparaître dans un instant.', 'pwa.later': 'Plus tard',
 };
 
 const pwaAr: Record<keyof typeof pwaEn, string> = {
@@ -136,7 +136,7 @@ const pwaAr: Record<keyof typeof pwaEn, string> = {
   'pwa.installManual': 'في متصفح Chrome افتح القائمة (⋮) ثم اختر «إضافة إلى الشاشة الرئيسية» أو «تثبيت التطبيق».', 'pwa.installed': 'إحسان مثبّت على هذا الجهاز.',
   'pwa.notifyTitle': 'الإشعارات', 'pwa.notifyBody': 'تلقَّ تحديثات إحسان على هذا الجهاز حتى عندما يكون التطبيق مغلقاً.', 'pwa.notifySignIn': 'سجّل الدخول لتفعيل الإشعارات.',
   'pwa.notifyDenied': 'الإشعارات محجوبة لإحسان. اسمح بها من إعدادات المتصفح أو الهاتف.', 'pwa.notifyUnsupported': 'الإشعارات غير متاحة في هذا المتصفح. جرّب Chrome على أندرويد.',
-  'pwa.notifyError': 'تعذر تغيير الإشعارات. حاول مرة أخرى.', 'pwa.test': 'إرسال إشعار تجريبي', 'pwa.testSent': 'أُرسل الإشعار التجريبي. سيظهر بعد لحظات.',
+  'pwa.notifyError': 'تعذر تغيير الإشعارات. حاول مرة أخرى.', 'pwa.test': 'إرسال إشعار تجريبي', 'pwa.testSent': 'أُرسل الإشعار التجريبي. سيظهر بعد لحظات.', 'pwa.later': 'ليس الآن',
 };
 
 const enCatalog = { ...en, ...collectEn, ...collectPluralEn, ...pwaEn };

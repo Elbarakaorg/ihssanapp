@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { display, palette, themedStyles, useScheme } from '@/ui/palette';
+import { display, palette, rtlLayout, themedStyles, useScheme } from '@/ui/palette';
 import { useLocale } from '@/platform/locale/locale-provider';
 import { donationCopy } from '@/platform/locale/donations';
 import { ThinkingOrb } from '@/ui/thinking-orb';
@@ -27,6 +27,6 @@ const styles = themedStyles(() => StyleSheet.create({
   copy: { flex: 1, gap: 4 },
   title: { ...display, color: palette.ink, fontSize: 17 },
   body: { color: palette.muted, fontSize: 13, lineHeight: 19 },
-  rtl: { direction: 'rtl' },
+  rtl: { ...rtlLayout },
   rtlText: { writingDirection: 'rtl', textAlign: 'right' },
 }));

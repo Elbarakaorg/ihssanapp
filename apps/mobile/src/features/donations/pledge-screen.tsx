@@ -12,7 +12,7 @@ import { ThankYou } from './thank-you';
 import { BackLink, Button, Field, Message } from '@/features/doctor/ui';
 import { Loading } from '@/ui/loading';
 import { Page, SectionHeading, uiStyles } from '@/ui/patient-ui';
-import { display, palette, themedStyles, useScheme } from '@/ui/palette';
+import { display, palette, rtlLayout, themedStyles, useScheme } from '@/ui/palette';
 import { useLocale } from '@/platform/locale/locale-provider';
 import { donationCopy } from '@/platform/locale/donations';
 import { type PledgeView, cancelPledge, getPledge, markPledgePaid, pickAndSubmitReceipt } from './donations-api';
@@ -208,5 +208,5 @@ const styles = themedStyles(() => StyleSheet.create({
   fine: { color: palette.muted, fontSize: 12, lineHeight: 18, marginTop: 10 },
   receiptComplete: { gap: 8, marginTop: 8 },
   rtlText: { writingDirection: 'rtl', textAlign: 'right' },
-  rtl: { direction: 'rtl' },
+  rtl: { ...rtlLayout },
 }));

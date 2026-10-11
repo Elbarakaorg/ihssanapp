@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowRight } from 'lucide-react-native';
 import { type ReactNode, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, type TextInputProps, View } from 'react-native';
 
-import { display, palette, themedStyles, useScheme, wobble, glassSurface } from '@/ui/palette';
+import { display, palette, rtlLayout, themedStyles, useScheme, wobble, glassSurface } from '@/ui/palette';
 
 export function BackLink({ label, href, direction = 'ltr' }: { label: string; href: Href; direction?: 'ltr' | 'rtl' }) {
   useScheme();
@@ -71,7 +71,7 @@ export const doctorStyles = themedStyles(() => StyleSheet.create({
 const styles = themedStyles(() => StyleSheet.create({
   back: { alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', gap: 8, marginBottom: 16, minHeight: 42 },
   backLabel: { ...display, color: palette.ink, fontSize: 15 },
-  rtlRow: { direction: 'rtl' },
+  rtlRow: { ...rtlLayout },
   rtlText: { writingDirection: 'rtl', textAlign: 'right' },
   button: { ...wobble, alignItems: 'center', backgroundColor: palette.forest, justifyContent: 'center', marginTop: 12, minHeight: 48, paddingHorizontal: 16 },
   buttonSecondary: { backgroundColor: 'transparent', borderColor: palette.line, borderWidth: 1 },

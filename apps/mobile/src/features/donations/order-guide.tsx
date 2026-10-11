@@ -7,7 +7,7 @@ import Animated, { Easing, Extrapolation, interpolate, useAnimatedScrollHandler,
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { display, palette, themedStyles, useScheme } from '@/ui/palette';
+import { display, palette, rtlLayout, themedStyles, useScheme } from '@/ui/palette';
 import { useLocale } from '@/platform/locale/locale-provider';
 import { donationCopy } from '@/platform/locale/donations';
 import { GuideDemo } from './order-guide-demos';
@@ -187,5 +187,5 @@ const styles = themedStyles(() => StyleSheet.create({
   next: { alignItems: 'center', backgroundColor: palette.forest, borderRadius: 22, justifyContent: 'center', minHeight: 44, minWidth: 96, paddingHorizontal: 22 },
   nextText: { color: palette.white, fontSize: 15, fontWeight: '800' },
   pressed: { opacity: 0.9, transform: [{ scale: 0.97 }] },
-  rtl: { direction: 'rtl', writingDirection: 'rtl', textAlign: 'right' },
+  rtl: { ...rtlLayout, writingDirection: 'rtl', textAlign: 'right' },
 }));

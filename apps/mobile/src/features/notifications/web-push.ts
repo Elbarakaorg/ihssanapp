@@ -16,6 +16,7 @@ const notify = () => listeners.forEach((listener) => listener());
 if (isWeb) {
   window.addEventListener('beforeinstallprompt', (event) => { event.preventDefault(); installEvent = event as InstallPromptEvent; notify(); });
   window.addEventListener('appinstalled', () => { installEvent = null; notify(); });
+  if ('serviceWorker' in navigator) window.addEventListener('load', () => { void navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => undefined); });
 }
 
 export function onInstallStateChange(listener: () => void) {

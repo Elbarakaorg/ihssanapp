@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, Extrapolation, interpolate, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withSpring, withTiming, type SharedValue } from 'react-native-reanimated';
 
-import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { palette, rtlLayout, themedStyles, useScheme } from '@/ui/palette';
 import { useLocale } from '@/platform/locale/locale-provider';
 import { donationCopy } from '@/platform/locale/donations';
 import { ORDER_STAGES } from './donations-logic';
@@ -89,5 +89,5 @@ const styles = themedStyles(() => StyleSheet.create({
   pulse: { backgroundColor: palette.forest, borderRadius: DOT / 2, height: DOT, position: 'absolute', width: DOT },
   label: { color: palette.muted, fontSize: 11, fontWeight: '600', textAlign: 'center' },
   labelActive: { color: palette.forest, fontWeight: '800' },
-  rtl: { direction: 'rtl' },
+  rtl: { ...rtlLayout },
 }));

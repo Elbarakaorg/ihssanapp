@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RightDrawer } from '@/features/navigation/right-drawer';
 import { useLocale } from '@/platform/locale/locale-provider';
 import { donationCopy } from '@/platform/locale/donations';
-import { palette, themedStyles, useScheme } from '@/ui/palette';
+import { palette, rtlLayout, themedStyles, useScheme } from '@/ui/palette';
 
 type Item = { key: 'home' | 'health' | 'discover' | 'give'; labelKey: 'nav.home' | 'nav.health' | 'nav.discover' | 'nav.give'; href: Href; Icon: LucideIcon; match: (path: string) => boolean };
 
@@ -77,5 +77,5 @@ const styles = themedStyles(() => StyleSheet.create({
   pressed: { opacity: 0.7 },
   label: { color: palette.muted, fontSize: 10, fontWeight: '600' },
   labelActive: { color: palette.forest },
-  rtl: { direction: 'rtl' },
+  rtl: { ...rtlLayout },
 }));

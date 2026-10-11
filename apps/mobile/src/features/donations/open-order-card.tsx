@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Button, Message } from '@/features/doctor/ui';
 import { uiStyles } from '@/ui/patient-ui';
-import { display, palette, themedStyles, useScheme } from '@/ui/palette';
+import { display, palette, rtlLayout, themedStyles, useScheme } from '@/ui/palette';
 import { useLocale } from '@/platform/locale/locale-provider';
 import { donationCopy } from '@/platform/locale/donations';
 import { type OpenOrder, cancelPledge, changePledgeAmount } from './donations-api';
@@ -104,6 +104,6 @@ const styles = themedStyles(() => StyleSheet.create({
   link: { alignSelf: 'center', justifyContent: 'center', minHeight: 42, paddingHorizontal: 8 },
   linkLabel: { color: palette.forest, fontSize: 13, fontWeight: '600' },
   cancelLabel: { color: palette.coral, fontSize: 13, fontWeight: '600' },
-  rtl: { direction: 'rtl' },
+  rtl: { ...rtlLayout },
   rtlText: { writingDirection: 'rtl', textAlign: 'right' },
 }));

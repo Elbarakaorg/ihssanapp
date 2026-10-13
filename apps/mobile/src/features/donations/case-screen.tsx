@@ -240,6 +240,7 @@ function DonateForm({ item, remaining, onDone, onCancel, locale }: { item: CaseD
   const [name, setName] = useState('');
   const [comment, setComment] = useState('');
   const [email, setEmail] = useState('');
+  const [emailUpdates, setEmailUpdates] = useState(false);
   const [recovered, setRecovered] = useState<OpenOrder[]>([]);
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
@@ -258,7 +259,7 @@ function DonateForm({ item, remaining, onDone, onCancel, locale }: { item: CaseD
     try {
       const unfinished = await recoverOpenOrders(email, item.id);
       if (unfinished.length) { setRecovered(unfinished); setBusy(false); return; }
-      const pledge = await createPledge({ caseId: item.id, caseTitle: item.title, amount, displayName: name, anonymous, comment, email });
+      const pledge = await createPledge({ caseId: item.id, caseTitle: item.title, amount, displayName: name, anonymous, comment, email, emailUpdates, locale });
       onDone(pledge.id);
     } catch (e) {
       setError(e instanceof Error ? e.message : donationCopy(locale, 'donate.startError'));
@@ -303,6 +304,10 @@ function DonateForm({ item, remaining, onDone, onCancel, locale }: { item: CaseD
       </View>
       <Field label={donationCopy(locale, 'donate.email')} direction={textDirection} inputDirection="ltr" value={email} onChangeText={setEmail} maxLength={254} autoCapitalize="none" autoComplete="email" autoCorrect={false} keyboardType="email-address" textContentType="emailAddress" placeholder={donationCopy(locale, 'donate.emailPlaceholder')} />
       <Text style={[styles.meta, locale === 'ar' && styles.rtlText]}>{donationCopy(locale, 'donate.emailPrivate')}</Text>
+      <View style={styles.switchRow}>
+        <View style={styles.flex}><Text style={[styles.switchTitle, locale === 'ar' && styles.rtlText]}>{donationCopy(locale, 'donate.emailUpdates')}</Text><Text style={[styles.meta, locale === 'ar' && styles.rtlText]}>{donationCopy(locale, 'donate.emailUpdatesNote')}</Text></View>
+        <Switch accessibilityLabel={donationCopy(locale, 'donate.emailUpdates')} onValueChange={setEmailUpdates} trackColor={{ true: palette.forest }} value={emailUpdates} />
+      </View>
       <View style={styles.switchRow}>
         <View style={styles.flex}><Text style={[styles.switchTitle, locale === 'ar' && styles.rtlText]}>{donationCopy(locale, 'donate.anonymous')}</Text><Text style={[styles.meta, locale === 'ar' && styles.rtlText]}>{donationCopy(locale, 'donate.namePrivate')}</Text></View>
         <Switch accessibilityLabel={donationCopy(locale, 'donate.anonymous')} onValueChange={setAnonymous} trackColor={{ true: palette.forest }} value={anonymous} />

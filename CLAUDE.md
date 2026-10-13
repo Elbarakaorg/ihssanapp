@@ -53,5 +53,8 @@ Migration `202610110001` (apply after 202610070001, 080001, 080002, 090001, 1000
 ## Installable web app and push
 Android Chrome can install the site to the home screen (manifest + `public/sw.js`, no fetch handler) and receive Web Push. Profile card: `features/notifications/install-card.tsx`; browser logic `web-push.ts`; table `push_subscriptions` + RPCs `save_push_subscription`/`delete_push_subscription` (migration `202610170001`); API `services/api/src/push-sender.ts` (`web-push`, per-user rows via RLS) and `POST /v1/push/test`. Setup: `npx web-push generate-vapid-keys`; `fly secrets set VAPID_PUBLIC_KEY=… VAPID_PRIVATE_KEY=… VAPID_SUBJECT=mailto:…`; set `EXPO_PUBLIC_VAPID_PUBLIC_KEY` (public key only) in Vercel and `.env.local`. iOS only gets push when installed (16.4+). Sending to other users (donation confirmed, dose reminders) needs a trusted server path (service-role key or a scheduled job); not built.
 
+## Donation emails
+Opt-in only (switch on the donation form, `set_pledge_email_updates`). Migration `202610180001`: `email_outbox` (reminder at order + 2h, confirmation on status change), `email_suppressions`, secret-guarded `email_worker_claim/complete/optout`. Worker in `services/api/src/donation-emails.ts` polls every minute and sends via Resend; needs Fly secret `EMAIL_WORKER_SECRET` whose sha256 hex is the single row in `email_worker_config`; optional `DONATION_FROM_EMAIL`, `WEB_URL`, `API_PUBLIC_URL`. Emails never contain bank details, receipts or order keys. Not built: Resend bounce/complaint webhook, collector alerts, welcome email.
+
 ## Docs to keep current
 When a feature ships, update `docs/implementation-plan.md` (Current Implementation Status), `docs/donations.md` for giving changes, and the relevant section here.

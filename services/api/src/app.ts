@@ -9,6 +9,7 @@ import { NotConfiguredError, RateLimitError, type CareService } from './care-ser
 import { CvExtractionError, type CvExtractor } from './cv-extract.js';
 import type { SupportInvitationMailer } from './invitation-mailer.js';
 import type { PushSender } from './push-sender.js';
+import type { DonationEmailService } from './donation-emails.js';
 
 type Variables = {
   identity: AuthIdentity;
@@ -53,7 +54,7 @@ const searchQuerySchema = z.object({
   lang: languageSchema,
 });
 
-export function createApi(dataAccess: DataAccess, allowedOrigins: string[] = [], invitationMailer: SupportInvitationMailer | null = null, careService: CareService | null = null, cvExtractor: CvExtractor | null = null, pushSender: PushSender | null = null) {
+export function createApi(dataAccess: DataAccess, allowedOrigins: string[] = [], invitationMailer: SupportInvitationMailer | null = null, careService: CareService | null = null, cvExtractor: CvExtractor | null = null, pushSender: PushSender | null = null, donationEmail: DonationEmailService | null = null) {
   const app = new Hono<{ Variables: Variables }>();
   const origins = new Set(allowedOrigins);
 
@@ -65,6 +66,31 @@ export function createApi(dataAccess: DataAccess, allowedOrigins: string[] = [],
   }));
 
   app.get('/health', (context) => context.json({ status: 'ok' }));
+
+  // Linked from donation emails, so no sign-in. GET only shows a page (mail scanners prefetch links); POST does the opt-out.
+  const optOutText = {
+    en: { title: 'Stop donation emails?', button: 'Stop these emails', done: 'Done. You will not receive more donation emails from Ihssan.', bad: 'This link is not valid.' },
+    fr: { title: 'Arrêter les e-mails de don ?', button: 'Ne plus recevoir ces e-mails', done: 'C’est fait. Vous ne recevrez plus d’e-mails de don d’Ihssan.', bad: 'Ce lien n’est pas valide.' },
+    ar: { title: 'إيقاف رسائل التبرع الإلكترونية؟', button: 'إيقاف هذه الرسائل', done: 'تم. لن تصلك من إحسان مزيد من رسائل التبرع.', bad: 'هذا الرابط غير صالح.' },
+  } as const;
+  const optOutQuery = z.object({ p: z.string().uuid(), s: z.string().regex(/^[a-f0-9]{64}$/), l: z.enum(['en', 'fr', 'ar']).catch('en') });
+  const optOutPage = (lang: 'en' | 'fr' | 'ar', body: string) => `<!doctype html><html lang="${lang}" dir="${lang === 'ar' ? 'rtl' : 'ltr'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Ihssan</title></head><body style="font-family:-apple-system,Segoe UI,Arial,sans-serif;background:#F7F7F2;color:#2B2B26;margin:0"><main style="max-width:460px;margin:12vh auto;padding:24px"><h1 style="font-size:22px">Ihssan</h1>${body}</main></body></html>`;
+  app.get('/email/optout', (context) => {
+    const query = optOutQuery.safeParse(context.req.query());
+    if (!query.success || !donationEmail?.verify(query.data.p, query.data.s)) return context.html(optOutPage('en', `<p>${optOutText.en.bad}</p>`), 400);
+    const text = optOutText[query.data.l];
+    return context.html(optOutPage(query.data.l, `<p>${text.title}</p><form method="post" action="/email/optout?p=${query.data.p}&amp;s=${query.data.s}&amp;l=${query.data.l}"><button style="background:#2f6f4f;color:#fff;border:0;border-radius:10px;padding:12px 18px;font-size:15px;font-weight:600">${text.button}</button></form>`));
+  });
+  app.post('/email/optout', async (context) => {
+    const query = optOutQuery.safeParse(context.req.query());
+    if (!query.success || !donationEmail?.verify(query.data.p, query.data.s)) return context.html(optOutPage('en', `<p>${optOutText.en.bad}</p>`), 400);
+    try {
+      await donationEmail.optOut(query.data.p);
+    } catch {
+      return context.html(optOutPage(query.data.l, '<p>Please try again in a moment.</p>'), 502);
+    }
+    return context.html(optOutPage(query.data.l, `<p>${optOutText[query.data.l].done}</p>`));
+  });
 
   app.use('/v1/*', async (context, next) => {
     const authorization = context.req.header('Authorization');

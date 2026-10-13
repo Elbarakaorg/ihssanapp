@@ -116,6 +116,7 @@ const collectPluralFr: Record<keyof typeof collectPluralEn, string> = { 'collect
 const collectPluralAr: Record<keyof typeof collectPluralEn, string> = { 'collect.commentsTwo': 'تعليقان بانتظار الموافقة', 'collect.commentsFew': '{count} تعليقات بانتظار الموافقة' };
 
 const pwaEn = {
+  'donate.emailUpdates': 'Email me about this donation', 'donate.emailUpdatesNote': 'A reminder if your order is still open after a couple of hours, and a confirmation once it is received. No other emails, and you can stop them from any email.',
   'pwa.installTitle': 'Add Ihssan to your home screen', 'pwa.installBody': 'Open Ihssan like an app: full screen, with its own icon.', 'pwa.installAction': 'Add to home screen',
   'pwa.installManual': 'In Chrome, open the menu (⋮) and choose “Add to Home screen” or “Install app”.', 'pwa.installed': 'Ihssan is installed on this device.',
   'pwa.notifyTitle': 'Notifications', 'pwa.notifyBody': 'Get updates from Ihssan on this device, even when the app is closed.', 'pwa.notifySignIn': 'Sign in to turn on notifications.',
@@ -124,6 +125,7 @@ const pwaEn = {
 } as const;
 
 const pwaFr: Record<keyof typeof pwaEn, string> = {
+  'donate.emailUpdates': 'M’envoyer un e-mail pour ce don', 'donate.emailUpdatesNote': 'Un rappel si votre ordre reste ouvert après quelques heures, puis une confirmation dès réception. Aucun autre e-mail, et vous pouvez les arrêter depuis n’importe quel message.',
   'pwa.installTitle': 'Ajouter Ihssan à l’écran d’accueil', 'pwa.installBody': 'Ouvrez Ihssan comme une application : en plein écran, avec sa propre icône.', 'pwa.installAction': 'Ajouter à l’écran d’accueil',
   'pwa.installManual': 'Dans Chrome, ouvrez le menu (⋮) puis choisissez « Ajouter à l’écran d’accueil » ou « Installer l’application ».', 'pwa.installed': 'Ihssan est installé sur cet appareil.',
   'pwa.notifyTitle': 'Notifications', 'pwa.notifyBody': 'Recevez les nouvelles d’Ihssan sur cet appareil, même lorsque l’application est fermée.', 'pwa.notifySignIn': 'Connectez-vous pour activer les notifications.',
@@ -132,6 +134,7 @@ const pwaFr: Record<keyof typeof pwaEn, string> = {
 };
 
 const pwaAr: Record<keyof typeof pwaEn, string> = {
+  'donate.emailUpdates': 'أرسلوا لي رسائل بشأن هذا التبرع', 'donate.emailUpdatesNote': 'تذكير إذا بقي طلبك مفتوحاً بعد ساعات، وتأكيد عند استلامه. لا رسائل أخرى، ويمكنك إيقافها من أي رسالة.',
   'pwa.installTitle': 'أضف إحسان إلى الشاشة الرئيسية', 'pwa.installBody': 'افتح إحسان كتطبيق: بملء الشاشة وبأيقونته الخاصة.', 'pwa.installAction': 'إضافة إلى الشاشة الرئيسية',
   'pwa.installManual': 'في متصفح Chrome افتح القائمة (⋮) ثم اختر «إضافة إلى الشاشة الرئيسية» أو «تثبيت التطبيق».', 'pwa.installed': 'إحسان مثبّت على هذا الجهاز.',
   'pwa.notifyTitle': 'الإشعارات', 'pwa.notifyBody': 'تلقَّ تحديثات إحسان على هذا الجهاز حتى عندما يكون التطبيق مغلقاً.', 'pwa.notifySignIn': 'سجّل الدخول لتفعيل الإشعارات.',

@@ -113,13 +113,15 @@ async function remember(entry: StoredPledge) {
 const EMAIL_KEY = 'ihssan.donor-email.v1';
 export const getSavedDonorEmail = async () => (await AsyncStorage.getItem(EMAIL_KEY).catch(() => null)) ?? '';
 
-export async function createPledge(input: { caseId: string; caseTitle: string; amount: number; displayName: string; anonymous: boolean; comment: string; email: string }) {
+export async function createPledge(input: { caseId: string; caseTitle: string; amount: number; displayName: string; anonymous: boolean; comment: string; email: string; emailUpdates?: boolean; locale?: string }) {
   const result = await rpc<{ id: string; reference: string; token: string; expires_at: string }>('create_donation_pledge', {
     p_case_id: input.caseId, p_amount: input.amount, p_display_name: input.anonymous ? null : input.displayName.trim() || null,
     p_is_anonymous: input.anonymous || !input.displayName.trim(), p_comment: input.comment.trim() || null, p_contact: null, p_email: input.email.trim(),
   }, 'Could not start your donation order. Please try again.');
   await remember({ id: result.id, token: result.token, reference: result.reference, caseId: input.caseId, caseTitle: input.caseTitle, amount: input.amount, createdAt: new Date().toISOString() });
   await AsyncStorage.setItem(EMAIL_KEY, input.email.trim()).catch(() => undefined);
+  // Best effort: a failed opt-in must never block the donation itself.
+  if (input.emailUpdates) await client().rpc('set_pledge_email_updates', { p_id: result.id, p_token: result.token, p_enabled: true, p_locale: input.locale ?? 'en' });
   return result;
 }
 

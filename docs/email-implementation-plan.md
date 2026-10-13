@@ -8,6 +8,7 @@ Last updated 2026-10-09. This plan covers transactional email for account welcom
 - `services/api/src/invitation-mailer.ts` sends support-admin invitation email through Resend's HTTP API when configured. The email is informational; access is granted only after the invited person signs in with the matching confirmed email.
 - Donation orders currently store one free-form `donor_contact` value for “phone or email.” Receipt submission and collector confirmation are Supabase RPCs called by the app. There is no durable email queue, donor email preference, collector email notification, or delivery webhook.
 - The mobile app also has local treatment reminders. Those stay local notifications and are not part of this email system.
+- Built (migration `202610180001`, `services/api/src/donation-emails.ts`): donor-consented donation emails. An unfinished-order reminder 2 hours after the order and a confirmation when a collector confirms, via `email_outbox` plus an in-process worker that calls only the secret-guarded `email_worker_*` functions (no service-role key). Opt-in switch on the donation form, one reminder per address per 24 hours, signed one-click opt-out at `/email/optout` with `List-Unsubscribe`, Resend `Idempotency-Key`. Collector alerts, welcome email and the Resend bounce/complaint webhook are still not built.
 
 ## Message Policy
 

@@ -10,6 +10,7 @@ import { createOpenAiCvExtractor } from './cv-extract.js';
 import { createGooglePlacesClient } from './places.js';
 import { createResendInvitationMailer } from './invitation-mailer.js';
 import { createWebPushSender } from './push-sender.js';
+import { createDonationEmail } from './donation-emails.js';
 import { createSupabaseDataAccess } from './supabase-data-access.js';
 
 const apiEnvPath = resolve(process.cwd(), '.env.local');
@@ -46,8 +47,14 @@ const careService = createCareService({
     ? createHirassaClient({ guardsUrl: hirassaUrl, apiKey: hirassaKey, authHeader: process.env.HIRASSA_AUTH_HEADER })
     : null,
 });
+const donationEmail = createDonationEmail({
+  supabaseUrl, publishableKey, workerSecret: process.env.EMAIL_WORKER_SECRET, resendApiKey: process.env.RESEND_API_KEY,
+  fromEmail: process.env.DONATION_FROM_EMAIL, replyTo: process.env.DONATION_REPLY_TO, webUrl: process.env.WEB_URL, apiUrl: process.env.API_PUBLIC_URL,
+});
 const app = createApi(createSupabaseDataAccess(supabaseUrl, publishableKey), allowedOrigins, invitationMailer, careService,
   createOpenAiCvExtractor({ apiKey: process.env.OPENAI_API_KEY, model: process.env.AI_MODEL }),
-  createWebPushSender({ supabaseUrl, publishableKey, vapidPublicKey: process.env.VAPID_PUBLIC_KEY, vapidPrivateKey: process.env.VAPID_PRIVATE_KEY, subject: process.env.VAPID_SUBJECT }));
+  createWebPushSender({ supabaseUrl, publishableKey, vapidPublicKey: process.env.VAPID_PUBLIC_KEY, vapidPrivateKey: process.env.VAPID_PRIVATE_KEY, subject: process.env.VAPID_SUBJECT }), donationEmail?.service ?? null);
+
+donationEmail?.start();
 
 serve({ fetch: app.fetch, hostname: '0.0.0.0', port });
